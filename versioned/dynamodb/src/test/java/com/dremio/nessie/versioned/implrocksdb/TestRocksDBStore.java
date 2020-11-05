@@ -13,16 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.store.dynamo;
+package com.dremio.nessie.versioned.implrocksdb;
 
-public class DynamoGeneralReadFailure extends RuntimeException {
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-  public DynamoGeneralReadFailure(String message, Throwable cause) {
-    super(message, cause);
+import org.junit.jupiter.api.Test;
+
+public class TestRocksDBStore {
+
+  @Test
+  public void createDefaultRocksDBInstance() {
+    String path = "/tmp/db";
+    RocksDBStore rocksDBStore = new RocksDBStore(null, path);
+    assertNotNull(rocksDBStore);
   }
-
-  public DynamoGeneralReadFailure(String message) {
-    super(message);
-  }
-
 }
