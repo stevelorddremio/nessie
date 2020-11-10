@@ -16,6 +16,8 @@
 package com.dremio.nessie.versioned.implrocksdb;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.List;
+import java.util.Optional;
 
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
