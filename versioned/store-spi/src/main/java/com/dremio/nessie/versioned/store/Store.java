@@ -45,13 +45,14 @@ public interface Store extends AutoCloseable {
 
   <V> boolean putIfAbsent(ValueType type, V value);
 
-  <V> void put(ValueType type, V value, Optional<ConditionExpression> conditionUnAliased);
+  <V> boolean put(ValueType type, V value, Optional<ConditionExpression> conditionUnAliased)
+      throws ReferenceNotFoundException;
 
   boolean delete(ValueType type, Id id, Optional<ConditionExpression> condition);
 
   void save(List<SaveOp<?>> ops);
 
-  <V> V loadSingle(ValueType valueType, Id id);
+  <V> V loadSingle(ValueType valueType, Id id) throws ReferenceNotFoundException;
 
   /**
    * Do a conditional update. If the condition succeeds, return the values in the object. If it fails, return a Optional.empty().

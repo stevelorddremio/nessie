@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import org.immutables.value.Value.Immutable;
 
+import com.dremio.nessie.versioned.ReferenceNotFoundException;
 import com.dremio.nessie.versioned.impl.KeyMutation.MutationType;
 import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.HasId;
@@ -324,8 +325,12 @@ abstract class KeyList {
     @Override
     Stream<InternalKey> getKeys(L1 startingPoint, Store store) {
       return fragmentIds.stream().flatMap(f -> {
-        Fragment fragment = store.loadSingle(ValueType.KEY_FRAGMENT, f);
-        return fragment.getKeys().stream();
+        try {
+          Fragment fragment = store.loadSingle(ValueType.KEY_FRAGMENT, f);
+          return fragment.getKeys().stream();
+        } catch (ReferenceNotFoundException e) {
+          throw new RuntimeException(e);
+        }
       });
     }
 

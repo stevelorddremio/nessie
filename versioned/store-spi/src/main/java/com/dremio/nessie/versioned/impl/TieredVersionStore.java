@@ -77,9 +77,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 
-import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
-import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
-
 /**
  * A version store that uses a tree of levels to store version information.
  */
@@ -126,12 +123,7 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
     }
 
     // with a hash.
-    final L1 l1;
-    try {
-      l1 = store.loadSingle(ValueType.L1, Id.of(targetHash.get()));
-    } catch (ResourceNotFoundException ex) {
-      throw new ReferenceNotFoundException("Unable to find target hash.", ex);
-    }
+    final L1 l1 = store.loadSingle(ValueType.L1, Id.of(targetHash.get()));
 
     InternalRef newRef = ref instanceof TagName ? new InternalTag(null, ref.getName(), l1.getId()) : new InternalBranch(ref.getName(), l1);
     if (!store.putIfAbsent(ValueType.REF, newRef)) {
@@ -149,7 +141,7 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
 
       Id id = ensureValidL1(ref.getBranch()).getId();
       return WithHash.of(id.toHash(), BranchName.of(ref.getBranch().getName()));
-    } catch (ResourceNotFoundException ex) {
+    } catch (ReferenceNotFoundException ex) {
       // ignore. could be a hash.
     }
 
@@ -172,7 +164,7 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
     final InternalRef iref;
     try {
       iref = store.loadSingle(ValueType.REF, id.getId());
-    } catch (ResourceNotFoundException ex) {
+    } catch (ReferenceNotFoundException ex) {
       throw new ReferenceNotFoundException(String.format("Unable to find '%s'.", ref.getName()), ex);
     }
 
@@ -282,27 +274,22 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
 
   @Override
   public Stream<WithHash<METADATA>> getCommits(Ref ref) throws ReferenceNotFoundException {
-    try {
-      InternalRefId id = InternalRefId.of(ref);
-      final L1 startingL1;
-      if (id.getType() == Type.HASH) {
-        // points to L1.
-        startingL1 = store.loadSingle(ValueType.L1, id.getId());
+    InternalRefId id = InternalRefId.of(ref);
+    final L1 startingL1;
+    if (id.getType() == Type.HASH) {
+      // points to L1.
+      startingL1 = store.loadSingle(ValueType.L1, id.getId());
+    } else {
+      InternalRef iref = store.loadSingle(ValueType.REF, id.getId());
+      if (iref.getType() == Type.TAG) {
+        startingL1 = store.loadSingle(ValueType.L1, iref.getTag().getCommit());
       } else {
-        InternalRef iref = store.loadSingle(ValueType.REF, id.getId());
-        if (iref.getType() == Type.TAG) {
-          startingL1 = store.loadSingle(ValueType.L1, iref.getTag().getCommit());
-        } else {
-          startingL1 = ensureValidL1(iref.getBranch());
-        }
+        startingL1 = ensureValidL1(iref.getBranch());
       }
-
-      HistoryRetriever hr = new HistoryRetriever(store, startingL1, Id.EMPTY, false, true, false);
-      return hr.getStream().map(hi -> WithHash.of(hi.getId().toHash(), metadataSerializer.fromBytes(hi.getMetadata().getBytes())));
-
-    } catch (ResourceNotFoundException ex) {
-      throw new ReferenceNotFoundException("Unable to find request reference.", ex);
     }
+
+    final HistoryRetriever hr = new HistoryRetriever(store, startingL1, Id.EMPTY, false, true, false);
+    return hr.getStream().map(hi -> WithHash.of(hi.getId().toHash(), metadataSerializer.fromBytes(hi.getMetadata().getBytes())));
   }
 
 
@@ -340,7 +327,7 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
       } else {
         return iref.getTag().getCommit().toHash();
       }
-    } catch (ResourceNotFoundException ex) {
+    } catch (ReferenceNotFoundException ex) {
       throw new ReferenceNotFoundException(String.format("Unable to find ref %s", ref.getName()), ex);
     }
   }
@@ -361,13 +348,7 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
       expectedId = null;
     }
 
-    final L1 l1;
-    try {
-      l1 = store.loadSingle(ValueType.L1, newId);
-    } catch (ResourceNotFoundException ex) {
-      throw new ReferenceNotFoundException("Unable to find target hash.");
-    }
-
+    final L1 l1 = store.loadSingle(ValueType.L1, newId);
     final boolean isTag = namedRef instanceof TagName;
     final InternalRef.Type type = isTag ? InternalRef.Type.TAG : InternalRef.Type.BRANCH;
     final String expectedType = isTag ? "Tag" : "Branch";
@@ -397,20 +378,16 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
       toSave = new InternalBranch(name, l1);
     }
 
-    try {
-      store.put(ValueType.REF, toSave, Optional.of(condition));
-    } catch (ResourceNotFoundException ex) {
-      throw new ReferenceNotFoundException("The current tag", ex);
-    } catch (ConditionalCheckFailedException ex) {
+    if (!store.put(ValueType.REF, toSave, Optional.of(condition))) {
       if (currentTarget.isPresent()) {
         throw new ReferenceConflictException(
             String.format("Unable to assign ref %s. The reference has changed, doesn't "
                 + "exist or you are trying to overwrite a %s with a %s.",
-                name, unexpectedType, expectedType), ex);
+                name, unexpectedType, expectedType));
       } else {
         throw new ReferenceNotFoundException(
             String.format("Unable to assign ref %s. The reference doesn't exist or you are "
-                + "trying to overwrite a %s with a %s.", name, unexpectedType, expectedType), ex);
+                + "trying to overwrite a %s with a %s.", name, unexpectedType, expectedType));
       }
     }
 

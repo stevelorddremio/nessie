@@ -288,7 +288,12 @@ class InternalBranch extends MemoizedId implements InternalRef {
 
     IdMap tree = this.tree;
 
-    L1 lastSavedL1 = lastSavedCommit.id.isEmpty() ? L1.EMPTY : store.loadSingle(ValueType.L1, lastSavedCommit.id);
+    final L1 lastSavedL1;
+    try {
+      lastSavedL1 = lastSavedCommit.id.isEmpty() ? L1.EMPTY : store.loadSingle(ValueType.L1, lastSavedCommit.id);
+    } catch (ReferenceNotFoundException e) {
+      throw new RuntimeException(e);
+    }
 
     if (unsavedCommits.isEmpty()) {
       return new UpdateState(Collections.emptyList(), deletes, lastSavedL1, 0, lastSavedL1.getId(), this);

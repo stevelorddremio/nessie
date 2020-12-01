@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.dremio.nessie.versioned.ReferenceNotFoundException;
 import com.dremio.nessie.versioned.impl.InternalRef;
 import com.dremio.nessie.versioned.impl.L1;
 import com.dremio.nessie.versioned.impl.SampleEntities;
@@ -159,22 +160,34 @@ public abstract class AbstractTestStore<S extends Store> {
     store.save(saveOps);
 
     saveOps.forEach(s -> {
-      final SimpleSchema<Object> schema = s.getType().getSchema();
-      assertEquals(
-          schema.itemToMap(s.getValue(), true),
-          schema.itemToMap(store.loadSingle(s.getType(), s.getValue().getId()), true));
+      try {
+        final SimpleSchema<Object> schema = s.getType().getSchema();
+        assertEquals(
+            schema.itemToMap(s.getValue(), true),
+            schema.itemToMap(store.loadSingle(s.getType(), s.getValue().getId()), true));
+      } catch (ReferenceNotFoundException e) {
+        Assertions.fail(e);
+      }
     });
   }
 
   private <T extends HasId> void putThenLoad(T sample, ValueType type) {
-    store.put(type, sample, Optional.empty());
-    testLoad(sample, type);
+    try {
+      Assertions.assertTrue(store.put(type, sample, Optional.empty()));
+      testLoad(sample, type);
+    } catch (ReferenceNotFoundException e) {
+      Assertions.fail(e);
+    }
   }
 
   private <T extends HasId> void testLoad(T sample, ValueType type) {
-    final T read = store.loadSingle(type, sample.getId());
-    final SimpleSchema<T> schema = type.getSchema();
-    assertEquals(schema.itemToMap(sample, true), schema.itemToMap(read, true));
+    try {
+      final T read = store.loadSingle(type, sample.getId());
+      final SimpleSchema<T> schema = type.getSchema();
+      assertEquals(schema.itemToMap(sample, true), schema.itemToMap(read, true));
+    } catch (ReferenceNotFoundException e) {
+      Assertions.fail(e);
+    }
   }
 
   private <T extends HasId> void testPutIfAbsent(T sample, ValueType type) {

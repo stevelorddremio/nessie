@@ -276,17 +276,18 @@ public class MongoDbStore implements Store {
   }
 
   @Override
-  public <V> void put(ValueType type, V value, Optional<ConditionExpression> conditionUnAliased) {
+  public <V> boolean put(ValueType type, V value, Optional<ConditionExpression> conditionUnAliased) {
     Preconditions.checkArgument(type.getObjectClass().isAssignableFrom(value.getClass()),
         "ValueType %s doesn't extend expected type %s.", value.getClass().getName(), type.getObjectClass().getName());
 
     final MongoCollection<V> collection = (MongoCollection<V>)collections.get(type);
     if (null == collection) {
-      throw new UnsupportedOperationException(String.format("Unsupported Entity type: %s", type.name()));
+      throw new IllegalArgumentException(String.format("Unsupported Entity type: %s", type.name()));
     }
 
     // TODO: Handle ConditionExpressions.
     await(() -> collection.replaceOne(Filters.eq(Store.KEY_NAME, ((HasId)value).getId()), value, REPLACE_UPSERT));
+    return true;
   }
 
   @Override
@@ -320,12 +321,12 @@ public class MongoDbStore implements Store {
   }
 
   @Override
-  public <V> V loadSingle(ValueType valueType, Id id) {
+  public <V> V loadSingle(ValueType valueType, Id id) throws ReferenceNotFoundException {
     final MongoCollection<V> collection = getCollection(valueType);
 
     final V value = await(() -> collection.find(Filters.eq(Store.KEY_NAME, id))).first();
     if (null == value) {
-      throw new RuntimeException("Unable to load item with ID: " + id);
+      throw new ReferenceNotFoundException("Unable to load item with ID: " + id);
     }
     return value;
   }

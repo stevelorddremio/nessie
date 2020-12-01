@@ -108,7 +108,11 @@ class HistoryRetriever {
         HistoryItem item = new HistoryItem(start.getId());
         item.l1 = start;
         if (retrieveCommit && !start.getMetadataId().isEmpty()) {
-          item.commitMetadata = store.loadSingle(ValueType.COMMIT_METADATA, start.getMetadataId());
+          try {
+            item.commitMetadata = store.loadSingle(ValueType.COMMIT_METADATA, start.getMetadataId());
+          } catch (ReferenceNotFoundException e) {
+            throw new RuntimeException(e);
+          }
         }
         this.currentIterator = Collections.singleton(item).iterator();
       }

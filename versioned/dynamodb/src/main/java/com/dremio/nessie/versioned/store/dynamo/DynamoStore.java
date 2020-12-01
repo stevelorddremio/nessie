@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dremio.nessie.versioned.ReferenceNotFoundException;
-import com.dremio.nessie.versioned.impl.DynamoStoreConfig;
 import com.dremio.nessie.versioned.impl.InternalRef;
 import com.dremio.nessie.versioned.impl.L1;
 import com.dremio.nessie.versioned.impl.L2;
@@ -221,11 +220,11 @@ public class DynamoStore implements Store {
 
   @Override
   public <V> boolean putIfAbsent(ValueType type, V value) {
-    ConditionExpression condition = ConditionExpression.of(ExpressionFunction.attributeNotExists(ExpressionPath.builder(KEY_NAME).build()));
     try {
-      put(type, value, Optional.of(condition));
-      return true;
-    } catch (ConditionalCheckFailedException ex) {
+      ConditionExpression condition =
+          ConditionExpression.of(ExpressionFunction.attributeNotExists(ExpressionPath.builder(KEY_NAME).build()));
+      return put(type, value, Optional.of(condition));
+    } catch (ReferenceNotFoundException e) {
       return false;
     }
   }
@@ -247,7 +246,8 @@ public class DynamoStore implements Store {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <V> void put(ValueType type, V value, Optional<ConditionExpression> conditionUnAliased) {
+  public <V> boolean put(ValueType type, V value, Optional<ConditionExpression> conditionUnAliased)
+      throws ReferenceNotFoundException {
     Preconditions.checkArgument(type.getObjectClass().isAssignableFrom(value.getClass()),
         "ValueType %s doesn't extend expected type %s.", value.getClass().getName(), type.getObjectClass().getName());
     Map<String, AttributeValue> attributes = AttributeValueUtil.fromEntity(
@@ -262,7 +262,14 @@ public class DynamoStore implements Store {
       c.apply(builder).conditionExpression(aliased.toConditionExpressionString());
     }
 
-    client.putItem(builder.build());
+    try {
+      client.putItem(builder.build());
+      return true;
+    } catch (ResourceNotFoundException re) {
+      throw new ReferenceNotFoundException("The current tag", re);
+    } catch (ConditionalCheckFailedException ce) {
+      return false;
+    }
   }
 
   @Override
@@ -311,14 +318,14 @@ public class DynamoStore implements Store {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <V> V loadSingle(ValueType valueType, Id id) {
+  public <V> V loadSingle(ValueType valueType, Id id) throws ReferenceNotFoundException {
     GetItemResponse response = client.getItem(GetItemRequest.builder()
         .tableName(tableNames.get(valueType))
         .key(ImmutableMap.of(KEY_NAME, AttributeValueUtil.fromEntity(id.toEntity())))
         .consistentRead(true)
         .build());
     if (!response.hasItem()) {
-      throw ResourceNotFoundException.builder().message("Unable to load item.").build();
+      throw new ReferenceNotFoundException("Unable to load item.");
     }
     return (V) valueType.getSchema().mapToItem(valueType.checkType(AttributeValueUtil.toEntity(response.item())));
   }

@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.dremio.nessie.versioned.ReferenceNotFoundException;
 import com.dremio.nessie.versioned.impl.InternalBranch.UpdateState;
 import com.dremio.nessie.versioned.store.dynamo.DynamoStore;
 
@@ -29,7 +30,7 @@ class TestVersionEquality {
    * Make sure that a new branch has the L1.EMPTY_ID identifier.
    */
   @Test
-  void internalBranchL1IdEqualsEmpty() {
+  void internalBranchL1IdEqualsEmpty() throws ReferenceNotFoundException {
     InternalBranch b = new InternalBranch("n/a");
     DynamoStore store = Mockito.mock(DynamoStore.class);
     Mockito.when(store.loadSingle(Mockito.any(), Mockito.any())).thenReturn(L1.EMPTY);

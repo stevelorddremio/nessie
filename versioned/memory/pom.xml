@@ -27,7 +27,7 @@
 
   <artifactId>nessie-versioned-memory</artifactId>
 
-  <name>Nessie - Versioned Memory Store</name>
+  <name>Nessie - Versioned - Memory Store</name>
 
   <dependencies>
     <dependency>
