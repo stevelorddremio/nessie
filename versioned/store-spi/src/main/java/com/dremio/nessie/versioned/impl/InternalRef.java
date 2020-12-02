@@ -31,9 +31,9 @@ import com.google.common.collect.Maps;
  */
 public interface InternalRef extends HasId {
 
-  static final String TYPE = "type";
+  String TYPE = "type";
 
-  public static enum Type {
+  enum Type {
     BRANCH("b"),
     TAG("t"),
     HASH(null),
@@ -93,7 +93,7 @@ public interface InternalRef extends HasId {
 
   Id getId();
 
-  static final SimpleSchema<InternalRef> SCHEMA = new SimpleSchema<InternalRef>(InternalRef.class) {
+  SimpleSchema<InternalRef> SCHEMA = new SimpleSchema<InternalRef>(InternalRef.class) {
 
     @Override
     public InternalRef deserialize(Map<String, Entity> attributeMap) {

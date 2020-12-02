@@ -28,8 +28,8 @@ class InternalTag extends MemoizedId implements InternalRef {
   static final String NAME = "name";
   static final String COMMIT = "commit";
 
-  private String name;
-  private Id commit;
+  private final String name;
+  private final Id commit;
 
   InternalTag(Id id, String name, Id commit) {
     super(id);

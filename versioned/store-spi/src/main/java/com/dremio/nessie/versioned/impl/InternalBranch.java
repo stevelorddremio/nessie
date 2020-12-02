@@ -83,7 +83,7 @@ import com.google.common.primitives.Ints;
  * ]
  * </pre>
  *
- * <p>In the state shown above, several concurrent commmiters have written their branch commits to the branch
+ * <p>In the state shown above, several concurrent committers have written their branch commits to the branch
  * but have yet to clean up. In those cases, any one of the committers may clean up some or all of the
  * non-finalized commits (including commits that potentially happened after their own).
  *
@@ -317,7 +317,7 @@ class InternalBranch extends MemoizedId implements InternalRef {
       }
       lastL1 = lastL1.getChildWithTree(c.commit, tree, c.keyMutationList)
           .withCheckpointAsNecessary(store);
-      toSave.add(new SaveOp<L1>(ValueType.L1, lastL1));
+      toSave.add(new SaveOp<>(ValueType.L1, lastL1));
       lastId = c.id;
       if (lastUnsaved != c) {
         // update for next loop.
@@ -366,11 +366,10 @@ class InternalBranch extends MemoizedId implements InternalRef {
      * @param store The store to save to.
      * @param executor The executor to do any necessary clean up of the commit log.
      * @param attempts The number of times we'll attempt to clean up the commit log.
-     * @param waitOnCollapse Whether or not the operation should wait on the final operation of collapsing the commit log succesfully
+     * @param waitOnCollapse Whether or not the operation should wait on the final operation of collapsing the commit log successfully
      *        before returning/failing. If false, the final collapse will be done in a separate thread.
      * @return
      */
-    @SuppressWarnings("unchecked")
     CompletableFuture<InternalBranch> ensureAvailable(Store store, Executor executor, int attempts, boolean waitOnCollapse) {
       if (saves.isEmpty()) {
         saved = true;
@@ -480,8 +479,8 @@ class InternalBranch extends MemoizedId implements InternalRef {
   }
 
   static class Delete {
-    int position;
-    Id id;
+    final int position;
+    final Id id;
 
     public Delete(int position, Id id) {
       super();

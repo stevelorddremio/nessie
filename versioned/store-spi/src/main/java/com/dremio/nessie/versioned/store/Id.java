@@ -85,9 +85,7 @@ public final class Id implements InternalRef {
    * @return The generated id.
    */
   public static Id build(ByteBuffer bytes) {
-    return build(hasher -> {
-      hasher.putBytes(bytes);
-    });
+    return build(hasher -> hasher.putBytes(bytes));
   }
 
   /**
@@ -96,9 +94,7 @@ public final class Id implements InternalRef {
    * @return The generated Id object.
    */
   public static Id build(String string) {
-    return build(hasher -> {
-      hasher.putString(string.toLowerCase(Locale.US), StandardCharsets.UTF_8);
-    });
+    return build(hasher -> hasher.putString(string.toLowerCase(Locale.US), StandardCharsets.UTF_8));
   }
 
   public static Id build(ByteString bytes) {

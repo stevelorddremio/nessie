@@ -90,7 +90,7 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
   private final Serializer<METADATA> metadataSerializer;
   private final StoreWorker<DATA,METADATA> storeWorker;
   private final ExecutorService executor;
-  private Store store;
+  private final Store store;
   private final int commitRetryCount = 5;
   private final int p2commitRetry = 5;
   private final boolean waitOnCollapse;
@@ -234,7 +234,7 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
       }
 
       // do updates.
-      holders.forEach(o -> o.apply());
+      holders.forEach(OperationHolder::apply);
 
       // save all but l1 and branch.
       store.save(
@@ -298,12 +298,12 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
     return store.getRefs()
         .map(ir -> {
           if (ir.getType() == Type.TAG) {
-            return WithHash.<NamedRef>of(ir.getTag().getCommit().toHash(), ImmutableTagName.builder().name(ir.getTag().getName()).build());
+            return WithHash.of(ir.getTag().getCommit().toHash(), ImmutableTagName.builder().name(ir.getTag().getName()).build());
           }
 
           InternalBranch branch = ir.getBranch();
           L1 l1 = ensureValidL1(branch);
-          return WithHash.<NamedRef>of(l1.getId().toHash(), ImmutableBranchName.builder().name(ir.getBranch().getName()).build());
+          return WithHash.of(l1.getId().toHash(), ImmutableBranchName.builder().name(ir.getBranch().getName()).build());
         });
   }
 
@@ -510,11 +510,11 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
       List<LoadOp<?>> loadOps = new ArrayList<>();
 
       // always load the l1 we're merging from.
-      loadOps.add(new LoadOp<L1>(ValueType.L1, Id.of(fromHash), l -> fromPtr.set(l)));
+      loadOps.add(new LoadOp<>(ValueType.L1, Id.of(fromHash), fromPtr::set));
       if (expectedBranchHash.isPresent()) {
         // if an expected branch hash is provided, use that l1 as the basic. Still load the branch to make sure it exists.
-        loadOps.add(new LoadOp<L1>(ValueType.L1, Id.of(expectedBranchHash.get()), l1 -> toPtr.set(l1)));
-        loadOps.add(new LoadOp<InternalRef>(ValueType.REF, branchId.getId(), r -> branch.set(r)));
+        loadOps.add(new LoadOp<>(ValueType.L1, Id.of(expectedBranchHash.get()), toPtr::set));
+        loadOps.add(new LoadOp<>(ValueType.REF, branchId.getId(), branch::set));
       } else {
 
         // if no expected branch hash is provided, use the head of the branch as the basis for the rebase.
@@ -621,7 +621,7 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
         .collect(Collectors.toList()));
 
     // get a list of all the intentions as a SetClause
-    List<Commit> intentions = creators.stream().map(pt -> pt.getCommit()).collect(Collectors.toList());
+    List<Commit> intentions = creators.stream().map(DiffManager::getCommit).collect(Collectors.toList());
     SetClause commitUpdate = CommitOp.getCommitSet(intentions);
 
     // Get the composite commit operation, but exclude any Commit intentions.
@@ -643,9 +643,9 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
    * Class used to manage the tree mutations required to move between two L1s.
    */
   private class DiffManager {
-    private PartialTree<DATA> tree;
-    private Id metadataId;
-    private DiffFinder finder;
+    private final PartialTree<DATA> tree;
+    private final Id metadataId;
+    private final DiffFinder finder;
 
     DiffManager(DiffFinder finder) {
       this.finder = finder;
@@ -693,19 +693,18 @@ public class TieredVersionStore<DATA, METADATA> implements VersionStore<DATA, ME
     store.load(finder.getLoad());
 
     // For now, we'll load all the values at once. In the future, we should paginate diffs.
-    Map<Id, InternalValue> values = new HashMap<>();
-    List<LoadOp<InternalValue>> loads = finder.getKeyDiffs()
+    final Map<Id, InternalValue> values = new HashMap<>();
+    final LoadStep loadStep = LoadStep.of(finder.getKeyDiffs()
         .flatMap(k -> Stream.of(k.getFrom(), k.getTo()))
         .distinct()
         .filter(id -> !id.isEmpty())
-        .map(id -> new LoadOp<InternalValue>(ValueType.VALUE, id, val -> values.put(id, val)))
-        .collect(Collectors.toList());
-    store.load(LoadStep.of(loads.toArray(new LoadOp[loads.size()])));
+        .map(id -> new LoadOp<InternalValue>(ValueType.VALUE, id, val -> values.put(id, val))).toArray(LoadOp[]::new));
+    store.load(loadStep);
 
     return finder.getKeyDiffs().map(kd -> Diff.of(
         kd.getKey().toKey(),
-        Optional.ofNullable(kd.getFrom()).map(id -> values.get(id)).map(v -> serializer.fromBytes(v.getBytes())),
-        Optional.ofNullable(kd.getTo()).map(id -> values.get(id)).map(v -> serializer.fromBytes(v.getBytes()))
+        Optional.ofNullable(kd.getFrom()).map(values::get).map(v -> serializer.fromBytes(v.getBytes())),
+        Optional.ofNullable(kd.getTo()).map(values::get).map(v -> serializer.fromBytes(v.getBytes()))
       )
     );
   }

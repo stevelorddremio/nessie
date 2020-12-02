@@ -38,8 +38,8 @@ public class L3 extends MemoizedId {
 
   private final TreeMap<InternalKey, PositionDelta> map;
 
-  public static L3 EMPTY = new L3(new TreeMap<>());
-  public static Id EMPTY_ID = EMPTY.getId();
+  public static final L3 EMPTY = new L3(new TreeMap<>());
+  public static final Id EMPTY_ID = EMPTY.getId();
 
   L3(TreeMap<InternalKey, PositionDelta> keys) {
     this(null, keys);
@@ -60,8 +60,8 @@ public class L3 extends MemoizedId {
   }
 
   /**
-   * Get the key if it exists.
-   * @param id The id of the key to retrieve
+   * Get the ID of the key if it exists.
+   * @param key The key to retrieve the ID for
    * @return If the key exists, provide. Else, provide Optional.empty()
    */
   Optional<Id> getPossibleId(InternalKey key) {
@@ -118,7 +118,7 @@ public class L3 extends MemoizedId {
 
     @Override
     public L3 deserialize(Map<String, Entity> attributeMap) {
-      TreeMap<InternalKey, PositionDelta> tree = attributeMap.get(TREE).getList().stream().map(av -> av.getMap()).collect(Collectors.toMap(
+      TreeMap<InternalKey, PositionDelta> tree = attributeMap.get(TREE).getList().stream().map(Entity::getMap).collect(Collectors.toMap(
           m -> InternalKey.fromEntity(m.get(TREE_KEY)),
           m -> PositionDelta.of(0, Id.fromEntity(m.get(TREE_ID))),
           (a,b) -> {
@@ -189,8 +189,8 @@ public class L3 extends MemoizedId {
    */
   public static Stream<KeyDiff> compare(L3 from, L3 to) {
     MapDifference<InternalKey, Id> difference =  Maps.difference(
-        Maps.transformValues(from.map, p -> p.getNewId()),
-        Maps.transformValues(to.map, p -> p.getNewId())
+        Maps.transformValues(from.map, PositionDelta::getNewId),
+        Maps.transformValues(to.map, PositionDelta::getNewId)
         );
     return Stream.concat(
         difference.entriesDiffering().entrySet().stream().map(KeyDiff::new),

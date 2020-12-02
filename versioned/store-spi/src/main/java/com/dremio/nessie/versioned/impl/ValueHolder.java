@@ -51,10 +51,10 @@ class ValueHolder<V> {
   }
 
   public static <V> ValueHolder<V> of(Serializer<V> serializer, V value) {
-    return new ValueHolder<V>(serializer, value, null);
+    return new ValueHolder<>(serializer, value, null);
   }
 
   public static <V> ValueHolder<V> of(Serializer<V> serializer, InternalValue bean) {
-    return new ValueHolder<V>(serializer, null, bean);
+    return new ValueHolder<>(serializer, null, bean);
   }
 }

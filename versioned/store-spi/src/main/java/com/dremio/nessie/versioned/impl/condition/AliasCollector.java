@@ -20,7 +20,7 @@ import com.dremio.nessie.versioned.store.Entity;
 public interface AliasCollector {
 
   @FunctionalInterface
-  public interface Aliasable<T> {
+  interface Aliasable<T> {
     T alias(AliasCollector c);
   }
 

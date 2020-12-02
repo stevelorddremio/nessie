@@ -36,9 +36,7 @@ public class Fragment extends MemoizedId {
 
   @Override
   Id generateId() {
-    return Id.build(h -> {
-      keys.stream().forEach(k -> InternalKey.addToHasher(k, h));
-    });
+    return Id.build(h -> keys.stream().forEach(k -> InternalKey.addToHasher(k, h)));
   }
 
   public List<InternalKey> getKeys() {

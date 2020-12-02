@@ -55,9 +55,7 @@ abstract class WrappedValueBean extends MemoizedId {
 
   @Override
   Id generateId() {
-    return Id.build(h -> {
-      h.putLong(getSeed()).putBytes(value.asReadOnlyByteBuffer());
-    });
+    return Id.build(h -> h.putLong(getSeed()).putBytes(value.asReadOnlyByteBuffer()));
   }
 
   @Override

@@ -37,7 +37,7 @@ public abstract class ProjectionExpression implements Aliasable<ProjectionExpres
   }
 
   public String toProjectionExpression() {
-    return getPaths().stream().map(p -> p.asString()).collect(Collectors.joining(", "));
+    return getPaths().stream().map(ExpressionPath::asString).collect(Collectors.joining(", "));
   }
 
   @Override

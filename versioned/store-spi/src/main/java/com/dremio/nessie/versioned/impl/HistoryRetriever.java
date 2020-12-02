@@ -59,9 +59,9 @@ class HistoryRetriever {
     this.includeEndEmpty = includeEndEmpty;
   }
 
-  class HistoryItem {
+  static class HistoryItem {
 
-    private Id id;
+    private final Id id;
     private L1 l1;
     private InternalCommitMetadata commitMetadata;
 

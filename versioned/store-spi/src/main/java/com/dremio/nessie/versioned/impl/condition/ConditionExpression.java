@@ -77,7 +77,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
    * Collect condition expressions into a single compound condition expression.
    * @return combined update.
    */
-  public static final Collector<ConditionExpression, List<ExpressionFunction>, ConditionExpression> toConditionExpression() {
+  public static Collector<ConditionExpression, List<ExpressionFunction>, ConditionExpression> toConditionExpression() {
     return Collector.of(
       Lists::newArrayList,
       (o1, l1) -> o1.addAll(l1.getFunctions()),

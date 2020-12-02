@@ -51,7 +51,7 @@ abstract class KeyList {
 
   public static final KeyList EMPTY = new CompleteList(Collections.emptyList(), ImmutableList.of());
 
-  static enum Type {
+  enum Type {
     INCREMENTAL,
     FULL
   }
@@ -88,7 +88,7 @@ abstract class KeyList {
   }
 
   boolean isEmptyIncremental() {
-    return getType() == Type.INCREMENTAL && ((IncrementalList) this).getMutations().isEmpty();
+    return getType() == Type.INCREMENTAL && this.getMutations().isEmpty();
   }
 
   boolean isFull() {
@@ -214,7 +214,7 @@ abstract class KeyList {
 
     @Override
     public Entity toEntity() {
-      return Entity.ofMap(ImmutableMap.<String, Entity>of(
+      return Entity.ofMap(ImmutableMap.of(
             IS_CHECKPOINT, Entity.ofBoolean(false),
             MUTATIONS, Entity.ofList(getMutations().stream().map(KeyMutation::toEntity)),
             ORIGIN, getPreviousCheckpoint().toEntity(),
@@ -306,7 +306,7 @@ abstract class KeyList {
 
     @Override
     public Entity toEntity() {
-      return Entity.ofMap(ImmutableMap.<String, Entity>of(
+      return Entity.ofMap(ImmutableMap.of(
             IS_CHECKPOINT,
             Entity.ofBoolean(true),
             FRAGMENTS,
@@ -350,10 +350,10 @@ abstract class KeyList {
    */
   static class KeyAccumulator {
     private static final int MAX_SIZE = 400_000 - 8096;
-    private Store store;
-    private Set<Id> presaved;
-    private List<InternalKey> currentList = new ArrayList<>();
-    private List<Id> fragmentIds = new ArrayList<>();
+    private final Store store;
+    private final Set<Id> presaved;
+    private final List<InternalKey> currentList = new ArrayList<>();
+    private final List<Id> fragmentIds = new ArrayList<>();
     private int currentListSize;
 
     public KeyAccumulator(Store store, Set<Id> presaved) {
@@ -384,11 +384,7 @@ abstract class KeyList {
     }
 
     private boolean aboveThreshold() {
-      if (currentListSize > MAX_SIZE) {
-        return true;
-      }
-
-      return false;
+      return currentListSize > MAX_SIZE;
     }
 
     public void close() {

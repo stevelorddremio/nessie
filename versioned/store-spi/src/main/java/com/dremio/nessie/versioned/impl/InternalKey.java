@@ -68,11 +68,11 @@ class InternalKey implements Comparable<InternalKey>, HasId {
   }
 
   public Entity toEntity() {
-    return Entity.ofList(getElements().stream().map(s -> Entity.ofString(s)).collect(Collectors.toList()));
+    return Entity.ofList(getElements().stream().map(Entity::ofString).collect(Collectors.toList()));
   }
 
   public int estimatedSize() {
-    return 3 + delegate.getElements().stream().mapToInt(s -> s.length()).sum();
+    return 3 + delegate.getElements().stream().mapToInt(String::length).sum();
   }
 
   public static InternalKey fromEntity(Entity value) {

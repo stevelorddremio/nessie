@@ -56,12 +56,12 @@ class DiffFinder {
   }
 
   public Stream<KeyDiff> getKeyDiffs() {
-    return l3Diffs.stream().flatMap(l3 -> l3.getKeyDiffs());
+    return l3Diffs.stream().flatMap(L3Diff::getKeyDiffs);
   }
 
   private static class L1Diff {
-    private L1 from;
-    private L1 to;
+    private final L1 from;
+    private final L1 to;
 
     public L1Diff(L1 from, L1 to) {
       super();
@@ -78,8 +78,8 @@ class DiffFinder {
         if (!a.equals(b)) {
           L2Diff d = new L2Diff();
           l2Diffs.add(d);
-          loadOps.add(new LoadOp<L2>(ValueType.L2, a, d::from));
-          loadOps.add(new LoadOp<L2>(ValueType.L2, b, d::to));
+          loadOps.add(new LoadOp<>(ValueType.L2, a, d::from));
+          loadOps.add(new LoadOp<>(ValueType.L2, b, d::to));
         }
       }
 
@@ -111,12 +111,12 @@ class DiffFinder {
           if (!a.equals(b)) {
             L3Diff d = new L3Diff();
             l3DiffsOutput.add(d);
-            loadOps.add(new LoadOp<L3>(ValueType.L3, a, d::from));
-            loadOps.add(new LoadOp<L3>(ValueType.L3, b, d::to));
+            loadOps.add(new LoadOp<>(ValueType.L3, a, d::from));
+            loadOps.add(new LoadOp<>(ValueType.L3, b, d::to));
           }
         }
       }
-      return loadOps.isEmpty() ? Optional.empty() : Optional.of(new LoadStep(loadOps, () -> Optional.empty()));
+      return loadOps.isEmpty() ? Optional.empty() : Optional.of(new LoadStep(loadOps, Optional::empty));
     }
   }
 

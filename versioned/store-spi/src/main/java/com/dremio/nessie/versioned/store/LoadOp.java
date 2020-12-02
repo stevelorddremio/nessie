@@ -63,16 +63,16 @@ public class LoadOp<V extends HasId> {
    */
   private static final Collector<LoadOp<?>, OpCollectorState, LoadOp<?>> COLLECTOR = Collector.of(
       OpCollectorState::new,
-      (o1, l1) -> o1.plus(l1),
-      (o1, o2) -> o1.plus(o2),
-      o -> o.build()
+      OpCollectorState::plus,
+      OpCollectorState::plus,
+      OpCollectorState::build
       );
 
   private static class OpCollectorState {
 
     private ValueType valueType;
     private Id id;
-    private List<Consumer<?>> consumers = new ArrayList<>();
+    private final List<Consumer<?>> consumers = new ArrayList<>();
 
     public OpCollectorState plus(OpCollectorState o) {
       if (this.hasValues() && o.hasValues()) {
@@ -106,9 +106,9 @@ public class LoadOp<V extends HasId> {
 
     @SuppressWarnings("unchecked")
     public LoadOp<?> build() {
-      return new LoadOp<HasId>(valueType, id, v -> {
+      return new LoadOp<>(valueType, id, v -> {
         for (Consumer<?> c : consumers) {
-          ((Consumer<Object>)c).accept(v);
+          ((Consumer<Object>) c).accept(v);
         }
       });
     }

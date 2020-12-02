@@ -35,7 +35,7 @@ public abstract class SimpleSchema<T> {
 
   public Map<String, Entity> itemToMap(T item, Collection<String> attributes) {
     Set<String> include = ImmutableSet.copyOf(attributes);
-    return Maps.filterKeys(itemToMap(item, true), k -> include.contains(k));
+    return Maps.filterKeys(itemToMap(item, true), include::contains);
   }
 
   public abstract Map<String, Entity> itemToMap(T item, boolean ignoreNulls);

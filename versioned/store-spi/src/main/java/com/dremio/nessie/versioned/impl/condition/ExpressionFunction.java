@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 
 public class ExpressionFunction implements Value {
 
-  private static enum FunctionName {
+  private enum FunctionName {
     LIST_APPEND("list_append", 2),
     IF_NOT_EXISTS("if_not_exists", 2),
     EQUALS("="),
@@ -41,9 +41,9 @@ public class ExpressionFunction implements Value {
     //    GTE(">=")
     ;
 
-    String protocolName;
-    int argCount;
-    boolean binaryExpression;
+    final String protocolName;
+    final int argCount;
+    final boolean binaryExpression;
 
     FunctionName(String text, int argCount) {
       this(text, argCount, false);
@@ -107,7 +107,7 @@ public class ExpressionFunction implements Value {
     if (name.binaryExpression) {
       return String.format("%s %s %s", arguments.get(0).asString(), name.protocolName, arguments.get(1).asString());
     }
-    return String.format("%s(%s)", name.protocolName, arguments.stream().map(v -> v.asString()).collect(Collectors.joining(", ")));
+    return String.format("%s(%s)", name.protocolName, arguments.stream().map(Value::asString).collect(Collectors.joining(", ")));
   }
 
   @Override

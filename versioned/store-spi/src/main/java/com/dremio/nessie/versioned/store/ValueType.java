@@ -41,7 +41,7 @@ public enum ValueType {
   KEY_FRAGMENT(Fragment.class, Fragment.SCHEMA, "k"),
   COMMIT_METADATA(InternalCommitMetadata.class, InternalCommitMetadata.SCHEMA, "m");
 
-  public static String SCHEMA_TYPE = "t";
+  public static final String SCHEMA_TYPE = "t";
 
   private final Class<?> objectClass;
   private final SimpleSchema<?> schema;

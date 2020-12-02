@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -60,8 +61,8 @@ import com.google.common.collect.Streams;
  */
 class PartialTree<V> {
 
-  public static enum LoadType {
-    NO_VALUES, SELECT_VALUES;
+  public enum LoadType {
+    NO_VALUES, SELECT_VALUES
   }
 
   private final Serializer<V> serializer;
@@ -75,12 +76,12 @@ class PartialTree<V> {
   private final Collection<InternalKey> keys;
 
   static <V> PartialTree<V> of(Serializer<V> serializer, InternalRefId id, List<InternalKey> keys) {
-    return new PartialTree<V>(serializer, id, keys);
+    return new PartialTree<>(serializer, id, keys);
   }
 
   static <V> PartialTree<V> of(Serializer<V> serializer, InternalRef.Type refType, L1 l1, Collection<InternalKey> keys) {
-    PartialTree<V> tree = new PartialTree<V>(serializer, InternalRefId.ofHash(l1.getId()), keys);
-    tree.l1 = new Pointer<L1>(l1);
+    PartialTree<V> tree = new PartialTree<>(serializer, InternalRefId.ofHash(l1.getId()), keys);
+    tree.l1 = new Pointer<>(l1);
     tree.refType = refType;
     return tree;
   }
@@ -108,11 +109,11 @@ class PartialTree<V> {
       return getLoadStep1(loadType).get();
     }
 
-    LoadOp<InternalRef> op = new LoadOp<InternalRef>(ValueType.REF, refId.getId(), loadedRef -> {
+    LoadOp<InternalRef> op = new LoadOp<>(ValueType.REF, refId.getId(), loadedRef -> {
       refType = loadedRef.getType();
       if (loadedRef.getType() == Type.BRANCH) {
         L1 loaded = l1Converter.apply(loadedRef.getBranch());
-        l1 = new Pointer<L1>(loaded);
+        l1 = new Pointer<>(loaded);
         rootId = loaded.getId();
       } else if (loadedRef.getType() == Type.TAG) {
         rootId = loadedRef.getTag().getCommit();
@@ -133,10 +134,10 @@ class PartialTree<V> {
    */
   public Stream<SaveOp<?>> getMostSaveOps() {
     checkMutable();
-    return Streams.<SaveOp<?>>concat(
-        l2s.values().stream().filter(Pointer::isDirty).map(l2p -> new SaveOp<L2>(ValueType.L2, l2p.get())).distinct(),
-        l3s.values().stream().filter(Pointer::isDirty).map(l3p -> new SaveOp<L3>(ValueType.L3, l3p.get())).distinct(),
-        values.values().stream().map(v -> new SaveOp<WrappedValueBean>(ValueType.VALUE, v.getPersistentValue())).distinct()
+    return Streams.concat(
+        l2s.values().stream().filter(Pointer::isDirty).map(l2p -> new SaveOp<>(ValueType.L2, l2p.get())).distinct(),
+        l3s.values().stream().filter(Pointer::isDirty).map(l3p -> new SaveOp<>(ValueType.L3, l3p.get())).distinct(),
+        values.values().stream().map(v -> new SaveOp<>(ValueType.VALUE, v.getPersistentValue())).distinct()
         );
   }
 
@@ -236,9 +237,7 @@ class PartialTree<V> {
       return loadFunc.get();
     }
 
-    LoadOp<L1> op = new LoadOp<L1>(ValueType.L1, rootId, l -> {
-      l1 = new Pointer<L1>(l);
-    });
+    LoadOp<L1> op = new LoadOp<>(ValueType.L1, rootId, l -> l1 = new Pointer<>(l));
     return Optional.of(new LoadStep(java.util.Collections.singleton(op), loadFunc));
   }
 
@@ -246,20 +245,18 @@ class PartialTree<V> {
     Collection<LoadOp<?>> loads = keys.stream()
         .map(id -> {
           Id l2Id = l1.get().getId(id.getL1Position());
-          return new LoadOp<L2>(ValueType.L2, l2Id, l -> {
-            l2s.putIfAbsent(id.getL1Position(), new Pointer<L2>(l));
-          });
+          return new LoadOp<L2>(ValueType.L2, l2Id, l -> l2s.putIfAbsent(id.getL1Position(), new Pointer<>(l)));
         })
         .collect(Collectors.toList());
 
-    return Optional.of(new LoadStep(loads, (Supplier<Optional<LoadStep>>) (() -> getLoadStep3(includeValues))));
+    return Optional.of(new LoadStep(loads, () -> getLoadStep3(includeValues)));
   }
 
   private Optional<LoadStep> getLoadStep3(boolean includeValues) {
     Collection<LoadOp<?>> loads = keys.stream().map(keyId -> {
       L2 l2 = l2s.get(keyId.getL1Position()).get();
       Id l3Id = l2.getId(keyId.getL2Position());
-      return new LoadOp<L3>(ValueType.L3, l3Id, l -> l3s.putIfAbsent(keyId.getPosition(), new Pointer<L3>(l)));
+      return new LoadOp<L3>(ValueType.L3, l3Id, l -> l3s.putIfAbsent(keyId.getPosition(), new Pointer<>(l)));
     }).collect(Collectors.toList());
     return Optional.of(new LoadStep(loads, () -> getLoadStep4(includeValues)));
   }
@@ -280,9 +277,9 @@ class PartialTree<V> {
               (wvb) -> {
                 values.putIfAbsent(key, ValueHolder.of(serializer, wvb));
               });
-      }).filter(n -> n != null)
+      }).filter(Objects::nonNull)
         .collect(Collectors.toList());
-    return Optional.of(new LoadStep(loads, () -> Optional.empty()));
+    return Optional.of(new LoadStep(loads, Optional::empty));
   }
 
   public Optional<Id> getValueIdForKey(InternalKey key) {

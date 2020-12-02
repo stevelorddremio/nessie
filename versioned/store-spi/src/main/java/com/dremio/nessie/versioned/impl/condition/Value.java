@@ -54,11 +54,11 @@ public interface Value extends Aliasable<Value> {
     throw new IllegalArgumentException();
   }
 
-  public static enum Type {
-    VALUE, PATH, FUNCTION;
+  enum Type {
+    VALUE, PATH, FUNCTION
   }
 
-  static class ValueOfEntity implements Value {
+  class ValueOfEntity implements Value {
     private final Entity value;
 
     public ValueOfEntity(Entity value) {

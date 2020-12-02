@@ -33,11 +33,11 @@ import com.google.common.collect.Streams;
 
 public class LoadStep {
 
-  private Collection<LoadOp<?>> ops;
-  private Supplier<Optional<LoadStep>> next;
+  private final Collection<LoadOp<?>> ops;
+  private final Supplier<Optional<LoadStep>> next;
 
   public LoadStep(Collection<LoadOp<?>> ops) {
-    this(ops, () -> Optional.empty());
+    this(ops, Optional::empty);
   }
 
   public LoadStep(Collection<LoadOp<?>> ops, Supplier<Optional<LoadStep>> next) {
@@ -88,7 +88,7 @@ public class LoadStep {
   }
 
   public static LoadStep of(LoadOp<?>...ops) {
-    return new LoadStep(Arrays.asList(ops), () -> Optional.empty());
+    return new LoadStep(Arrays.asList(ops), Optional::empty);
   }
 
   public static Collector<LoadStep, StepCollectorState, LoadStep> toLoadStep() {
@@ -97,8 +97,8 @@ public class LoadStep {
 
   private static final Collector<LoadStep, StepCollectorState, LoadStep> COLLECTOR = Collector.of(
       StepCollectorState::new,
-      (o1, l1) -> o1.plus(l1),
-      (o1, o2) -> o1.plus(o2),
+      StepCollectorState::plus,
+      StepCollectorState::plus,
       StepCollectorState::getStep
       );
 
