@@ -102,6 +102,16 @@
       <artifactId>logback-core</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongodb-driver-reactivestreams</artifactId>
+      <version>${mongodb.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>bson</artifactId>
+      <version>${mongodb.version}</version>
+    </dependency>
   </dependencies>
 
   <repositories>

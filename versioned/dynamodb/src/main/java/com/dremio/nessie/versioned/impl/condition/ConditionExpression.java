@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.immutables.value.Value;
 
 import com.dremio.nessie.versioned.impl.condition.AliasCollector.Aliasable;
@@ -36,6 +38,11 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
 
   public String toConditionExpressionString() {
     return getFunctions().stream().map(ExpressionFunction::asString).collect(Collectors.joining(" AND "));
+  }
+
+  //TODO need to expand this to add AND of entire list of ConditionExpressions.
+  public Bson toConditionExpressionBson() {
+    return getFunctions().get(0).asBson();
   }
 
   @Override

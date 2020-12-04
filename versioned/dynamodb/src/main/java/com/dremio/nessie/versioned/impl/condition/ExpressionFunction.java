@@ -21,6 +21,10 @@ import java.util.stream.Collectors;
 import com.dremio.nessie.versioned.store.Entity;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.mongodb.client.model.Filters;
+
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 public class ExpressionFunction implements Value {
 
@@ -60,7 +64,7 @@ public class ExpressionFunction implements Value {
     }
   }
 
-  private final FunctionName name;
+  protected final FunctionName name;
   private final List<Value> arguments;
 
   private ExpressionFunction(FunctionName name, ImmutableList<Value> arguments) {
@@ -108,6 +112,40 @@ public class ExpressionFunction implements Value {
       return String.format("%s %s %s", arguments.get(0).asString(), name.protocolName, arguments.get(1).asString());
     }
     return String.format("%s(%s)", name.protocolName, arguments.stream().map(v -> v.asString()).collect(Collectors.joining(", ")));
+  }
+
+  public Bson asBson() {
+    if (name.binaryExpression) {
+      //return String.format("%s %s %s", arguments.get(0).asString(), name.protocolName, arguments.get(1).asString());
+    }
+    Document doc = new Document();
+    switch (name) {
+      case EQUALS:
+        if (arguments.size() == FunctionName.EQUALS.argCount) {
+          doc.append(arguments.get(0).asString(), arguments.get(1).asString());
+        }
+        break;
+      case SIZE:
+        if (arguments.size() == FunctionName.SIZE.argCount) {
+          doc.append("$size",arguments.get(0).asString());
+        }
+      default:
+        break;
+    }
+    if (name == FunctionName.EQUALS) {
+      if (arguments.size() == FunctionName.EQUALS.argCount) {
+        doc.append(arguments.get(0).asString(), arguments.get(1).asString());
+      }
+    }
+//    for (Value argument : arguments) {
+//      if (argument.getType()==Type.FUNCTION) {
+//        if (argument.getFunction().name == FunctionName.EQUALS) {
+//          doc.append();
+//        }
+//      }
+    return doc;
+
+    //return String.format("%s(%s)", name.protocolName, arguments.stream().map(v -> v.asString()).collect(Collectors.joining(", ")));
   }
 
   @Override
