@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 
 public class ExpressionFunction implements Value {
 
-  private enum FunctionName {
+  enum FunctionName {
     LIST_APPEND("list_append", 2),
     IF_NOT_EXISTS("if_not_exists", 2),
     EQUALS("="),
@@ -118,6 +118,17 @@ public class ExpressionFunction implements Value {
   @Override
   public ExpressionFunction getFunction() {
     return this;
+  }
+
+  /**
+   * This is part of the Visitor design pattern.
+   * This method is called by visiting classes. In response their visitAs method is called back.
+   * @param visitor the instance visiting.
+   * @param <T> The class to which ExpressionFunction is converted
+   * @return the converted class
+   */
+  public <T> T accept(ExpressionFunctionVisitor visitor) {
+    return (T)visitor.visitAs(this, arguments, name);
   }
 
 }

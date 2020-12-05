@@ -88,4 +88,15 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
       o1 ->  ImmutableConditionExpression.builder().addAllFunctions(o1).build()
       );
   }
+
+  /**
+   * This is part of the Visitor design pattern.
+   * This method is called by visiting classes. In response their visitTo method is called back.
+   * @param visitor the instance visiting.
+   * @param <T> The class to which ConditionExpression is converted
+   * @return the converted class
+   */
+  public <T> T accept(ConditionExpressionVisitor visitor) {
+    return (T)visitor.visitTo(this);
+  }
 }
