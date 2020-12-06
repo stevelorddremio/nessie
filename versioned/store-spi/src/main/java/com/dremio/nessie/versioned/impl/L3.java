@@ -41,7 +41,7 @@ public class L3 extends MemoizedId {
   public static final L3 EMPTY = new L3(new TreeMap<>());
   public static final Id EMPTY_ID = EMPTY.getId();
 
-  L3(TreeMap<InternalKey, PositionDelta> keys) {
+  private L3(TreeMap<InternalKey, PositionDelta> keys) {
     this(null, keys);
   }
 
