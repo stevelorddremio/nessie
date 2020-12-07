@@ -40,7 +40,6 @@ public class BsonConditionExpression implements ConditionExpressionVisitor<Bson>
    */
   @Override
   public Bson visitTo(ConditionExpression conditionExpression) {
-//    final ConditionExpression conditionExpression = _conditionExpression.accept(this);
     BsonExpressionFunction bsonExpressionFunction = new BsonExpressionFunction();
     ExpressionFunction expressionFunction = conditionExpression.getFunctions().get(0);
     return bsonExpressionFunction.as(expressionFunction);
