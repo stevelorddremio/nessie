@@ -33,46 +33,28 @@ public class BsonExpressionFunction implements ExpressionFunctionVisitor<Bson> {
    */
   public Bson as(ExpressionFunction expressionFunction) {
     return expressionFunction.accept(this);
-
   }
 
   /**
    * This is a callback method that ExpressionFunction will call when this visitor is accepted.
    * Its purpose is c reates a BSON representation of the ExpressionFunction object.
-   * @param conditionExpression
-   * @return
+   * @param expressionFunction the object to be converteds
+   * @return The ExpressionFunction represented as Bson
    */
   @Override
   public Bson visitAs(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name) {
-
     Document doc = new Document();
-    switch (name) {
-      case EQUALS:
-        if (arguments.size() == ExpressionFunction.FunctionName.EQUALS.argCount) {
+    if (arguments.size() == name.argCount) {
+      switch (name) {
+        case EQUALS:
           return doc.append(arguments.get(0).asString(), arguments.get(1).asString());
-        }
-        break;
-      case SIZE:
-        if (arguments.size() == ExpressionFunction.FunctionName.SIZE.argCount) {
-          return doc.append("$size",arguments.get(0).asString());
-        }
-      default:
-        break;
-    }
-    if (name == ExpressionFunction.FunctionName.EQUALS) {
-      if (arguments.size() == ExpressionFunction.FunctionName.EQUALS.argCount) {
-        return doc.append(arguments.get(0).asString(), arguments.get(1).asString());
+        case SIZE:
+          return doc.append("$size", arguments.get(0).asString());
+        default:
+          break;
       }
     }
-//    for (Value argument : arguments) {
-//      if (argument.getType()==Type.FUNCTION) {
-//        if (argument.getFunction().name == FunctionName.EQUALS) {
-//          doc.append();
-//        }
-//      }
     return doc;
-
-    //return String.format("%s(%s)", name.protocolName, arguments.stream().map(v -> v.asString()).collect(Collectors.joining(", ")));
   }
 
 }
