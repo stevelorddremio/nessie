@@ -61,12 +61,12 @@ public class TestMongoDbExpressions {
   }
 
   // TODO: Add ADD handling
-  @Disabled
   @Test
   void conditionExpressionAndEquals() {
     AliasCollectorImpl c = new AliasCollectorImpl();
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p0, av0), ExpressionFunction.equals(p1, av1)).alias(c);
     ConditionExpressionVisitor conditionExpressionVisitor = new BsonConditionExpressionVisitor();
+    // TODO can we use Filters here?
     assertEquals(new Document("$and", "[{p0, :v0}, {p1, :v1}]"), ex.accept(conditionExpressionVisitor));
   }
 

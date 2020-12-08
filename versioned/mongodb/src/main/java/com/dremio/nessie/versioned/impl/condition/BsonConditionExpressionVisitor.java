@@ -15,7 +15,11 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
+import org.bson.Document;
 import org.bson.conversions.Bson;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 /**
  * This class allows retrieval of ConditionExpression objects in BSON format.
@@ -33,10 +37,13 @@ public class BsonConditionExpressionVisitor implements ConditionExpressionVisito
   @Override
   public Bson visit(final ConditionExpression conditionExpression) {
     final BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
-    final ExpressionFunction expressionFunction = conditionExpression.getFunctions().get(0);
-    return expressionFunction.accept(bsonExpressionFunctionVisitor);
-    // TODO refine the implementation to handle multiple ExpressionFunctions.
-    // return getFunctions().stream().map(ExpressionFunction::asBson).collect(Collectors.joining(" AND "));
+    if (conditionExpression.getFunctions().size() == 1) {
+      final ExpressionFunction expressionFunction = conditionExpression.getFunctions().get(0);
+      return expressionFunction.accept(bsonExpressionFunctionVisitor);
+    } else {
+      List<Bson> expressionFunctionList = conditionExpression.getFunctions().stream().map(f -> f.accept(bsonExpressionFunctionVisitor)).collect(Collectors.toList());
+      return new Document("$and", expressionFunctionList);
     }
+  }
 
 }
