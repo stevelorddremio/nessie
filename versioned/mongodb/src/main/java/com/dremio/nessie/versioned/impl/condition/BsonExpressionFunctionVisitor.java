@@ -24,16 +24,7 @@ import org.bson.conversions.Bson;
  * This provides a separation of queries on @{ExpressionFunction} from the object itself.
  * This uses the Visitor design pattern to retrieve object attributes.
  */
-public class BsonExpressionFunction implements ExpressionFunctionVisitor<Bson> {
-
-  /**
-   * Creates a BSON representation of the ConditionExpression object.
-   * @param expressionFunction the object to convert.
-   * @return BSON representation of expressionFunction
-   */
-  public Bson as(ExpressionFunction expressionFunction) {
-    return expressionFunction.accept(this);
-  }
+public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<Bson> {
 
   /**
    * This is a callback method that ExpressionFunction will call when this visitor is accepted.
@@ -42,7 +33,7 @@ public class BsonExpressionFunction implements ExpressionFunctionVisitor<Bson> {
    * @return The ExpressionFunction represented as Bson
    */
   @Override
-  public Bson visitAs(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name) {
+  public Bson visit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name) {
     Document doc = new Document();
     if (arguments.size() == name.argCount) {
       switch (name) {

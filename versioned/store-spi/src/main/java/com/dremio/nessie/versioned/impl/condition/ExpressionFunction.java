@@ -127,8 +127,8 @@ public class ExpressionFunction implements Value {
    * @param <T> The class to which ExpressionFunction is converted
    * @return the converted class
    */
-  public <T> T accept(ExpressionFunctionVisitor visitor) {
-    return (T)visitor.visitAs(this, arguments, name);
+  public <T> T accept(ExpressionFunctionVisitor<T> visitor) {
+    return (T)visitor.visit(this, arguments, name);
   }
 
 }

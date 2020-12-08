@@ -25,5 +25,5 @@ public interface ConditionExpressionVisitor<T> {
    * Creates a representation of a ConditionExpression in the class T.
    * Visitors should call an accept method on ConditionExpression then this callback method is called.
    */
-  T visitTo(ConditionExpression conditionExpression);
+  T visit(ConditionExpression conditionExpression);
 }

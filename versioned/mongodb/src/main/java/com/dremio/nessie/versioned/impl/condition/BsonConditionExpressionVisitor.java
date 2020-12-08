@@ -15,34 +15,30 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.bson.conversions.Bson;
 
 /**
- * This provides a separation of queries on @{ConditionExpression} from the object itself.
- * This uses the Visitor design pattern to retrieve object attributes.
+ * This class allows retrieval of ConditionExpression objects in BSON format.
  */
-public class BsonConditionExpression implements ConditionExpressionVisitor<Bson> {
-
-  /**
-   * Creates a BSON representation of the ConditionExpression object.
-   * @param conditionExpression the object to convert.
-   * @return BSON representation of conditionExpression
-   */
-  public Bson to(ConditionExpression conditionExpression) {
-    return conditionExpression.accept(this);
-  }
+public class BsonConditionExpressionVisitor implements ConditionExpressionVisitor<Bson> {
+  //This class provides a separation of queries on @{ConditionExpression} from the object itself.
+  //This uses the Visitor design pattern to retrieve object attributes.
 
    /**
    * This is a callback method that ConditionExpression will call when this visitor is accepted.
-   * Its purpose is c reates a BSON representation of the ConditionExpression object.
+   * Its purpose is creates a BSON representation of the ConditionExpression object.
    * @param conditionExpression
    * @return
    */
   @Override
-  public Bson visitTo(ConditionExpression conditionExpression) {
-    BsonExpressionFunction bsonExpressionFunction = new BsonExpressionFunction();
+  public Bson visit(ConditionExpression conditionExpression) {
+    BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
     ExpressionFunction expressionFunction = conditionExpression.getFunctions().get(0);
-    return bsonExpressionFunction.as(expressionFunction);
-  }
+    return expressionFunction.accept(bsonExpressionFunctionVisitor);
+//    return getFunctions().stream().map(ExpressionFunction::asBson).collect(Collectors.joining(" AND "));
+    }
 
 }

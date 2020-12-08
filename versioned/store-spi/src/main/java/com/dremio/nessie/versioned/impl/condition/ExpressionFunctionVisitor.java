@@ -27,5 +27,5 @@ public interface ExpressionFunctionVisitor<T> {
    * Creates a representation of a ExpressionFunction in the class T.
    * Visitors should call an accept method on ExpressionFunction then this callback method is called.
    */
-  T visitAs(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name);
+  T visit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name);
 }
