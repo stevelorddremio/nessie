@@ -18,6 +18,8 @@ package com.dremio.nessie.versioned.store.mongodb;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+
 import org.bson.Document;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -60,7 +62,8 @@ public class TestMongoDbExpressions {
     assertTrue(new Document("$size", "p0").equals(ex.accept(conditionExpressionVisitor)));
   }
 
-  // TODO: Add ADD handling
+  // TODO: Check expected Document is correct.
+  @Disabled
   @Test
   void conditionExpressionAndEquals() {
     AliasCollectorImpl c = new AliasCollectorImpl();
@@ -68,6 +71,10 @@ public class TestMongoDbExpressions {
     ConditionExpressionVisitor conditionExpressionVisitor = new BsonConditionExpressionVisitor();
     // TODO can we use Filters here?
     assertEquals(new Document("$and", "[{p0, :v0}, {p1, :v1}]"), ex.accept(conditionExpressionVisitor));
+    Document expected = new Document("$and", Arrays.asList(
+      new Document(p0.asString(), av0.getBoolean()),
+      new Document(p1.asString(), av1.getBoolean())));
+    assertEquals(expected, ex.accept(conditionExpressionVisitor));
   }
 
   @Test

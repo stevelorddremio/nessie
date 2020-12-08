@@ -25,7 +25,7 @@ import java.util.List;
 public interface ExpressionFunctionVisitor<T> {
   /**
    * Creates a representation of a ExpressionFunction in the class T.
-   * Visitors should call an accept method on ExpressionFunction then this callback method is called.
+   * Visitors should call an accept method on ExpressionFunction which will cause this callback method to be called.
    * @param expressionFunction The object to be represented as class T
    * @param arguments the components of the expression function
    * @param name the name of the expression function

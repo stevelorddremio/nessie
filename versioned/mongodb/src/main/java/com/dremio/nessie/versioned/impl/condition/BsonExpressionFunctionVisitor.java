@@ -45,10 +45,10 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
           // TODO is .asString() appropriate here?
           return doc.append("$size", arguments.get(0).asString());
         default:
-          throw new UnsupportedOperationException(String.format("%s is not a supported ExpressionFunction.FunctionName.", name));
+          throw new UnsupportedOperationException(String.format("%s is not a supported function name.", name));
       }
     }
-    throw new InvalidParameterException(String.format("Number of arguments provided %d does not match the number expected %d", arguments.size(), name.argCount));
+    throw new InvalidParameterException(String.format("Number of arguments provided %d does not match the number expected %d.", arguments.size(), name.argCount));
   }
 
 }
