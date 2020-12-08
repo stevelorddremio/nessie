@@ -15,9 +15,6 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.bson.conversions.Bson;
 
 /**
