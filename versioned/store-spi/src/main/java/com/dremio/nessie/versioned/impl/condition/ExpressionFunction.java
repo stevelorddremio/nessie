@@ -128,7 +128,7 @@ public class ExpressionFunction implements Value {
    * @return the converted class
    */
   public <T> T accept(ExpressionFunctionVisitor<T> visitor) {
-    return (T)visitor.visit(this, arguments, name);
+    return visitor.visit(this, arguments, name);
   }
 
 }

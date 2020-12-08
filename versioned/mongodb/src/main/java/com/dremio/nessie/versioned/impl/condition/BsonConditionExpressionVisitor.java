@@ -21,21 +21,22 @@ import org.bson.conversions.Bson;
  * This class allows retrieval of ConditionExpression objects in BSON format.
  */
 public class BsonConditionExpressionVisitor implements ConditionExpressionVisitor<Bson> {
-  //This class provides a separation of queries on @{ConditionExpression} from the object itself.
-  //This uses the Visitor design pattern to retrieve object attributes.
+  // This class provides a separation of queries on @{ConditionExpression} from the object itself.
+  // This uses the Visitor design pattern to retrieve object attributes.
 
    /**
    * This is a callback method that ConditionExpression will call when this visitor is accepted.
-   * Its purpose is creates a BSON representation of the ConditionExpression object.
-   * @param conditionExpression
-   * @return
+   * It creates a BSON representation of the ConditionExpression object.
+   * @param conditionExpression to be converted into BSON.
+   * @return the converted ConditionExpression object in BSON format.
    */
   @Override
-  public Bson visit(ConditionExpression conditionExpression) {
-    BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
-    ExpressionFunction expressionFunction = conditionExpression.getFunctions().get(0);
+  public Bson visit(final ConditionExpression conditionExpression) {
+    final BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
+    final ExpressionFunction expressionFunction = conditionExpression.getFunctions().get(0);
     return expressionFunction.accept(bsonExpressionFunctionVisitor);
-//    return getFunctions().stream().map(ExpressionFunction::asBson).collect(Collectors.joining(" AND "));
+    // TODO refine the implementation to handle multiple ExpressionFunctions.
+    // return getFunctions().stream().map(ExpressionFunction::asBson).collect(Collectors.joining(" AND "));
     }
 
 }

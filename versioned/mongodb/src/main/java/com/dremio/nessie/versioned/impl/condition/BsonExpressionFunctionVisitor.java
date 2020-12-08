@@ -15,6 +15,7 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
+import java.security.InvalidParameterException;
 import java.util.List;
 
 import org.bson.Document;
@@ -38,14 +39,16 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
     if (arguments.size() == name.argCount) {
       switch (name) {
         case EQUALS:
+          // TODO is .asString() appropriate here?
           return doc.append(arguments.get(0).asString(), arguments.get(1).asString());
         case SIZE:
+          // TODO is .asString() appropriate here?
           return doc.append("$size", arguments.get(0).asString());
         default:
-          break;
+          throw new UnsupportedOperationException(String.format("%s is not a supported ExpressionFunction.FunctionName.", name));
       }
     }
-    return doc;
+    throw new InvalidParameterException(String.format("Number of arguments provided %d does not match the number expected %d", arguments.size(), name.argCount));
   }
 
 }

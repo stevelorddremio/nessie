@@ -97,6 +97,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
    * @return the converted class
    */
   public <T> T accept(ConditionExpressionVisitor<T> visitor) {
-    return (T)visitor.visit(this);
+
+    return visitor.visit(this);
   }
 }
