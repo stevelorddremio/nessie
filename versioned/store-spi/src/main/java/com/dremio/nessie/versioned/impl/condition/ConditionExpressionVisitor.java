@@ -18,7 +18,7 @@ package com.dremio.nessie.versioned.impl.condition;
 /**
  * Classes requiring visiting rights to ConditionExpression must implement this
  * interface as part of the Visitor design pattern.
- * @param <T>
+ * @param <T> The class to which the ConditionExpression will be converted.
  */
 public interface ConditionExpressionVisitor<T> {
   /**

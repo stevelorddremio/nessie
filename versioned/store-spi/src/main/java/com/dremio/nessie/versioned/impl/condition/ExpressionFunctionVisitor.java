@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Classes requiring visiting rights to ConditionExpression must implement this
  * interface as part of the Visitor design pattern.
- * @param <T>
+ * @param <T> the class to which the ConditionExpression will be converted.
  */
 public interface ExpressionFunctionVisitor<T> {
   /**
