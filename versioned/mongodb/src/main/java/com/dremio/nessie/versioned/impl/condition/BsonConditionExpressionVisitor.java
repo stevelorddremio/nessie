@@ -15,10 +15,11 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
-import org.bson.Document;
-import org.bson.conversions.Bson;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 
 /**
