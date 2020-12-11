@@ -51,6 +51,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
 
   /**
    * AND the existing condition with this newly provided condition.
+   *
    * @param function The function to AND with.
    * @return The new compound expression.
    */
@@ -63,6 +64,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
 
   /**
    * AND the existing condition with this newly provided condition.
+   *
    * @param expr The expression to AND with.
    * @return The new compound expression.
    */
@@ -75,6 +77,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
 
   /**
    * Collect condition expressions into a single compound condition expression.
+   *
    * @return combined update.
    */
   public static Collector<ConditionExpression, List<ExpressionFunction>, ConditionExpression> toConditionExpression() {
@@ -85,13 +88,14 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
         o1.addAll(o2);
         return o1;
       },
-      o1 ->  ImmutableConditionExpression.builder().addAllFunctions(o1).build()
-      );
+      o1 -> ImmutableConditionExpression.builder().addAllFunctions(o1).build()
+    );
   }
 
   /**
    * This is part of the Visitor design pattern.
-   * This method is called by visiting classes. In response their visitTo method is called back.
+   * This method is called by visiting classes. In response their visit method is called back.
+   *
    * @param visitor the instance visiting.
    * @param <T> The class to which ConditionExpression is converted
    * @return the converted class
@@ -99,5 +103,16 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
   public <T> T accept(ConditionExpressionVisitor<T> visitor) {
 
     return visitor.visit(this);
+  }
+
+  /**
+   * This is part of the Visitor design pattern.
+   * This method is called by visiting classes. In response their aliasVisit method is called back.
+   * @param visitor the instance visiting.
+   * @param c The class doing the aliasing.
+   * @return the aliased ConditionExpression.
+   */
+  public ConditionExpression acceptAlias(ConditionExpressionAliasVisitor visitor, AliasCollector c) {
+    return visitor.aliasVisit(this, c);
   }
 }

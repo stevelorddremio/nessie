@@ -63,7 +63,7 @@ public class ExpressionFunction implements Value {
   private final FunctionName name;
   private final List<Value> arguments;
 
-  private ExpressionFunction(FunctionName name, ImmutableList<Value> arguments) {
+  ExpressionFunction(FunctionName name, ImmutableList<Value> arguments) {
     this.name = name;
     this.arguments = ImmutableList.copyOf(arguments);
     Preconditions.checkArgument(this.arguments.size() == name.argCount, "Unexpected argument count.");
@@ -122,13 +122,24 @@ public class ExpressionFunction implements Value {
 
   /**
    * This is part of the Visitor design pattern.
-   * This method is called by visiting classes. In response their visitAs method is called back.
+   * This method is called by visiting classes. In response their visit method is called back.
    * @param visitor the instance visiting.
    * @param <T> The class to which ExpressionFunction is converted
    * @return the converted class
    */
   public <T> T accept(ExpressionFunctionVisitor<T> visitor) {
     return visitor.visit(this, arguments, name);
+  }
+
+  /**
+   * This is part of the Visitor design pattern.
+   * This method is called by visiting classes. In response their aliasVisit method is called back.
+   * @param visitor the instance visiting.
+   * @param c The class doing the aliasing.
+   * @return the aliased ExpressionFunction.
+   */
+  public ExpressionFunction acceptAlias(ExpressionFunctionAliasVisitor visitor, AliasCollector c) {
+    return visitor.aliasVisit(this, arguments, name, c);
   }
 
 }
