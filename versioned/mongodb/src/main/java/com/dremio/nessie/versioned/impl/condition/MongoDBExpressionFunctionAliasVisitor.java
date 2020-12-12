@@ -17,6 +17,7 @@ package com.dremio.nessie.versioned.impl.condition;
 
 import java.util.List;
 
+import com.dremio.nessie.versioned.store.Entity;
 import com.google.common.collect.ImmutableList;
 
 /*
@@ -28,6 +29,7 @@ public class MongoDBExpressionFunctionAliasVisitor implements ExpressionFunction
     // TODO check v.getPath().acceptAlias() is correct.
     //  We might be able to provide acceptAlias as part of Value interface which would change the call to v.acceptAlias(...
     return new ExpressionFunction(name, arguments.stream().map(v -> getArgumentValue(v, c)).collect(ImmutableList.toImmutableList()));
+//    return new ExpressionFunction(name, arguments.stream().map(v -> v.alias(c)).collect(ImmutableList.toImmutableList()));
   }
 
   Value getArgumentValue(Value v, AliasCollector c) {
@@ -36,8 +38,8 @@ public class MongoDBExpressionFunctionAliasVisitor implements ExpressionFunction
         ExpressionPathAliasVisitor expressionPathAliasVisitor = new MongoDBExpressionPathAliasVisitor();
         return v.getPath().acceptAlias(expressionPathAliasVisitor, c);
       case VALUE:
-        //TODO provide correct Value alias visitor
-        throw new UnsupportedOperationException();
+        ValueAliasVisitor valueAliasVisitor = new MongoDBValueAliasVisitor();
+        return v.acceptAlias(valueAliasVisitor, c);
       case FUNCTION:
         ExpressionFunctionAliasVisitor expressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
         return v.getFunction().acceptAlias(expressionFunctionAliasVisitor, c);

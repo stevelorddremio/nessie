@@ -17,13 +17,27 @@ package com.dremio.nessie.versioned.impl.condition;
 
 import com.dremio.nessie.versioned.store.Entity;
 
-public class MongoDBAliasCollectorImpl implements AliasCollector {
+/**
+ * A MongoDB specific implementation of @{com.dremio.nessie.versioned.impl.condition.AliasCollector}
+ */
+class MongoDBAliasCollectorImpl implements AliasCollector {
 
+  /**
+   * Converts any special characters or reserved words that cannot be used in queries of MongoDB.
+   * Currently there are no restrictions on what is stored.
+   * @param unescaped the string to check for characters or reserved words.
+   * @return the converted string.
+   */
   @Override
   public String escape(String unescaped) {
     return unescaped;
   }
 
+  /**
+   * Converts objects into their String equivalent for use in MongoDB queries.
+   * @param value the object to convert.
+   * @return the string equivalent of value.
+   */
   @Override
   public String alias(Entity value) {
     switch (value.getType()) {
@@ -36,6 +50,7 @@ public class MongoDBAliasCollectorImpl implements AliasCollector {
       case STRING:
         return value.getString();
       case BINARY:
+        // TODO investigate if this will be required.
         throw new UnsupportedOperationException("Unable to convert: " + value.getType());
       case BOOLEAN:
         return Boolean.toString(value.getBoolean());

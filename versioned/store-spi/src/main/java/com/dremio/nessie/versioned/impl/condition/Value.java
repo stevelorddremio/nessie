@@ -30,10 +30,13 @@ public interface Value extends Aliasable<Value> {
   @Override
   Value alias(AliasCollector c);
 
-  /**
-   * Return the string representation of this string, if possible.
-   * @return A DynamoDb expression fragment.
-   */
+  Value acceptAlias(ValueAliasVisitor visitor, AliasCollector c);
+
+
+    /**
+     * Return the string representation of this string, if possible.
+     * @return A DynamoDb expression fragment.
+     */
   String asString();
 
   /**
@@ -78,6 +81,18 @@ public interface Value extends Aliasable<Value> {
     @Override
     public Type getType() {
       return Type.VALUE;
+    }
+
+    /**
+     * This is part of the Visitor design pattern.
+     * This method is called by visiting classes. In response their aliasVisit method is called back.
+     * @param visitor the instance visiting.
+     * @param c The class doing the aliasing.
+     * @return the aliased Value.
+     */
+    @Override
+    public Value acceptAlias(ValueAliasVisitor visitor, AliasCollector c) {
+      return visitor.aliasVisit(this, value, c);
     }
 
   }

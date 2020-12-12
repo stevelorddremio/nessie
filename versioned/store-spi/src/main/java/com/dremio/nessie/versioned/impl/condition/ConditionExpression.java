@@ -77,7 +77,6 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
 
   /**
    * Collect condition expressions into a single compound condition expression.
-   *
    * @return combined update.
    */
   public static Collector<ConditionExpression, List<ExpressionFunction>, ConditionExpression> toConditionExpression() {
@@ -101,7 +100,6 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
    * @return the converted class
    */
   public <T> T accept(ConditionExpressionVisitor<T> visitor) {
-
     return visitor.visit(this);
   }
 

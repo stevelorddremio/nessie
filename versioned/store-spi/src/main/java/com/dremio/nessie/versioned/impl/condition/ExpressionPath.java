@@ -151,6 +151,11 @@ public abstract class ExpressionPath implements Value {
     return ImmutableExpressionPath.builder().root((NameSegment) getRoot().alias(c)).build();
   }
 
+  @Override
+  public Value acceptAlias(ValueAliasVisitor visitor, AliasCollector c) {
+    throw new UnsupportedOperationException();
+  }
+
   /**
    * This is part of the Visitor design pattern.
    * This method is called by visiting classes. In response their aliasVisit method is called back.

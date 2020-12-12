@@ -99,6 +99,11 @@ public class ExpressionFunction implements Value {
     return new ExpressionFunction(name, arguments.stream().map(v -> v.alias(c)).collect(ImmutableList.toImmutableList()));
   }
 
+  @Override
+  public Value acceptAlias(ValueAliasVisitor visitor, AliasCollector c) {
+    throw new UnsupportedOperationException();
+  }
+
   /**
    * Return this function as a Dynamo expression string.
    * @return The expression string.
