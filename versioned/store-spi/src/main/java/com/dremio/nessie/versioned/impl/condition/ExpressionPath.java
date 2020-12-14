@@ -152,7 +152,7 @@ public abstract class ExpressionPath implements Value {
   }
 
   @Override
-  public Value accept(ValueAliasVisitor visitor, AliasCollector c) {
+  public Value accept(ValueAliasVisitor visitor, AliasCollector collector) {
     throw new UnsupportedOperationException();
   }
 

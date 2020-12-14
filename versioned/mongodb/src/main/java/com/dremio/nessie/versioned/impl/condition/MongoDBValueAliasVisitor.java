@@ -18,6 +18,7 @@ package com.dremio.nessie.versioned.impl.condition;
 import com.dremio.nessie.versioned.store.Entity;
 
 public class MongoDBValueAliasVisitor implements ValueAliasVisitor {
+  @Override
   public Value visit(Value value, Entity entity, AliasCollector collector) {
     return ExpressionPath.builder(collector.alias(entity)).build();
   }

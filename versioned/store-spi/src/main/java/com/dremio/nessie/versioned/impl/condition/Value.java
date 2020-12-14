@@ -19,7 +19,7 @@ import com.dremio.nessie.versioned.impl.condition.AliasCollector.Aliasable;
 import com.dremio.nessie.versioned.store.Entity;
 
 /**
- * A marker interface that is exposes a value type in DynamoDB's expression language.
+ * A marker interface that exposes a value type in backing store interactions.
  */
 public interface Value extends Aliasable<Value> {
 
@@ -30,8 +30,13 @@ public interface Value extends Aliasable<Value> {
   @Override
   Value alias(AliasCollector c);
 
-  Value accept(ValueAliasVisitor visitor, AliasCollector c);
-
+  /**
+   * Entry point for visitors aliasing attribute names in @{Value}.
+   * @param visitor  the instance visiting.
+   * @param collector The class doing the aliasing.
+   * @return the aliased Value.
+   */
+  Value accept(ValueAliasVisitor visitor, AliasCollector collector);
 
   /**
    * Return the string representation of this string, if possible.

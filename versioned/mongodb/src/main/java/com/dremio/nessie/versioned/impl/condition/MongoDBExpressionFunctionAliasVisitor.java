@@ -30,20 +30,25 @@ public class MongoDBExpressionFunctionAliasVisitor implements ExpressionFunction
       .collect(ImmutableList.toImmutableList()));
   }
 
+  /**
+   * Returns an aliased sub class equivalent to the type of Value.
+   * @param value
+   * @param collector
+   * @return
+   */
   Value getArgumentValue(Value value, AliasCollector collector) {
     switch (value.getType()) {
       case PATH:
-        ExpressionPathAliasVisitor expressionPathAliasVisitor = new MongoDBExpressionPathAliasVisitor();
+        final ExpressionPathAliasVisitor expressionPathAliasVisitor = new MongoDBExpressionPathAliasVisitor();
         return value.getPath().accept(expressionPathAliasVisitor, collector);
       case VALUE:
-        ValueAliasVisitor valueAliasVisitor = new MongoDBValueAliasVisitor();
+        final ValueAliasVisitor valueAliasVisitor = new MongoDBValueAliasVisitor();
         return value.accept(valueAliasVisitor, collector);
       case FUNCTION:
-        ExpressionFunctionAliasVisitor expressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
+        final ExpressionFunctionAliasVisitor expressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
         return value.getFunction().accept(expressionFunctionAliasVisitor, collector);
       default:
         throw new UnsupportedOperationException();
     }
   }
-
 }
