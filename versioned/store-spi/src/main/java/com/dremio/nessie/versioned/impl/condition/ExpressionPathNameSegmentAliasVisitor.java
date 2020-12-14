@@ -19,8 +19,8 @@ public interface ExpressionPathNameSegmentAliasVisitor {
   /**
    * The callback method in the visitor design pattern.
    * @param nameSegment The object to be aliased.
-   * @param c the class that does the aliasing.
+   * @param collector the class that does the aliasing.
    * @return The aliased ExpressionPath.NameSegment
    */
-  ExpressionPath.NameSegment aliasVisit(ExpressionPath.NameSegment nameSegment, AliasCollector c);
+  ExpressionPath.NameSegment visit(ExpressionPath.NameSegment nameSegment, AliasCollector collector);
 }

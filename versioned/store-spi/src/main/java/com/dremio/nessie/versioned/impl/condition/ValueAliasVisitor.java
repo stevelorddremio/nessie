@@ -21,8 +21,8 @@ public interface ValueAliasVisitor {
   /**
    * The callback method in the visitor design pattern.
    * @param value The object to be aliased.
-   * @param c the class that does the aliasing.
+   * @param collector the class that does the aliasing.
    * @return The aliased Value.
    */
-  Value aliasVisit(Value value, Entity e, AliasCollector c);
+  Value visit(Value value, Entity entity, AliasCollector collector);
 }

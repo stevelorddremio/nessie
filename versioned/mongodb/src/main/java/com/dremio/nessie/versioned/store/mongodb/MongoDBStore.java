@@ -29,7 +29,6 @@ import java.util.stream.Stream;
 
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
-import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistries;
@@ -268,9 +267,9 @@ public class MongoDBStore implements Store {
 
     final MongoCollection<V> collection = getCollection(type);
     if (conditionUnAliased.isPresent()) {
-      MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
+      MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
       ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-      ConditionExpression aliased = conditionUnAliased.get().acceptAlias(conditionExpressionAliasVisitor, c);
+      ConditionExpression aliased = conditionUnAliased.get().accept(conditionExpressionAliasVisitor, collector);
       BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
       await(collection.replaceOne(aliased.accept(bsonConditionExpressionVisitor), value, new ReplaceOptions().upsert(true)));
     } else {
@@ -282,7 +281,18 @@ public class MongoDBStore implements Store {
 
   @Override
   public boolean delete(ValueType type, Id id, Optional<ConditionExpression> condition) {
-    throw new UnsupportedOperationException();
+    final MongoCollection collection = getCollection(type);
+
+    if (condition.isPresent()) {
+      MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
+      ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
+      ConditionExpression aliased = condition.get().accept(conditionExpressionAliasVisitor, collector);
+      BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+      await(collection.deleteOne(aliased.accept(bsonConditionExpressionVisitor)));
+    } else {
+      await(collection.deleteOne(Filters.eq(Store.KEY_NAME, id.getId())));
+    }
+    return true;
   }
 
   @Override

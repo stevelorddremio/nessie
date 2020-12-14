@@ -23,8 +23,8 @@ public interface ExpressionPathAliasVisitor {
   /**
    * The callback method in the visitor design pattern.
    * @param value The object to be aliased.
-   * @param c the class that does the aliasing.
+   * @param collector the class that does the aliasing.
    * @return The aliased ExpressionPath.
    */
-  ExpressionPath aliasVisit(ExpressionPath value, AliasCollector c);
+  ExpressionPath visit(ExpressionPath value, AliasCollector collector);
 }

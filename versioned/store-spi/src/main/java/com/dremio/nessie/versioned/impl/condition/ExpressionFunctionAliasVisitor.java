@@ -25,8 +25,9 @@ public interface ExpressionFunctionAliasVisitor {
   /**
    * The callback method in the visitor design pattern.
    * @param expressionFunction The object to be aliased.
-   * @param c the class that does the aliasing.
+   * @param collector the class that does the aliasing.
    * @return The aliased ExpressionFunction.
    */
-  ExpressionFunction aliasVisit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name, AliasCollector c);
+  ExpressionFunction visit(ExpressionFunction expressionFunction, List<Value> arguments,
+                           ExpressionFunction.FunctionName name, AliasCollector collector);
 }

@@ -22,14 +22,14 @@ public class MongoDBExpressionPathAliasVisitor implements ExpressionPathAliasVis
   /**
    * The callback method in the visitor design pattern.
    * @param expressionpath The object to be aliased.
-   * @param c the class that does the aliasing.
+   * @param collector the class that does the aliasing.
    * @return The aliased ExpressionPath.
    */
   @Override
-  public ExpressionPath aliasVisit(ExpressionPath expressionpath, AliasCollector c) {
+  public ExpressionPath visit(ExpressionPath expressionpath, AliasCollector collector) {
     ExpressionPathNameSegmentAliasVisitor expressionPathNameSegmentAliasVisitor = new MongoDBExpressionPathNameSegmentAliasVisitor();
     return ImmutableExpressionPath.builder()
-      .root((ExpressionPath.NameSegment) expressionpath.getRoot().acceptAlias(expressionPathNameSegmentAliasVisitor, c))
+      .root((ExpressionPath.NameSegment) expressionpath.getRoot().accept(expressionPathNameSegmentAliasVisitor, collector))
       .build();
   }
 }

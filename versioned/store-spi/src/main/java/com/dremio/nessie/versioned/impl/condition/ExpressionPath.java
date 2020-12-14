@@ -152,7 +152,7 @@ public abstract class ExpressionPath implements Value {
   }
 
   @Override
-  public Value acceptAlias(ValueAliasVisitor visitor, AliasCollector c) {
+  public Value accept(ValueAliasVisitor visitor, AliasCollector c) {
     throw new UnsupportedOperationException();
   }
 
@@ -163,8 +163,8 @@ public abstract class ExpressionPath implements Value {
    * @param c The class doing the aliasing.
    * @return the aliased ExpressionFunction.
    */
-  public ExpressionPath acceptAlias(ExpressionPathAliasVisitor visitor, AliasCollector c) {
-    return visitor.aliasVisit(this, c);
+  public ExpressionPath accept(ExpressionPathAliasVisitor visitor, AliasCollector c) {
+    return visitor.visit(this, c);
   }
 
   @Immutable
@@ -209,8 +209,8 @@ public abstract class ExpressionPath implements Value {
      * @param c The class doing the aliasing.
      * @return the aliased PathSegment
      */
-    public PathSegment acceptAlias(ExpressionPathNameSegmentAliasVisitor visitor, AliasCollector c) {
-      return visitor.aliasVisit(this, c);
+    public PathSegment accept(ExpressionPathNameSegmentAliasVisitor visitor, AliasCollector c) {
+      return visitor.visit(this, c);
     }
   }
 

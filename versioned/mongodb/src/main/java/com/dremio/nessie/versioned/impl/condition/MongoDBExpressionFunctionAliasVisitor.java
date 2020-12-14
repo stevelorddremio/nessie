@@ -17,7 +17,6 @@ package com.dremio.nessie.versioned.impl.condition;
 
 import java.util.List;
 
-import com.dremio.nessie.versioned.store.Entity;
 import com.google.common.collect.ImmutableList;
 
 /*
@@ -25,24 +24,23 @@ import com.google.common.collect.ImmutableList;
  */
 public class MongoDBExpressionFunctionAliasVisitor implements ExpressionFunctionAliasVisitor {
   @Override
-  public ExpressionFunction aliasVisit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name, AliasCollector c) {
-    // TODO check v.getPath().acceptAlias() is correct.
-    //  We might be able to provide acceptAlias as part of Value interface which would change the call to v.acceptAlias(...
-    return new ExpressionFunction(name, arguments.stream().map(v -> getArgumentValue(v, c)).collect(ImmutableList.toImmutableList()));
-//    return new ExpressionFunction(name, arguments.stream().map(v -> v.alias(c)).collect(ImmutableList.toImmutableList()));
+  public ExpressionFunction visit(ExpressionFunction expressionFunction, List<Value> arguments,
+                                  ExpressionFunction.FunctionName name, AliasCollector collector) {
+    return new ExpressionFunction(name, arguments.stream().map(v -> getArgumentValue(v, collector))
+      .collect(ImmutableList.toImmutableList()));
   }
 
-  Value getArgumentValue(Value v, AliasCollector c) {
-    switch (v.getType()) {
+  Value getArgumentValue(Value value, AliasCollector collector) {
+    switch (value.getType()) {
       case PATH:
         ExpressionPathAliasVisitor expressionPathAliasVisitor = new MongoDBExpressionPathAliasVisitor();
-        return v.getPath().acceptAlias(expressionPathAliasVisitor, c);
+        return value.getPath().accept(expressionPathAliasVisitor, collector);
       case VALUE:
         ValueAliasVisitor valueAliasVisitor = new MongoDBValueAliasVisitor();
-        return v.acceptAlias(valueAliasVisitor, c);
+        return value.accept(valueAliasVisitor, collector);
       case FUNCTION:
         ExpressionFunctionAliasVisitor expressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
-        return v.getFunction().acceptAlias(expressionFunctionAliasVisitor, c);
+        return value.getFunction().accept(expressionFunctionAliasVisitor, collector);
       default:
         throw new UnsupportedOperationException();
     }

@@ -88,7 +88,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
         return o1;
       },
       o1 -> ImmutableConditionExpression.builder().addAllFunctions(o1).build()
-    );
+      );
   }
 
   /**
@@ -110,7 +110,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
    * @param c The class doing the aliasing.
    * @return the aliased ConditionExpression.
    */
-  public ConditionExpression acceptAlias(ConditionExpressionAliasVisitor visitor, AliasCollector c) {
-    return visitor.aliasVisit(this, c);
+  public ConditionExpression accept(ConditionExpressionAliasVisitor visitor, AliasCollector c) {
+    return visitor.visit(this, c);
   }
 }

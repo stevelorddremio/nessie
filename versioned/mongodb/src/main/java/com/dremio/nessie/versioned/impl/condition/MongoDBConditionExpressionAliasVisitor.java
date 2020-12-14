@@ -22,11 +22,11 @@ import com.google.common.collect.ImmutableList;
  */
 public class MongoDBConditionExpressionAliasVisitor implements ConditionExpressionAliasVisitor {
   @Override
-  public ConditionExpression aliasVisit(ConditionExpression conditionExpression, AliasCollector c) {
+  public ConditionExpression visit(ConditionExpression conditionExpression, AliasCollector collector) {
     MongoDBExpressionFunctionAliasVisitor mongoDBExpressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
     return ImmutableConditionExpression.builder()
       .functions(conditionExpression.getFunctions().stream()
-        .map(f -> f.acceptAlias(mongoDBExpressionFunctionAliasVisitor, c)).collect(ImmutableList.toImmutableList()))
+        .map(f -> f.accept(mongoDBExpressionFunctionAliasVisitor, collector)).collect(ImmutableList.toImmutableList()))
       .build();
   }
 

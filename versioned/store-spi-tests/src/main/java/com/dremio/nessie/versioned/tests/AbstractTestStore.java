@@ -16,7 +16,6 @@
 package com.dremio.nessie.versioned.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +35,7 @@ import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
 import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
 import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.HasId;
+import com.dremio.nessie.versioned.store.Id;
 import com.dremio.nessie.versioned.store.SaveOp;
 import com.dremio.nessie.versioned.store.SimpleSchema;
 import com.dremio.nessie.versioned.store.Store;
@@ -187,7 +187,14 @@ public abstract class AbstractTestStore<S extends Store> {
     HasId value = SampleEntities.createValue(random);
     final Entity id  = Entity.ofString((value).getId().toString());
     ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));
-    testPut(value, ValueType.VALUE, conditionExpression);
+    testPut(value, ValueType.VALUE, Optional.of(conditionExpression));
+  }
+
+  @Test
+  public void deleteNoConditions() {
+    HasId value = SampleEntities.createValue(random);
+    testPut(value, ValueType.VALUE, Optional.empty());
+    testDelete(ValueType.VALUE, (value).getId(), Optional.empty());
   }
 
   private <T extends HasId> void putThenLoad(T sample, ValueType type) {
@@ -216,12 +223,16 @@ public abstract class AbstractTestStore<S extends Store> {
     testLoad(sample, type);
   }
 
-  private <T extends HasId> void testPut(T sample, ValueType type, ConditionExpression conditionExpression) {
+  private <T extends HasId> void testPut(T sample, ValueType type, Optional<ConditionExpression> conditionExpression) {
     try {
-      Assertions.assertTrue(store.put(type, sample, Optional.of(conditionExpression)));
+      Assertions.assertTrue(store.put(type, sample, conditionExpression));
     } catch (ReferenceNotFoundException e) {
       Assertions.fail(e);
     }
     testLoad(sample, type);
+  }
+
+  private void testDelete(ValueType type, Id id, Optional<ConditionExpression> conditionExpression) {
+    Assertions.assertTrue(store.delete(type, id, conditionExpression));
   }
 }

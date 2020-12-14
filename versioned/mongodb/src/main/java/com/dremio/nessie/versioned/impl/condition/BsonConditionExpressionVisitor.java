@@ -43,8 +43,8 @@ public class BsonConditionExpressionVisitor implements ConditionExpressionVisito
       return expressionFunction.accept(bsonExpressionFunctionVisitor);
     } else {
       List<Bson> expressionFunctionList = conditionExpression.getFunctions().stream()
-        .map(f -> f.accept(bsonExpressionFunctionVisitor))
-        .collect(Collectors.toList());
+          .map(f -> f.accept(bsonExpressionFunctionVisitor))
+          .collect(Collectors.toList());
       return new Document("$and", expressionFunctionList);
     }
   }

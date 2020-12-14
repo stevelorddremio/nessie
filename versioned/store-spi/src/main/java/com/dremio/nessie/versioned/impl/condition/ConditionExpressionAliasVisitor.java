@@ -23,8 +23,8 @@ public interface ConditionExpressionAliasVisitor {
   /**
    * The callback method in the visitor design pattern.
    * @param conditionExpression The object to be aliased.
-   * @param c the class that does the aliasing.
+   * @param collector the class that does the aliasing.
    * @return The aliased ConditionExpression.
    */
-  ConditionExpression aliasVisit(ConditionExpression conditionExpression, AliasCollector c);
+  ConditionExpression visit(ConditionExpression conditionExpression, AliasCollector collector);
 }

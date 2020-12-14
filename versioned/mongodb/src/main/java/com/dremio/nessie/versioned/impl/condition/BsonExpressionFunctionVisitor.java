@@ -48,7 +48,8 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
           throw new UnsupportedOperationException(String.format("%s is not a supported function name.", name));
       }
     }
-    throw new InvalidParameterException(String.format("Number of arguments provided %d does not match the number expected %d.", arguments.size(), name.argCount));
+    throw new InvalidParameterException(
+      String.format("Number of arguments provided %d does not match the number expected %d.", arguments.size(), name.argCount));
   }
 
 }

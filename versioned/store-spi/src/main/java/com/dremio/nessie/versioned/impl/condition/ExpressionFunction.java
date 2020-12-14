@@ -99,11 +99,6 @@ public class ExpressionFunction implements Value {
     return new ExpressionFunction(name, arguments.stream().map(v -> v.alias(c)).collect(ImmutableList.toImmutableList()));
   }
 
-  @Override
-  public Value acceptAlias(ValueAliasVisitor visitor, AliasCollector c) {
-    throw new UnsupportedOperationException();
-  }
-
   /**
    * Return this function as a Dynamo expression string.
    * @return The expression string.
@@ -138,13 +133,24 @@ public class ExpressionFunction implements Value {
 
   /**
    * This is part of the Visitor design pattern.
-   * This method is called by visiting classes. In response their aliasVisit method is called back.
+   * This method is called by visiting classes. In response their visit method is called back.
    * @param visitor the instance visiting.
-   * @param c The class doing the aliasing.
+   * @param collector The class doing the aliasing.
    * @return the aliased ExpressionFunction.
    */
-  public ExpressionFunction acceptAlias(ExpressionFunctionAliasVisitor visitor, AliasCollector c) {
-    return visitor.aliasVisit(this, arguments, name, c);
+  public ExpressionFunction accept(ExpressionFunctionAliasVisitor visitor, AliasCollector collector) {
+    return visitor.visit(this, arguments, name, collector);
+  }
+
+  /**
+   * Accept from the Value interface is not valid for ExpressionFunctions.
+   * @param visitor the instance visiting.
+   * @param collector The class doing the aliasing.
+   * @return Not valid for ExpressionFunctions.
+   */
+  @Override
+  public Value accept(ValueAliasVisitor visitor, AliasCollector collector) {
+    throw new UnsupportedOperationException();
   }
 
 }
