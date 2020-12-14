@@ -16,6 +16,7 @@
 package com.dremio.nessie.versioned.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +31,10 @@ import com.dremio.nessie.versioned.ReferenceNotFoundException;
 import com.dremio.nessie.versioned.impl.InternalRef;
 import com.dremio.nessie.versioned.impl.L1;
 import com.dremio.nessie.versioned.impl.SampleEntities;
+import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
+import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
+import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
+import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.HasId;
 import com.dremio.nessie.versioned.store.SaveOp;
 import com.dremio.nessie.versioned.store.SimpleSchema;
@@ -176,6 +181,15 @@ public abstract class AbstractTestStore<S extends Store> {
     });
   }
 
+  @Test
+  public void putValue() {
+    final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
+    HasId value = SampleEntities.createValue(random);
+    final Entity id  = Entity.ofString((value).getId().toString());
+    ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));
+    testPut(value, ValueType.VALUE, conditionExpression);
+  }
+
   private <T extends HasId> void putThenLoad(T sample, ValueType type) {
     try {
       Assertions.assertTrue(store.put(type, sample, Optional.empty()));
@@ -199,6 +213,15 @@ public abstract class AbstractTestStore<S extends Store> {
     Assertions.assertTrue(store.putIfAbsent(type, sample));
     testLoad(sample, type);
     Assertions.assertFalse(store.putIfAbsent(type, sample));
+    testLoad(sample, type);
+  }
+
+  private <T extends HasId> void testPut(T sample, ValueType type, ConditionExpression conditionExpression) {
+    try {
+      Assertions.assertTrue(store.put(type, sample, Optional.of(conditionExpression)));
+    } catch (ReferenceNotFoundException e) {
+      Assertions.fail(e);
+    }
     testLoad(sample, type);
   }
 }

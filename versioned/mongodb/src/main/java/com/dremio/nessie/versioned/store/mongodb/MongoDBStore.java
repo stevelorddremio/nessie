@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
+import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistries;
@@ -41,7 +42,11 @@ import org.reactivestreams.Subscription;
 
 import com.dremio.nessie.versioned.ReferenceNotFoundException;
 import com.dremio.nessie.versioned.impl.InternalRef;
+import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
+import com.dremio.nessie.versioned.impl.condition.ConditionExpressionAliasVisitor;
+import com.dremio.nessie.versioned.impl.condition.MongoDBAliasCollectorImpl;
+import com.dremio.nessie.versioned.impl.condition.MongoDBConditionExpressionAliasVisitor;
 import com.dremio.nessie.versioned.impl.condition.UpdateExpression;
 import com.dremio.nessie.versioned.store.HasId;
 import com.dremio.nessie.versioned.store.Id;
@@ -261,15 +266,17 @@ public class MongoDBStore implements Store {
     Preconditions.checkArgument(type.getObjectClass().isAssignableFrom(value.getClass()),
         "ValueType %s doesn't extend expected type %s.", value.getClass().getName(), type.getObjectClass().getName());
 
-    // TODO: Handle ConditionExpressions.
-    if (conditionUnAliased.isPresent()) {
-      throw new UnsupportedOperationException("ConditionExpressions are not supported with MongoDB yet.");
-    }
-
     final MongoCollection<V> collection = getCollection(type);
-
-    // Use upsert so that if an item does not exist, it will be insert.
-    await(collection.replaceOne(Filters.eq(Store.KEY_NAME, ((HasId)value).getId()), value, new ReplaceOptions().upsert(true)));
+    if (conditionUnAliased.isPresent()) {
+      MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
+      ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
+      ConditionExpression aliased = conditionUnAliased.get().acceptAlias(conditionExpressionAliasVisitor, c);
+      BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+      await(collection.replaceOne(aliased.accept(bsonConditionExpressionVisitor), value, new ReplaceOptions().upsert(true)));
+    } else {
+      // Use upsert so that if an item does not exist, it will be insert.
+      await(collection.replaceOne(Filters.eq(Store.KEY_NAME, ((HasId) value).getId()), value, new ReplaceOptions().upsert(true)));
+    }
     return true;
   }
 

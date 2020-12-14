@@ -20,7 +20,7 @@ import com.dremio.nessie.versioned.store.Entity;
 /**
  * A MongoDB specific implementation of @{com.dremio.nessie.versioned.impl.condition.AliasCollector}
  */
-class MongoDBAliasCollectorImpl implements AliasCollector {
+public class MongoDBAliasCollectorImpl implements AliasCollector {
 
   /**
    * Converts any special characters or reserved words that cannot be used in queries of MongoDB.

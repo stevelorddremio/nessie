@@ -19,21 +19,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.Test;
 
-import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
-import com.dremio.nessie.versioned.impl.condition.BsonExpressionFunctionVisitor;
-import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
-import com.dremio.nessie.versioned.impl.condition.ConditionExpressionAliasVisitor;
-import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
-import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
-import com.dremio.nessie.versioned.impl.condition.MongoDBAliasCollectorImpl;
-import com.dremio.nessie.versioned.impl.condition.MongoDBConditionExpressionAliasVisitor;
-import com.dremio.nessie.versioned.impl.condition.MongoDBExpressionFunctionAliasVisitor;
+import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.store.Entity;
+import com.dremio.nessie.versioned.store.HasId;
+import com.dremio.nessie.versioned.store.Store;
 import com.mongodb.client.model.Filters;
 
 public class TestMongoDbExpressions {
@@ -41,10 +36,14 @@ public class TestMongoDbExpressions {
   private final Entity av0 = Entity.ofBoolean(true);
   private final Entity av1 = Entity.ofBoolean(false);
   private final Entity av2 = Entity.ofString("mystr");
+  private Random random = new Random(8612341233543L);
+
+  private final Entity id  = Entity.ofString(((HasId) SampleEntities.createL1(random)).getId().toString());
 
   private final ExpressionPath p0 = ExpressionPath.builder("p0").build();
   private final ExpressionPath p1 = ExpressionPath.builder("p1").build();
   private final ExpressionPath p2 = ExpressionPath.builder("p2").position(2).build();
+  private final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
 
   @Test
   void conditionExpressionEquals() {
@@ -53,7 +52,6 @@ public class TestMongoDbExpressions {
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p0, av0)).acceptAlias(conditionExpressionAliasVisitor, c);
     BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
     assertEquals(new Document(p0.asString(), av0.getBoolean()).toString(), ex.accept(bsonConditionExpressionVisitor).toString());
-//    assertEquals(Filters.eq(p0.asString(), av0.getBoolean()), ex.accept(conditionExpressionVisitor));
   }
 
   @Test
@@ -73,7 +71,6 @@ public class TestMongoDbExpressions {
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.size(p0))
       .acceptAlias(conditionExpressionAliasVisitor, c);
     BsonConditionExpressionVisitor conditionExpressionVisitor = new BsonConditionExpressionVisitor();
-    //TODO change to use Filters
     assertEquals(new Document("$size", p0.asString()), ex.accept(conditionExpressionVisitor));
   }
 
@@ -84,9 +81,6 @@ public class TestMongoDbExpressions {
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p0, av0), ExpressionFunction.equals(p1, av1))
       .acceptAlias(conditionExpressionAliasVisitor, c);
     BsonConditionExpressionVisitor conditionExpressionVisitor = new BsonConditionExpressionVisitor();
-//    Bson expected2 = Filters.and(
-//      Filters.eq(p0.asString(), av0.getBoolean()),
-//      Filters.eq(p1.asString(), av1.getBoolean()));
     Document expected = new Document("$and", Arrays.asList(
       new Document(p0.asString(), av0.getBoolean()),
       new Document(p1.asString(), av1.getBoolean())));
@@ -101,7 +95,14 @@ public class TestMongoDbExpressions {
     ExpressionFunction f2 = f.acceptAlias(expressionFunctionAliasVisitor, c);
     BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
     assertEquals(new Document("foo", av0.getBoolean()).toString(), f2.accept(bsonExpressionFunctionVisitor).toString());
-//    assertEquals(Filters.eq("foo", av0.getBoolean()), f2.accept(expressionFunctionVisitor));
   }
 
+  @Test
+  void conditionExpressionKeyHadId() {
+    MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
+    ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
+    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(keyName, id)).acceptAlias(conditionExpressionAliasVisitor, c);
+    BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+    assertEquals(new Document(keyName.asString(), id.getString()).toString(), ex.accept(bsonConditionExpressionVisitor).toString());
+  }
 }
