@@ -32,9 +32,9 @@ public class MongoDBExpressionFunctionAliasVisitor implements ExpressionFunction
 
   /**
    * Returns an aliased sub class equivalent to the type of Value.
-   * @param value
-   * @param collector
-   * @return
+   * @param value the value to alias.
+   * @param collector the class that does the aliasing.
+   * @return The aliased ExpressionPath.
    */
   Value getArgumentValue(Value value, AliasCollector collector) {
     switch (value.getType()) {

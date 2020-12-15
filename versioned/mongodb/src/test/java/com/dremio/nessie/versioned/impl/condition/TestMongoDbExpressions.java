@@ -25,6 +25,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.Test;
 
+
 import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.HasId;
@@ -43,6 +44,8 @@ public class TestMongoDbExpressions {
   private final ExpressionPath p0 = ExpressionPath.builder("p0").build();
   private final ExpressionPath p1 = ExpressionPath.builder("p1").build();
   private final ExpressionPath p2 = ExpressionPath.builder("p2").position(2).build();
+  private final String two = "2";
+  private final ExpressionPath pathTwo = ExpressionPath.builder(two).build();
   private final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
 
   @Test
@@ -72,6 +75,24 @@ public class TestMongoDbExpressions {
         .accept(conditionExpressionAliasVisitor, c);
     BsonConditionExpressionVisitor conditionExpressionVisitor = new BsonConditionExpressionVisitor();
     assertEquals(new Document("$size", p0.asString()), ex.accept(conditionExpressionVisitor));
+  }
+
+  @Test
+  void conditionExpressionOfBranchAndWithSize() {
+    MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
+    ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
+
+    ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(
+        ExpressionPath.builder("commits").position(0).name("id").build(), id));
+    conditionExpression = conditionExpression.and(
+      ExpressionFunction.size(pathTwo))
+      .accept(conditionExpressionAliasVisitor, collector);
+
+    BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+    Document expected = new Document("$and", Arrays.asList(
+        new Document("commits[0].id", id.getString()),
+        new Document("$size", two)));
+    assertEquals(expected.toString(), conditionExpression.accept(bsonConditionExpressionVisitor).toString());
   }
 
   @Test
