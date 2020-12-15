@@ -39,13 +39,13 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import com.dremio.nessie.versioned.ReferenceNotFoundException;
 import com.dremio.nessie.versioned.impl.InternalRef;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
 import com.dremio.nessie.versioned.impl.condition.UpdateExpression;
 import com.dremio.nessie.versioned.store.HasId;
 import com.dremio.nessie.versioned.store.Id;
 import com.dremio.nessie.versioned.store.LoadStep;
+import com.dremio.nessie.versioned.store.NotFoundException;
 import com.dremio.nessie.versioned.store.SaveOp;
 import com.dremio.nessie.versioned.store.Store;
 import com.dremio.nessie.versioned.store.ValueType;
@@ -239,7 +239,7 @@ public class MongoDBStore implements Store {
   }
 
   @Override
-  public void load(LoadStep loadstep) throws ReferenceNotFoundException {
+  public void load(LoadStep loadstep) throws NotFoundException {
     throw new UnsupportedOperationException();
   }
 
@@ -257,7 +257,7 @@ public class MongoDBStore implements Store {
   }
 
   @Override
-  public <V> boolean put(ValueType type, V value, Optional<ConditionExpression> conditionUnAliased) {
+  public <V> void put(ValueType type, V value, Optional<ConditionExpression> conditionUnAliased) {
     Preconditions.checkArgument(type.getObjectClass().isAssignableFrom(value.getClass()),
         "ValueType %s doesn't extend expected type %s.", value.getClass().getName(), type.getObjectClass().getName());
 
@@ -270,7 +270,6 @@ public class MongoDBStore implements Store {
 
     // Use upsert so that if an item does not exist, it will be insert.
     await(collection.replaceOne(Filters.eq(Store.KEY_NAME, ((HasId)value).getId()), value, new ReplaceOptions().upsert(true)));
-    return true;
   }
 
   @Override
@@ -305,19 +304,19 @@ public class MongoDBStore implements Store {
   }
 
   @Override
-  public <V> V loadSingle(ValueType valueType, Id id) throws ReferenceNotFoundException {
+  public <V> V loadSingle(ValueType valueType, Id id) throws NotFoundException {
     final MongoCollection<V> collection = getCollection(valueType);
 
     final V value = await(collection.find(Filters.eq(Store.KEY_NAME, id))).first();
     if (null == value) {
-      throw new ReferenceNotFoundException("Unable to load item with ID: " + id);
+      throw new NotFoundException("Unable to load item with ID: " + id);
     }
     return value;
   }
 
   @Override
   public <V> Optional<V> update(ValueType type, Id id, UpdateExpression update, Optional<ConditionExpression> condition)
-      throws ReferenceNotFoundException {
+      throws NotFoundException {
     throw new UnsupportedOperationException();
   }
 
