@@ -36,8 +36,8 @@
     <module>memory</module>
     <module>mongodb</module>
     <module>spi</module>
-    <module>store-spi</module>
-    <module>store-spi-tests</module>
     <module>tests</module>
+    <module>tiered</module>
+    <module>tiered-tests</module>
   </modules>
 </project>

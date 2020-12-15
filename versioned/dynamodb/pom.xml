@@ -37,7 +37,7 @@
     </dependency>
     <dependency>
       <groupId>org.projectnessie</groupId>
-      <artifactId>nessie-versioned-store-spi</artifactId>
+      <artifactId>nessie-versioned-tiered</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

@@ -18,9 +18,8 @@ package com.dremio.nessie.versioned.impl.condition;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.bson.Document;
+import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
-
 
 /**
  * This class allows retrieval of ConditionExpression objects in BSON format.
@@ -38,15 +37,12 @@ public class BsonConditionExpressionVisitor implements ConditionExpressionVisito
   @Override
   public Bson visit(final ConditionExpression conditionExpression) {
     final BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
-    if (conditionExpression.getFunctions().size() == 1) {
-      final ExpressionFunction expressionFunction = conditionExpression.getFunctions().get(0);
-      return expressionFunction.accept(bsonExpressionFunctionVisitor);
-    } else {
-      List<Bson> expressionFunctionList = conditionExpression.getFunctions().stream()
-          .map(f -> f.accept(bsonExpressionFunctionVisitor))
-          .collect(Collectors.toList());
-      return new Document("$and", expressionFunctionList);
-    }
-  }
+    final List<Bson> expressionFunctionList = conditionExpression.getFunctions().stream()
+      .map(f -> f.accept(bsonExpressionFunctionVisitor))
+      .collect(Collectors.toList());
 
+    return (expressionFunctionList.size() == 1) ?
+        expressionFunctionList.get(0) :
+        Filters.and(expressionFunctionList);
+  }
 }
