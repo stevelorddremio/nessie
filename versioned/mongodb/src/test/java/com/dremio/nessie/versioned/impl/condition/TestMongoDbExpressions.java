@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.junit.jupiter.api.Test;
 
 
@@ -30,7 +29,6 @@ import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.HasId;
 import com.dremio.nessie.versioned.store.Store;
-import com.mongodb.client.model.Filters;
 
 public class TestMongoDbExpressions {
 
@@ -44,6 +42,8 @@ public class TestMongoDbExpressions {
   private final ExpressionPath p0 = ExpressionPath.builder("p0").build();
   private final ExpressionPath p1 = ExpressionPath.builder("p1").build();
   private final ExpressionPath p2 = ExpressionPath.builder("p2").position(2).build();
+  private final ExpressionPath commit_0_id = ExpressionPath.builder("commits").position(0).name("id").build();
+
   private final String two = "2";
   private final ExpressionPath pathTwo = ExpressionPath.builder(two).build();
   private final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
@@ -63,7 +63,6 @@ public class TestMongoDbExpressions {
     ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p2, av2)).accept(conditionExpressionAliasVisitor, c);
     BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
-    Bson expected = Filters.eq(p2.asString(), av2.getString());
     assertTrue(new Document(p2.asString(), av2.getString()).equals(ex.accept(bsonConditionExpressionVisitor)));
   }
 
@@ -83,14 +82,14 @@ public class TestMongoDbExpressions {
     ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
 
     ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(
-        ExpressionPath.builder("commits").position(0).name("id").build(), id));
+      commit_0_id, id));
     conditionExpression = conditionExpression.and(
       ExpressionFunction.size(pathTwo))
       .accept(conditionExpressionAliasVisitor, collector);
 
     BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
     Document expected = new Document("$and", Arrays.asList(
-        new Document("commits[0].id", id.getString()),
+        new Document(commit_0_id.asString(), id.getString()),
         new Document("$size", two)));
     assertEquals(expected.toString(), conditionExpression.accept(bsonConditionExpressionVisitor).toString());
   }
