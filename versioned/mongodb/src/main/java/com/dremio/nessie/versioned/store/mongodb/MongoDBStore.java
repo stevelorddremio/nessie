@@ -157,7 +157,7 @@ public class MongoDBStore implements Store {
     private final T value;
     private final Class<T> valueClass;
 
-    public <V> UpdateEntityBson(Class<T> valueClass, T value) {
+    public UpdateEntityBson(Class<T> valueClass, T value) {
       this.valueClass = valueClass;
       this.value = value;
     }
@@ -265,33 +265,26 @@ public class MongoDBStore implements Store {
     Preconditions.checkArgument(type.getObjectClass().isAssignableFrom(value.getClass()),
         "ValueType %s doesn't extend expected type %s.", value.getClass().getName(), type.getObjectClass().getName());
 
-    final MongoCollection<V> collection = getCollection(type);
+    Bson filter = Filters.eq(Store.KEY_NAME, ((HasId) value).getId());
     if (conditionUnAliased.isPresent()) {
-      MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
-      ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-      ConditionExpression aliased = conditionUnAliased.get().accept(conditionExpressionAliasVisitor, collector);
-      BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
-      await(collection.replaceOne(aliased.accept(bsonConditionExpressionVisitor), value, new ReplaceOptions().upsert(true)));
-    } else {
-      // Use upsert so that if an item does not exist, it will be insert.
-      await(collection.replaceOne(Filters.eq(Store.KEY_NAME, ((HasId) value).getId()), value, new ReplaceOptions().upsert(true)));
+      filter = Filters.and(filter, toBson(conditionUnAliased));
     }
+
+    // Use upsert so that if an item does not exist, it will be insert.
+    final MongoCollection<V> collection = getCollection(type);
+    await(collection.replaceOne(filter, value, new ReplaceOptions().upsert(true)));
   }
 
   @Override
   public boolean delete(ValueType type, Id id, Optional<ConditionExpression> condition) {
-    final MongoCollection collection = getCollection(type);
+    final MongoCollection<?> collection = getCollection(type);
 
+    Bson filter = Filters.eq(Store.KEY_NAME, id.getId());
     if (condition.isPresent()) {
-      MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
-      ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-      ConditionExpression aliased = condition.get().accept(conditionExpressionAliasVisitor, collector);
-      BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
-      await(collection.deleteOne(aliased.accept(bsonConditionExpressionVisitor)));
-    } else {
-      await(collection.deleteOne(Filters.eq(Store.KEY_NAME, id.getId())));
+      filter = Filters.and(filter, toBson(condition));
     }
-    return true;
+
+    return 0 != await(collection.deleteOne(filter)).first().getDeletedCount();
   }
 
   @Override
@@ -340,7 +333,8 @@ public class MongoDBStore implements Store {
   @Override
   public Stream<InternalRef> getRefs() {
     // TODO: Can this be optimized to not collect the elements before streaming them?
-    return await(((MongoCollection<InternalRef>)getCollection(ValueType.REF)).find()).getReceived().stream();
+    final MongoCollection<InternalRef> collection = getCollection(ValueType.REF);
+    return await(collection.find()).getReceived().stream();
   }
 
   /**
@@ -368,11 +362,19 @@ public class MongoDBStore implements Store {
     }
   }
 
-  private MongoCollection getCollection(ValueType valueType) {
-    final MongoCollection collection = collections.get(valueType);
+  private <V> MongoCollection<V> getCollection(ValueType valueType) {
+    final MongoCollection<? extends HasId> collection = collections.get(valueType);
     if (null == collection) {
       throw new UnsupportedOperationException(String.format("Unsupported Entity type: %s", valueType.name()));
     }
-    return collection;
+    return (MongoCollection<V>) collection;
+  }
+
+  private Bson toBson(Optional<ConditionExpression> conditionUnAliased) {
+    final MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
+    final ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
+    final ConditionExpression aliased = conditionUnAliased.get().accept(conditionExpressionAliasVisitor, collector);
+    final BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+    return aliased.accept(bsonConditionExpressionVisitor);
   }
 }

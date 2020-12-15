@@ -19,6 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Random;
 
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.junit.jupiter.api.Test;
+
+import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
 import com.dremio.nessie.versioned.impl.condition.BsonExpressionFunctionVisitor;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
@@ -28,16 +33,11 @@ import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
 import com.dremio.nessie.versioned.impl.condition.MongoDBAliasCollectorImpl;
 import com.dremio.nessie.versioned.impl.condition.MongoDBConditionExpressionAliasVisitor;
 import com.dremio.nessie.versioned.impl.condition.MongoDBExpressionFunctionAliasVisitor;
-import com.google.common.collect.ImmutableList;
-import com.mongodb.client.model.Filters;
-import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.junit.jupiter.api.Test;
-
-import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.HasId;
 import com.dremio.nessie.versioned.store.Store;
+import com.google.common.collect.ImmutableList;
+import com.mongodb.client.model.Filters;
 
 class TestMongoDbExpressions {
   private static final Entity av0 = Entity.ofBoolean(true);
@@ -113,7 +113,7 @@ class TestMongoDbExpressions {
   }
 
   @Test
-  void equals() {
+  void equalsExpression() {
     ExpressionFunction f = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), av0);
     MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
     MongoDBExpressionFunctionAliasVisitor expressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
