@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.dremio.nessie.versioned.store.Entity;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -63,6 +64,7 @@ public class ExpressionFunction implements Value {
   private final FunctionName name;
   private final List<Value> arguments;
 
+  @VisibleForTesting
   ExpressionFunction(FunctionName name, ImmutableList<Value> arguments) {
     this.name = name;
     this.arguments = ImmutableList.copyOf(arguments);

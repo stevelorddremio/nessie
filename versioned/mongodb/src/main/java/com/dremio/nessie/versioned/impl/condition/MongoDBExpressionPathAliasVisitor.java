@@ -27,7 +27,7 @@ public class MongoDBExpressionPathAliasVisitor implements ExpressionPathAliasVis
    */
   @Override
   public ExpressionPath visit(ExpressionPath expressionpath, AliasCollector collector) {
-    ExpressionPathNameSegmentAliasVisitor expressionPathNameSegmentAliasVisitor = new MongoDBExpressionPathNameSegmentAliasVisitor();
+    final ExpressionPathNameSegmentAliasVisitor expressionPathNameSegmentAliasVisitor = new MongoDBExpressionPathNameSegmentAliasVisitor();
     return ImmutableExpressionPath.builder()
       .root((ExpressionPath.NameSegment) expressionpath.getRoot().accept(expressionPathNameSegmentAliasVisitor, collector))
       .build();

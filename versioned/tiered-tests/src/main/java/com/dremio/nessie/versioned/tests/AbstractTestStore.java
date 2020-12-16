@@ -184,9 +184,9 @@ public abstract class AbstractTestStore<S extends Store> {
   @Test
   public void putWithConditionalValue() {
     final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
-    HasId value = SampleEntities.createValue(random);
+    final HasId value = SampleEntities.createValue(random);
     final Entity id  = Entity.ofString(value.getId().toString());
-    ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));
+    final ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));
     testPut(value, ValueType.VALUE, Optional.of(conditionExpression));
   }
 
@@ -240,17 +240,17 @@ public abstract class AbstractTestStore<S extends Store> {
   @Test
   public void deleteConditionalMismatchAttributeValue() {
     final Entity nonExistent = Entity.ofString("Missing");
-    ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("value").build(), nonExistent);
-    ConditionExpression ex = ConditionExpression.of(expressionFunction);
+    final ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("value").build(), nonExistent);
+    final ConditionExpression ex = ConditionExpression.of(expressionFunction);
     deleteConditional(SampleEntities.createValue(random), ValueType.VALUE, false, Optional.of(ex));
   }
 
   @Test
   public void deleteConditionalMismatchAttributeL1() {
     final Entity nonExistent = Entity.ofString("Missing");
-    ExpressionFunction expressionFunction =
+    final ExpressionFunction expressionFunction =
         ExpressionFunction.equals(ExpressionPath.builder("commit").build(), nonExistent);
-    ConditionExpression ex = ConditionExpression.of(expressionFunction);
+    final ConditionExpression ex = ConditionExpression.of(expressionFunction);
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(ex));
   }
 

@@ -18,7 +18,6 @@ package com.dremio.nessie.versioned.impl.condition;
 import java.security.InvalidParameterException;
 import java.util.List;
 
-import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.client.model.Filters;
@@ -37,25 +36,24 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
    */
   @Override
   public Bson visit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name) {
-    if (arguments.size() == name.argCount) {
-      switch (name) {
-        case EQUALS:
-          Bson document = new Document();
-          BsonExpressionFunctionVisitor expressionFunctionVisitor = new BsonExpressionFunctionVisitor();
-          document = expressionFunction.accept(expressionFunctionVisitor, arguments.get(0), arguments.get(1));
-          if (document != null) {
-            return document;
-          }
-          return Filters.eq(arguments.get(0).asString(), arguments.get(1).asString());
-
-        case SIZE:
-          throw new UnsupportedOperationException(String.format("%s must be converted using visitGetSize().", name));
-        default:
-          throw new UnsupportedOperationException(String.format("%s is not a supported function name.", name));
-      }
+    if (arguments.size() != name.argCount) {
+      throw new InvalidParameterException(
+        String.format("Number of arguments provided %d does not match the number expected %d.", arguments.size(), name.argCount));
     }
-    throw new InvalidParameterException(
-      String.format("Number of arguments provided %d does not match the number expected %d.", arguments.size(), name.argCount));
+    switch (name) {
+      case EQUALS:
+        final BsonExpressionFunctionVisitor expressionFunctionVisitor = new BsonExpressionFunctionVisitor();
+        Bson document = expressionFunction.accept(expressionFunctionVisitor, arguments.get(0), arguments.get(1));
+        if (document != null) {
+          return document;
+        }
+        return Filters.eq(arguments.get(0).asString(), arguments.get(1).asString());
+
+      case SIZE:
+        throw new UnsupportedOperationException(String.format("%s must be converted using visitGetSize().", name));
+      default:
+        throw new UnsupportedOperationException(String.format("%s is not a supported function name.", name));
+    }
   }
 
   /**

@@ -42,6 +42,6 @@ public class BsonConditionExpressionVisitor implements ConditionExpressionVisito
         .map(f -> f.accept(bsonExpressionFunctionVisitor))
         .collect(Collectors.toList());
 
-    return (expressionFunctionList.size() == 1) ? expressionFunctionList.get(0) : Filters.and(expressionFunctionList);
+    return Filters.and(expressionFunctionList);
   }
 }

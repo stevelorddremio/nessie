@@ -43,7 +43,6 @@ import com.dremio.nessie.versioned.impl.InternalRef;
 import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpressionAliasVisitor;
-import com.dremio.nessie.versioned.impl.condition.MongoDBAliasCollectorImpl;
 import com.dremio.nessie.versioned.impl.condition.MongoDBConditionExpressionAliasVisitor;
 import com.dremio.nessie.versioned.impl.condition.UpdateExpression;
 import com.dremio.nessie.versioned.store.HasId;

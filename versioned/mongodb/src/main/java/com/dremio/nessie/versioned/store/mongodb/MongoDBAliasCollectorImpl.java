@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.impl.condition;
+package com.dremio.nessie.versioned.store.mongodb;
 
+import com.dremio.nessie.versioned.impl.condition.AliasCollector;
 import com.dremio.nessie.versioned.store.Entity;
 
 /**
