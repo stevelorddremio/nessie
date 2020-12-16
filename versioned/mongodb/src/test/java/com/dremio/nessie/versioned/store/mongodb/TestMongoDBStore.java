@@ -86,10 +86,7 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
    */
   @Test
   public void deleteSelectedByConditionExpression1() {
-    final ExpressionPath commits = ExpressionPath.builder("commits").build();
-    final Entity ONE = Entity.ofNumber(1);
-
-    ConditionExpression conditionExpression1 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(commits), ONE))
+    ConditionExpression conditionExpression1 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE))
       .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(conditionExpression1));
   }
@@ -101,10 +98,7 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
    */
   @Test
   public void deleteSelectedByConditionExpression2() {
-    final ExpressionPath commits = ExpressionPath.builder("commits").build();
-    final Entity TWO = Entity.ofNumber(2);
-
-    ConditionExpression conditionExpression2 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(commits), TWO))
+    ConditionExpression conditionExpression2 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO))
       .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(conditionExpression2));
   }

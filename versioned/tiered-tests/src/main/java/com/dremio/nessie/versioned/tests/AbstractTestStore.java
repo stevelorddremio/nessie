@@ -48,6 +48,10 @@ import com.google.common.collect.ImmutableList;
  * @param <S> The type of the Store being tested.
  */
 public abstract class AbstractTestStore<S extends Store> {
+  protected static final ExpressionPath COMMITS = ExpressionPath.builder("commits").build();
+  protected static final Entity ONE = Entity.ofNumber(1);
+  protected static final Entity TWO = Entity.ofNumber(2);
+
   protected Random random;
   protected S store;
 
@@ -254,6 +258,28 @@ public abstract class AbstractTestStore<S extends Store> {
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(ex));
   }
 
+  /**
+   * This test creates a branch which has two commits in the history.
+   * The test is to try to delete the branch specifying the commit history size should be one.
+   * The delete should fail.
+   */
+  @Test
+  public void deleteSelectedByConditionExpression1NoAlias() {
+    ConditionExpression conditionExpression1 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE));
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(conditionExpression1));
+  }
+
+  /**
+   * This test creates a branch which has two commits in the history.
+   * The test is to try to delete the branch specifying the commit history size should be two.
+   * The delete should succeed.
+   */
+  @Test
+  public void deleteSelectedByConditionExpression2NoAlias() {
+    ConditionExpression conditionExpression2 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO));
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(conditionExpression2));
+  }
+
   protected <T extends HasId> void deleteConditional(T sample, ValueType type, boolean deleteSucceeded,
                                                    Optional<ConditionExpression> conditionExpression) {
     testPut(sample, type, Optional.empty());
@@ -263,6 +289,16 @@ public abstract class AbstractTestStore<S extends Store> {
     } else {
       testFailedDelete(type, sample.getId(), conditionExpression);
       testLoad(sample, type);
+    }
+  }
+
+  protected <T extends HasId> void putConditional(T sample, ValueType type, boolean putSucceeded,
+                                                  Optional<ConditionExpression> conditionExpression) {
+    store.put(type, sample, conditionExpression);
+    if (putSucceeded) {
+      testLoad(sample, type);
+    } else {
+      testNotLoaded(sample, type);
     }
   }
 
