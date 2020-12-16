@@ -15,10 +15,21 @@
  */
 package com.dremio.nessie.versioned.store.mongodb;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.dremio.nessie.versioned.impl.SampleEntities;
+import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
+import com.dremio.nessie.versioned.impl.condition.ConditionExpressionAliasVisitor;
+import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
+import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
+import com.dremio.nessie.versioned.impl.condition.MongoDBConditionExpressionAliasVisitor;
+import com.dremio.nessie.versioned.store.Entity;
+import com.dremio.nessie.versioned.store.ValueType;
 import com.dremio.nessie.versioned.tests.AbstractTestStore;
 
 /**
@@ -29,6 +40,8 @@ import com.dremio.nessie.versioned.tests.AbstractTestStore;
 class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
   private static final String testDatabaseName = "mydb";
   private String connectionString;
+  private static final MongoDBAliasCollectorImpl COLLECTOR = new MongoDBAliasCollectorImpl();
+  private static final ConditionExpressionAliasVisitor CONDITION_EXPRESSION_ALIAS_VISITOR = new MongoDBConditionExpressionAliasVisitor();
 
   @BeforeAll
   void init(String connectionString) {
@@ -64,5 +77,35 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
   @Override
   protected void resetStoreState() {
     store.resetCollections();
+  }
+
+  /**
+   * This test creates a branch which has two commits in the history.
+   * The test is to try to delete the branch specifying the commit history size should be one.
+   * The delete should fail.
+   */
+  @Test
+  public void deleteSelectedByConditionExpression1() {
+    final ExpressionPath commits = ExpressionPath.builder("commits").build();
+    final Entity ONE = Entity.ofNumber(1);
+
+    ConditionExpression conditionExpression1 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(commits), ONE))
+      .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(conditionExpression1));
+  }
+
+  /**
+   * This test creates a branch which has two commits in the history.
+   * The test is to try to delete the branch specifying the commit history size should be two.
+   * The delete should succeed.
+   */
+  @Test
+  public void deleteSelectedByConditionExpression2() {
+    final ExpressionPath commits = ExpressionPath.builder("commits").build();
+    final Entity TWO = Entity.ofNumber(2);
+
+    ConditionExpression conditionExpression2 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(commits), TWO))
+      .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(conditionExpression2));
   }
 }
