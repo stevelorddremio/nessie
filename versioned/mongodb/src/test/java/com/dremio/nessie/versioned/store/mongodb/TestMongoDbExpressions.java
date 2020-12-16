@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Random;
 
-import org.bson.Document;
+
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +36,6 @@ import com.dremio.nessie.versioned.impl.condition.MongoDBExpressionFunctionAlias
 import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.HasId;
 import com.dremio.nessie.versioned.store.Store;
-import com.google.common.collect.ImmutableList;
 import com.mongodb.client.model.Filters;
 
 class TestMongoDbExpressions {
@@ -52,8 +51,7 @@ class TestMongoDbExpressions {
   private static final ExpressionPath p2 = ExpressionPath.builder("p2").position(2).build();
   private static final ExpressionPath commit0Id = ExpressionPath.builder("commits").position(0).name("id").build();
 
-  private static final String two = "2";
-  private static final ExpressionPath pathTwo = ExpressionPath.builder(two).build();
+  private static final Entity one = Entity.ofNumber(1);
   private static final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
 
   private static final MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
@@ -65,30 +63,38 @@ class TestMongoDbExpressions {
   @Test
   void conditionExpressionEquals() {
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p0, av0)).accept(conditionExpressionAliasVisitor, collector);
-    equals(new Document(p0.asString(), av0.getBoolean()), ex.accept(bsonConditionExpressionVisitor));
+    equals(Filters.eq(p0.asString(), av0.getBoolean()), ex.accept(bsonConditionExpressionVisitor));
   }
 
   @Test
   void conditionExpressionArrayEquals() {
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p2, av2)).accept(conditionExpressionAliasVisitor, collector);
-    equals(new Document(p2.asString(), av2.getString()), ex.accept(bsonConditionExpressionVisitor));
+    equals(Filters.eq(p2.asString(), av2.getString()), ex.accept(bsonConditionExpressionVisitor));
   }
 
   @Test
   void conditionExpressionSize() {
-    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.size(p0)).accept(conditionExpressionAliasVisitor, collector);
-    equals(new Document("$size", p0.asString()), ex.accept(bsonConditionExpressionVisitor));
+    ConditionExpression ex = ConditionExpression.of(
+        ExpressionFunction.equals(
+          ExpressionFunction.size(p0), one))
+        .accept(conditionExpressionAliasVisitor, collector);
+
+    final Bson expected = Filters.size(p0.asString(), 1);
+
+    equals(expected, ex.accept(bsonConditionExpressionVisitor));
   }
 
   @Test
   void conditionExpressionOfBranchAndWithSize() {
     ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(commit0Id, id));
-    conditionExpression = conditionExpression.and(ExpressionFunction.size(pathTwo))
+    conditionExpression = conditionExpression.and(
+      ExpressionFunction.equals(ExpressionFunction.size(p0), one))
       .accept(conditionExpressionAliasVisitor, collector);
 
-    final Bson expected = Filters.and(ImmutableList.of(
-        new Document(commit0Id.asString(), id.getString()),
-        new Document("$size", two)));
+    final Bson expected = Filters.and(
+        Filters.eq(commit0Id.asString(), id.getString()),
+        Filters.size(p0.asString(), 1));
+
     equals(expected, conditionExpression.accept(bsonConditionExpressionVisitor));
   }
 
@@ -97,8 +103,8 @@ class TestMongoDbExpressions {
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p0, av0), ExpressionFunction.equals(p1, av1))
         .accept(conditionExpressionAliasVisitor, collector);
     final Bson expected = Filters.and(
-        new Document(p0.asString(), av0.getBoolean()),
-        new Document(p1.asString(), av1.getBoolean()));
+        Filters.eq(p0.asString(), av0.getBoolean()),
+        Filters.eq(p1.asString(), av1.getBoolean()));
     equals(expected, ex.accept(bsonConditionExpressionVisitor));
   }
 
@@ -106,13 +112,16 @@ class TestMongoDbExpressions {
   void equalsExpression() {
     ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), av0);
     ExpressionFunction aliasedExpressionFunction = expressionFunction.accept(expressionFunctionAliasVisitor, collector);
-    equals(new Document("foo", av0.getBoolean()), aliasedExpressionFunction.accept(bsonExpressionFunctionVisitor));
+    final Bson expected = Filters.eq("foo", av0.getBoolean());
+    equals(expected, aliasedExpressionFunction.accept(bsonExpressionFunctionVisitor));
   }
 
   @Test
   void conditionExpressionKeyHadId() {
-    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(keyName, id)).accept(conditionExpressionAliasVisitor, collector);
-    equals(new Document(keyName.asString(), id.getString()), ex.accept(bsonConditionExpressionVisitor));
+    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(keyName, id))
+        .accept(conditionExpressionAliasVisitor, collector);
+    Bson expected = Filters.eq(keyName.asString(), id.getString());
+    equals(expected, ex.accept(bsonConditionExpressionVisitor));
   }
 
   private void equals(Bson expected, Bson actual) {

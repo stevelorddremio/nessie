@@ -21,6 +21,8 @@ import java.util.List;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.mongodb.client.model.Filters;
+
 /**
  * This provides a separation of queries on @{ExpressionFunction} from the object itself.
  * This uses the Visitor design pattern to retrieve object attributes.
@@ -35,15 +37,19 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
    */
   @Override
   public Bson visit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name) {
-    Document doc = new Document();
     if (arguments.size() == name.argCount) {
       switch (name) {
         case EQUALS:
-          // TODO is .asString() appropriate here?
-          return doc.append(arguments.get(0).asString(), arguments.get(1).asString());
+          Bson document = new Document();
+          BsonExpressionFunctionVisitor expressionFunctionVisitor = new BsonExpressionFunctionVisitor();
+          document = expressionFunction.accept(expressionFunctionVisitor, arguments.get(0), arguments.get(1));
+          if (document != null) {
+            return document;
+          }
+          return Filters.eq(arguments.get(0).asString(), arguments.get(1).asString());
+
         case SIZE:
-          // TODO is .asString() appropriate here?
-          return doc.append("$size", arguments.get(0).asString());
+          throw new UnsupportedOperationException(String.format("%s must be converted using visitGetSize().", name));
         default:
           throw new UnsupportedOperationException(String.format("%s is not a supported function name.", name));
       }
@@ -52,4 +58,15 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
       String.format("Number of arguments provided %d does not match the number expected %d.", arguments.size(), name.argCount));
   }
 
+  /**
+   * Creates a Bson representation of a SIZE ConditionExpression from the hierachical representation required by ExpressionFunctions.
+   * @param expressionFunction  The object to be represented as class T.
+   * @param attributeName the attribute for which size is tested.
+   * @param attributeSize the expected size of the attribute.
+   * @return the Bson representation of the size object.
+   */
+  @Override
+  public Bson visitGetSize(ExpressionFunction expressionFunction, String attributeName, String attributeSize) {
+    return Filters.size(attributeName, Integer.parseInt(attributeSize));
+  }
 }

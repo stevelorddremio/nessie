@@ -31,4 +31,14 @@ public interface ExpressionFunctionVisitor<T> {
    * @param name the name of the expression function
    */
   T visit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name);
+
+  //TODO rename visitGetSize to visit
+
+  /**
+   * Creates a representation of the ExpressionFunction if it is a size.
+   * @param expressionFunction  The object to be represented as class T.
+   * @param attributeName the attribute for which size is tested.
+   * @param attributeSize the expected size of the attribute.
+   */
+  T visitGetSize(ExpressionFunction expressionFunction, String attributeName, String attributeSize);
 }

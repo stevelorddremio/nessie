@@ -120,6 +120,7 @@ public class ExpressionFunction implements Value {
     return this;
   }
 
+
   /**
    * This is part of the Visitor design pattern.
    * This method is called by visiting classes. In response their visit method is called back.
@@ -129,6 +130,29 @@ public class ExpressionFunction implements Value {
    */
   public <T> T accept(ExpressionFunctionVisitor<T> visitor) {
     return visitor.visit(this, arguments, name);
+  }
+
+  /**
+   * Creates a SIZE representation if the ExpressionFunction is a SIZE type.
+   * @param visitor the instance visiting.
+   * @param leftOperand the attribute which is associated with size comparison.
+   *                     This normally comes from the parent ExpressionFunction.
+   * @param <T> The class to which ExpressionFunction is converted
+   * @return the converted class
+   */
+  public <T> T accept(ExpressionFunctionVisitor<T> visitor, Value leftOperand, Value rightOperand) {
+    String attributeName = new String();
+    String attributeSize = new String();
+    if (leftOperand instanceof ExpressionFunction && ((ExpressionFunction)leftOperand).name == FunctionName.SIZE) {
+      attributeName = ((ExpressionFunction) leftOperand).arguments.get(0).asString();
+    }
+    if (!(rightOperand instanceof ExpressionFunction)) {
+      attributeSize = rightOperand.asString();
+    }
+    if (!attributeName.isEmpty() && !attributeSize.isEmpty()) {
+      return visitor.visitGetSize(this, attributeName, attributeSize);
+    }
+    return null;
   }
 
   /**

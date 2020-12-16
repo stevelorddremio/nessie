@@ -182,7 +182,7 @@ public abstract class AbstractTestStore<S extends Store> {
   }
 
   @Test
-  public void putValue() {
+  public void putWithConditionalValue() {
     final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
     HasId value = SampleEntities.createValue(random);
     final Entity id  = Entity.ofString(value.getId().toString());
@@ -191,10 +191,79 @@ public abstract class AbstractTestStore<S extends Store> {
   }
 
   @Test
-  public void deleteNoConditions() {
-    HasId value = SampleEntities.createValue(random);
-    testPut(value, ValueType.VALUE, Optional.empty());
-    testDelete(ValueType.VALUE, (value).getId(), Optional.empty());
+  public void deleteNoConditionalValue() {
+    deleteConditional(SampleEntities.createValue(random), ValueType.VALUE, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteNoConditionalL1() {
+    deleteConditional(SampleEntities.createL1(random), ValueType.L1, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteNoConditionalL2() {
+    deleteConditional(SampleEntities.createL2(random), ValueType.L2, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteNoConditionalL3() {
+    deleteConditional(SampleEntities.createL3(random), ValueType.L3, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteNoConditionalFragment() {
+    deleteConditional(
+        SampleEntities.createFragment(random), ValueType.KEY_FRAGMENT, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteNoConditionalBranch() {
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteNoConditionalTag() {
+    deleteConditional(SampleEntities.createTag(random), ValueType.REF, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteNoConditionalCommitMetadata() {
+    deleteConditional(
+        SampleEntities.createCommitMetadata(random), ValueType.COMMIT_METADATA, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteConditionalValue() {
+    deleteConditional(SampleEntities.createValue(random), ValueType.VALUE, true, Optional.empty());
+  }
+
+  @Test
+  public void deleteConditionalMismatchAttributeValue() {
+    final Entity nonExistent = Entity.ofString("Missing");
+    ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("value").build(), nonExistent);
+    ConditionExpression ex = ConditionExpression.of(expressionFunction);
+    deleteConditional(SampleEntities.createValue(random), ValueType.VALUE, false, Optional.of(ex));
+  }
+
+  @Test
+  public void deleteConditionalMismatchAttributeL1() {
+    final Entity nonExistent = Entity.ofString("Missing");
+    ExpressionFunction expressionFunction =
+        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), nonExistent);
+    ConditionExpression ex = ConditionExpression.of(expressionFunction);
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(ex));
+  }
+
+  private <T extends HasId> void deleteConditional(T sample, ValueType type, boolean deleteSuceeded,
+                                                   Optional<ConditionExpression> conditionExpression) {
+    testPut(sample, type, Optional.empty());
+    if (deleteSuceeded) {
+      testDelete(type, sample.getId(), conditionExpression);
+      testNotLoaded(sample, type);
+    } else {
+      testFailedDelete(type, sample.getId(), conditionExpression);
+      testLoad(sample, type);
+    }
   }
 
   private <T extends HasId> void putThenLoad(T sample, ValueType type) {
@@ -216,6 +285,17 @@ public abstract class AbstractTestStore<S extends Store> {
     }
   }
 
+  private <T extends HasId> void testNotLoaded(T sample, ValueType type) {
+    try {
+      final T read = store.loadSingle(type, sample.getId());
+      final SimpleSchema<T> schema = type.getSchema();
+      schema.itemToMap(read, true);
+      Assertions.fail();
+    } catch (NotFoundException e) {
+      // Exception is expected.
+    }
+  }
+
   private <T extends HasId> void testPutIfAbsent(T sample, ValueType type) {
     Assertions.assertTrue(store.putIfAbsent(type, sample));
     testLoad(sample, type);
@@ -226,13 +306,17 @@ public abstract class AbstractTestStore<S extends Store> {
   private <T extends HasId> void testPut(T sample, ValueType type, Optional<ConditionExpression> conditionExpression) {
     try {
       store.put(type, sample, conditionExpression);
+      testLoad(sample, type);
     } catch (NotFoundException e) {
       Assertions.fail(e);
     }
-    testLoad(sample, type);
   }
 
   private void testDelete(ValueType type, Id id, Optional<ConditionExpression> conditionExpression) {
     Assertions.assertTrue(store.delete(type, id, conditionExpression));
+  }
+
+  private void testFailedDelete(ValueType type, Id id, Optional<ConditionExpression> conditionExpression) {
+    Assertions.assertFalse(store.delete(type, id, conditionExpression));
   }
 }
