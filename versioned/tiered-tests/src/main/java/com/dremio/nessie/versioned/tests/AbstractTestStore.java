@@ -185,7 +185,7 @@ public abstract class AbstractTestStore<S extends Store> {
   public void putValue() {
     final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
     HasId value = SampleEntities.createValue(random);
-    final Entity id  = Entity.ofString((value).getId().toString());
+    final Entity id  = Entity.ofString(value.getId().toString());
     ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));
     testPut(value, ValueType.VALUE, Optional.of(conditionExpression));
   }

@@ -56,43 +56,36 @@ class TestMongoDbExpressions {
   private static final ExpressionPath pathTwo = ExpressionPath.builder(two).build();
   private static final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
 
+  private static final MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
+  private static final ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
+  private static final MongoDBExpressionFunctionAliasVisitor expressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
+  private static final BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+  private static final BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
+
   @Test
   void conditionExpressionEquals() {
-    MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
-    ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p0, av0)).accept(conditionExpressionAliasVisitor, c);
-    BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p0, av0)).accept(conditionExpressionAliasVisitor, collector);
     equals(new Document(p0.asString(), av0.getBoolean()), ex.accept(bsonConditionExpressionVisitor));
   }
 
   @Test
   void conditionExpressionArrayEquals() {
-    MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
-    ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p2, av2)).accept(conditionExpressionAliasVisitor, c);
-    BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p2, av2)).accept(conditionExpressionAliasVisitor, collector);
     equals(new Document(p2.asString(), av2.getString()), ex.accept(bsonConditionExpressionVisitor));
   }
 
   @Test
   void conditionExpressionSize() {
-    MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
-    ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.size(p0)).accept(conditionExpressionAliasVisitor, c);
-    BsonConditionExpressionVisitor conditionExpressionVisitor = new BsonConditionExpressionVisitor();
-    equals(new Document("$size", p0.asString()), ex.accept(conditionExpressionVisitor));
+    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.size(p0)).accept(conditionExpressionAliasVisitor, collector);
+    equals(new Document("$size", p0.asString()), ex.accept(bsonConditionExpressionVisitor));
   }
 
   @Test
   void conditionExpressionOfBranchAndWithSize() {
-    MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
-    ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-
     ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(commit0Id, id));
     conditionExpression = conditionExpression.and(ExpressionFunction.size(pathTwo))
       .accept(conditionExpressionAliasVisitor, collector);
 
-    BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
     final Bson expected = Filters.and(ImmutableList.of(
         new Document(commit0Id.asString(), id.getString()),
         new Document("$size", two)));
@@ -101,33 +94,24 @@ class TestMongoDbExpressions {
 
   @Test
   void conditionExpressionAndEquals() {
-    MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
-    ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(p0, av0), ExpressionFunction.equals(p1, av1))
-        .accept(conditionExpressionAliasVisitor, c);
-    BsonConditionExpressionVisitor conditionExpressionVisitor = new BsonConditionExpressionVisitor();
+        .accept(conditionExpressionAliasVisitor, collector);
     final Bson expected = Filters.and(
         new Document(p0.asString(), av0.getBoolean()),
         new Document(p1.asString(), av1.getBoolean()));
-    equals(expected, ex.accept(conditionExpressionVisitor));
+    equals(expected, ex.accept(bsonConditionExpressionVisitor));
   }
 
   @Test
   void equalsExpression() {
-    ExpressionFunction f = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), av0);
-    MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
-    MongoDBExpressionFunctionAliasVisitor expressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
-    ExpressionFunction f2 = f.accept(expressionFunctionAliasVisitor, c);
-    BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
-    equals(new Document("foo", av0.getBoolean()), f2.accept(bsonExpressionFunctionVisitor));
+    ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), av0);
+    ExpressionFunction aliasedExpressionFunction = expressionFunction.accept(expressionFunctionAliasVisitor, collector);
+    equals(new Document("foo", av0.getBoolean()), aliasedExpressionFunction.accept(bsonExpressionFunctionVisitor));
   }
 
   @Test
   void conditionExpressionKeyHadId() {
-    MongoDBAliasCollectorImpl c = new MongoDBAliasCollectorImpl();
-    ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(keyName, id)).accept(conditionExpressionAliasVisitor, c);
-    BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+    ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(keyName, id)).accept(conditionExpressionAliasVisitor, collector);
     equals(new Document(keyName.asString(), id.getString()), ex.accept(bsonConditionExpressionVisitor));
   }
 
