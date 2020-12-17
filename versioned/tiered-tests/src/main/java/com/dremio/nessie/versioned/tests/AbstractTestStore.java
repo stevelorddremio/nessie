@@ -229,6 +229,7 @@ public abstract class AbstractTestStore<S extends Store> {
   @Test
   public void putToCorrectTagCollection() {
     final InternalRef sample = SampleEntities.createTag(random);
+    putThenLoad(sample, ValueType.REF);
     final Id id = sample.getId();
     final InternalRef.Type type = InternalRef.Type.TAG;
     final ConditionExpression condition = ConditionExpression.of(
@@ -241,6 +242,7 @@ public abstract class AbstractTestStore<S extends Store> {
   @Test
   public void putToCorrectBranchCollection() {
     final InternalRef sample = SampleEntities.createBranch(random);
+    putThenLoad(sample, ValueType.REF);
     final Id id = sample.getId();
     final InternalRef.Type type = InternalRef.Type.BRANCH;
     final ConditionExpression condition = ConditionExpression.of(
@@ -256,7 +258,7 @@ public abstract class AbstractTestStore<S extends Store> {
     final InternalRef.Type type = InternalRef.Type.BRANCH;
     final ConditionExpression condition = ConditionExpression.of(
         ExpressionFunction.equals(ExpressionPath.builder(InternalRef.TYPE).build(), type.toEntity()),
-        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), nonExistent));
+        ExpressionFunction.equals(ExpressionPath.builder("name").build(), nonExistent));
     putConditional(sample, ValueType.REF, false, Optional.of(condition));
   }
 
@@ -358,6 +360,9 @@ public abstract class AbstractTestStore<S extends Store> {
   }
 
   private <T extends HasId> void putWithCondition(T sample, ValueType type, boolean putSucceeded) {
+    // Tests that attempting to put (update) an existing entry should only occur when the condition expression is met.
+    putThenLoad(sample, type);
+
     final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
     final Entity id  = Entity.ofString(sample.getId().toString());
     final ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));

@@ -271,7 +271,7 @@ public class MongoDBStore implements Store {
 
     // Use upsert so that if an item does not exist, it will be insert.
     final MongoCollection<V> collection = getCollection(type);
-    await(collection.replaceOne(filter, value, new ReplaceOptions().upsert(true)));
+    await(collection.replaceOne(filter, value, new ReplaceOptions().upsert(!conditionUnAliased.isPresent())));
   }
 
   @Override
