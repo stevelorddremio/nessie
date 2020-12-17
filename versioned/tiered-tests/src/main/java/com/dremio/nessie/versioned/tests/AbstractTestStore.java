@@ -220,6 +220,7 @@ public abstract class AbstractTestStore<S extends Store> {
   public void putWithConditionL2() {
     putWithCondition(SampleEntities.createL2(random), ValueType.L2, true);
   }
+
   @Test
   public void putWithConditionL3() {
     putWithCondition(SampleEntities.createL3(random), ValueType.L3, true);
@@ -231,11 +232,8 @@ public abstract class AbstractTestStore<S extends Store> {
     final Id id = sample.getId();
     final InternalRef.Type type = InternalRef.Type.TAG;
     final ConditionExpression condition = ConditionExpression.of(
-      ExpressionFunction.equals(
-        ExpressionPath.builder(InternalRef.TYPE).build(),
-        type.toEntity()),
-      ExpressionFunction.equals(ExpressionPath.builder("commit").build(),
-        id.toEntity())
+        ExpressionFunction.equals(ExpressionPath.builder(InternalRef.TYPE).build(), type.toEntity()),
+        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), id.toEntity())
     );
     putConditional(sample, ValueType.REF, true, Optional.of(condition));
   }
@@ -246,12 +244,8 @@ public abstract class AbstractTestStore<S extends Store> {
     final Id id = sample.getId();
     final InternalRef.Type type = InternalRef.Type.BRANCH;
     final ConditionExpression condition = ConditionExpression.of(
-      ExpressionFunction.equals(
-        ExpressionPath.builder(InternalRef.TYPE).build(),
-        type.toEntity()),
-      ExpressionFunction.equals(ExpressionPath.builder("commit").build(),
-        id.toEntity())
-    );
+        ExpressionFunction.equals(ExpressionPath.builder(InternalRef.TYPE).build(), type.toEntity()),
+        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), id.toEntity()));
     putConditional(sample, ValueType.REF, true, Optional.of(condition));
   }
 
@@ -261,8 +255,8 @@ public abstract class AbstractTestStore<S extends Store> {
     final Entity nonExistent = Entity.ofString("Missing");
     final InternalRef.Type type = InternalRef.Type.BRANCH;
     final ConditionExpression condition = ConditionExpression.of(
-      ExpressionFunction.equals(ExpressionPath.builder(InternalRef.TYPE).build(), type.toEntity()),
-      ExpressionFunction.equals(ExpressionPath.builder("commit").build(), nonExistent));
+        ExpressionFunction.equals(ExpressionPath.builder(InternalRef.TYPE).build(), type.toEntity()),
+        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), nonExistent));
     putConditional(sample, ValueType.REF, false, Optional.of(condition));
   }
 
@@ -272,11 +266,8 @@ public abstract class AbstractTestStore<S extends Store> {
     final Id id = sample.getId();
     final InternalRef.Type type = InternalRef.Type.TAG;
     final ConditionExpression condition = ConditionExpression.of(
-      ExpressionFunction.equals(
-        ExpressionPath.builder(InternalRef.TYPE).build(),
-        type.toEntity()),
-      ExpressionFunction.equals(ExpressionPath.builder("commit").build(),
-        id.toEntity()));
+        ExpressionFunction.equals(ExpressionPath.builder(InternalRef.TYPE).build(), type.toEntity()),
+        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), id.toEntity()));
     // Trying to put a TAG entity to the VALUE collection should fail.
     assertThrows(IllegalArgumentException.class, () -> store.put(ValueType.VALUE, sample, Optional.of(condition)));
   }
@@ -303,8 +294,7 @@ public abstract class AbstractTestStore<S extends Store> {
 
   @Test
   public void deleteNoConditionalFragment() {
-    deleteConditional(
-        SampleEntities.createFragment(random), ValueType.KEY_FRAGMENT, true, Optional.empty());
+    deleteConditional(SampleEntities.createFragment(random), ValueType.KEY_FRAGMENT, true, Optional.empty());
   }
 
   @Test
@@ -352,8 +342,8 @@ public abstract class AbstractTestStore<S extends Store> {
    */
   @Test
   public void deleteSelectedByConditionExpression1NoAlias() {
-    final ConditionExpression conditionExpression1 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE));
-    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(conditionExpression1));
+    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE));
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(expression));
   }
 
   /**
@@ -363,8 +353,8 @@ public abstract class AbstractTestStore<S extends Store> {
    */
   @Test
   public void deleteSelectedByConditionExpression2NoAlias() {
-    final ConditionExpression conditionExpression2 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO));
-    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(conditionExpression2));
+    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO));
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(expression));
   }
 
   private <T extends HasId> void putWithCondition(T sample, ValueType type, boolean putSucceeded) {

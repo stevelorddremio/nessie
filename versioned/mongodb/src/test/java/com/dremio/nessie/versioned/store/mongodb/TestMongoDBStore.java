@@ -26,9 +26,7 @@ import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpressionAliasVisitor;
 import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
-import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
 import com.dremio.nessie.versioned.impl.condition.MongoDBConditionExpressionAliasVisitor;
-import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.ValueType;
 import com.dremio.nessie.versioned.tests.AbstractTestStore;
 
@@ -86,9 +84,9 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
    */
   @Test
   public void deleteSelectedByConditionExpression1() {
-    ConditionExpression conditionExpression1 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE))
-      .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
-    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(conditionExpression1));
+    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE))
+        .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(expression));
   }
 
   /**
@@ -98,8 +96,8 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
    */
   @Test
   public void deleteSelectedByConditionExpression2() {
-    ConditionExpression conditionExpression2 = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO))
-      .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
-    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(conditionExpression2));
+    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO))
+        .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(expression));
   }
 }

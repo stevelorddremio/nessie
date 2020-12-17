@@ -266,7 +266,7 @@ public class MongoDBStore implements Store {
 
     Bson filter = Filters.eq(Store.KEY_NAME, ((HasId) value).getId());
     if (conditionUnAliased.isPresent()) {
-      filter = Filters.and(filter, toBson(conditionUnAliased));
+      filter = Filters.and(filter, toBson(conditionUnAliased.get()));
     }
 
     // Use upsert so that if an item does not exist, it will be insert.
@@ -280,7 +280,7 @@ public class MongoDBStore implements Store {
 
     Bson filter = Filters.eq(Store.KEY_NAME, id.getId());
     if (condition.isPresent()) {
-      filter = Filters.and(filter, toBson(condition));
+      filter = Filters.and(filter, toBson(condition.get()));
     }
 
     return 0 != await(collection.deleteOne(filter)).first().getDeletedCount();
@@ -369,10 +369,10 @@ public class MongoDBStore implements Store {
     return (MongoCollection<V>) collection;
   }
 
-  private Bson toBson(Optional<ConditionExpression> conditionUnAliased) {
+  private Bson toBson(ConditionExpression conditionUnAliased) {
     final MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
     final ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-    final ConditionExpression aliased = conditionUnAliased.get().accept(conditionExpressionAliasVisitor, collector);
+    final ConditionExpression aliased = conditionUnAliased.accept(conditionExpressionAliasVisitor, collector);
     final BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
     return aliased.accept(bsonConditionExpressionVisitor);
   }
