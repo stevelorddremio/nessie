@@ -15,6 +15,9 @@
  */
 package com.dremio.nessie.versioned.store.mongodb;
 
+import java.util.Base64;
+import java.util.stream.Collectors;
+
 import com.dremio.nessie.versioned.impl.condition.AliasCollector;
 import com.dremio.nessie.versioned.store.Entity;
 
@@ -43,16 +46,16 @@ public class MongoDBAliasCollectorImpl implements AliasCollector {
   public String alias(Entity value) {
     switch (value.getType()) {
       case MAP:
-        throw new UnsupportedOperationException("Unable to convert: " + value.getType());
+        return "{ $map {" + value.getMap().entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+          .collect(Collectors.joining(", ")) + "}}";
       case LIST:
-        throw new UnsupportedOperationException("Unable to convert: " + value.getType());
+        return "[" + value.getList().stream().map(Entity::toString).collect(Collectors.joining(", ")) + "]";
       case NUMBER:
         return String.valueOf(value.getNumber());
       case STRING:
         return value.getString();
       case BINARY:
-        // TODO investigate if this will be required.
-        throw new UnsupportedOperationException("Unable to convert: " + value.getType());
+        return Base64.getEncoder().encodeToString(value.getBinary().toByteArray());
       case BOOLEAN:
         return Boolean.toString(value.getBoolean());
       default:

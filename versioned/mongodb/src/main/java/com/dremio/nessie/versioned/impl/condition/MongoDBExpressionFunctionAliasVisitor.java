@@ -45,8 +45,7 @@ public class MongoDBExpressionFunctionAliasVisitor implements ExpressionFunction
         final ValueAliasVisitor valueAliasVisitor = new MongoDBValueAliasVisitor();
         return value.accept(valueAliasVisitor, collector);
       case FUNCTION:
-        final ExpressionFunctionAliasVisitor expressionFunctionAliasVisitor = new MongoDBExpressionFunctionAliasVisitor();
-        return value.getFunction().accept(expressionFunctionAliasVisitor, collector);
+        return value.getFunction().accept(this, collector);
       default:
         throw new UnsupportedOperationException();
     }

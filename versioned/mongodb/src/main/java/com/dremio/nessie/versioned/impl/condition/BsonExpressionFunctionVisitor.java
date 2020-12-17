@@ -38,12 +38,12 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
   public Bson visit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name) {
     if (arguments.size() != name.argCount) {
       throw new InvalidParameterException(
-        String.format("Number of arguments provided %d does not match the number expected %d.", arguments.size(), name.argCount));
+        String.format("Number of arguments provided %d does not match the number expected %d for %s.",
+          arguments.size(), name.argCount, name));
     }
     switch (name) {
       case EQUALS:
-        final BsonExpressionFunctionVisitor expressionFunctionVisitor = new BsonExpressionFunctionVisitor();
-        Bson document = expressionFunction.accept(expressionFunctionVisitor, arguments.get(0), arguments.get(1));
+        final Bson document = expressionFunction.accept(this, arguments.get(0), arguments.get(1));
         if (document != null) {
           return document;
         }

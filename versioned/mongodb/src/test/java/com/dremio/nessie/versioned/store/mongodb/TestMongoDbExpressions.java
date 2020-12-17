@@ -62,7 +62,7 @@ class TestMongoDbExpressions {
   void conditionExpressionEquals() {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(P0, AV0))
         .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
-    Bson expected = Filters.and(Filters.eq(P0.asString(), AV0.getBoolean()));
+    final Bson expected = Filters.and(Filters.eq(P0.asString(), AV0.getBoolean()));
     equals(expected, ex.accept(BSON_CONDITION_EXPRESSION_VISITOR));
   }
 
@@ -70,7 +70,7 @@ class TestMongoDbExpressions {
   void conditionExpressionArrayEquals() {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(P2, AV2))
         .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
-    Bson expected = Filters.and(Filters.eq(P2.asString(), AV2.getString()));
+    final Bson expected = Filters.and(Filters.eq(P2.asString(), AV2.getString()));
     equals(expected, ex.accept(BSON_CONDITION_EXPRESSION_VISITOR));
   }
 
@@ -82,7 +82,6 @@ class TestMongoDbExpressions {
         .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
 
     final Bson expected = Filters.and(Filters.size(P0.asString(), 1));
-
     equals(expected, ex.accept(BSON_CONDITION_EXPRESSION_VISITOR));
   }
 

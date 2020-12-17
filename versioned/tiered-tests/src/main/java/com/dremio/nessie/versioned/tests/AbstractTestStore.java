@@ -16,6 +16,7 @@
 package com.dremio.nessie.versioned.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Optional;
@@ -191,7 +192,95 @@ public abstract class AbstractTestStore<S extends Store> {
     final HasId value = SampleEntities.createValue(random);
     final Entity id  = Entity.ofString(value.getId().toString());
     final ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));
-    testPut(value, ValueType.VALUE, Optional.of(conditionExpression));
+    putConditional(value, ValueType.VALUE, true, Optional.of(conditionExpression));
+  }
+
+  @Test
+  public void putWithConditionalValue1() {
+    final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
+    final HasId value = SampleEntities.createValue(random);
+    final Entity id  = Entity.ofString(value.getId().toString());
+    final ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));
+    putConditional(value, ValueType.VALUE, true, Optional.of(conditionExpression));
+  }
+
+  /*
+      ConditionExpression condition = ConditionExpression.of(
+        ExpressionFunction.equals(
+            ExpressionPath.builder(InternalRef.TYPE).build(),
+            type.toEntity())
+        );
+
+    final InternalRef toSave;
+
+    if (isTag) {
+      if (currentTarget.isPresent()) {
+        condition = condition.and(ExpressionFunction.equals(ExpressionPath.builder(InternalTag.COMMIT).build(),
+            expectedId.toEntity()));
+      }
+      toSave = new InternalTag(refId, namedRef.getName(), newId);
+    } else {
+      if (currentTarget.isPresent()) {
+        condition = condition.and(
+            ExpressionFunction.equals(
+                ExpressionPath.builder(InternalBranch.COMMITS).position(0).name(Commit.ID).build(),
+                expectedId.toEntity()));
+      }
+      toSave = new InternalBranch(name, l1);
+    }
+
+    try {
+      store.put(ValueType.REF, toSave, Optional.of(condition));
+
+   */
+  private <T extends HasId> void putWithCondition(T sample, ValueType type, boolean deleteSucceeded,
+                                                  Optional<ConditionExpression> conditionExpression) {
+
+  }
+
+  @Test
+  public void putToCorrectTagCollection() {
+    InternalRef sample = SampleEntities.createTag(random);
+    Id id = sample.getId();
+    InternalRef.Type type = InternalRef.Type.TAG;
+    ConditionExpression condition = ConditionExpression.of(
+      ExpressionFunction.equals(
+        ExpressionPath.builder(InternalRef.TYPE).build(),
+        type.toEntity()),
+      ExpressionFunction.equals(ExpressionPath.builder("commit").build(),
+        id.toEntity())
+    );
+    putConditional(sample, ValueType.REF, true, Optional.of(condition));
+  }
+
+  @Test
+  public void putToCorrectBranchCollection() {
+    InternalRef sample = SampleEntities.createBranch(random);
+    Id id = sample.getId();
+    InternalRef.Type type = InternalRef.Type.BRANCH;
+    final ConditionExpression condition = ConditionExpression.of(
+      ExpressionFunction.equals(
+        ExpressionPath.builder(InternalRef.TYPE).build(),
+        type.toEntity()),
+      ExpressionFunction.equals(ExpressionPath.builder("commit").build(),
+        id.toEntity())
+    );
+    putConditional(sample, ValueType.REF, true, Optional.of(condition));
+  }
+
+  @Test
+  public void putToIncorrectCollection() {
+    InternalRef sample = SampleEntities.createTag(random);
+    Id id = sample.getId();
+    InternalRef.Type type = InternalRef.Type.TAG;
+    final ConditionExpression condition = ConditionExpression.of(
+      ExpressionFunction.equals(
+        ExpressionPath.builder(InternalRef.TYPE).build(),
+        type.toEntity()),
+      ExpressionFunction.equals(ExpressionPath.builder("commit").build(),
+        id.toEntity())
+    );
+    assertThrows(IllegalArgumentException.class, () -> store.put(ValueType.VALUE, sample, Optional.of(condition)));
   }
 
   @Test
