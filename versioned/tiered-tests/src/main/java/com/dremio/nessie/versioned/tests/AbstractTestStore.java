@@ -188,42 +188,42 @@ public abstract class AbstractTestStore<S extends Store> {
 
   @Test
   public void putWithConditionValue() {
-    putWithCondition(SampleEntities.createValue(random), ValueType.VALUE, true);
+    putWithCondition(SampleEntities.createValue(random), ValueType.VALUE);
   }
 
   @Test
   public void putWithConditionBranch() {
-    putWithCondition(SampleEntities.createBranch(random), ValueType.REF, true);
+    putWithCondition(SampleEntities.createBranch(random), ValueType.REF);
   }
 
   @Test
   public void putWithConditionTag() {
-    putWithCondition(SampleEntities.createTag(random), ValueType.REF, true);
+    putWithCondition(SampleEntities.createTag(random), ValueType.REF);
   }
 
   @Test
   public void putWithConditionCommitMetadata() {
-    putWithCondition(SampleEntities.createCommitMetadata(random), ValueType.COMMIT_METADATA, true);
+    putWithCondition(SampleEntities.createCommitMetadata(random), ValueType.COMMIT_METADATA);
   }
 
   @Test
   public void putWithConditionKeyFragment() {
-    putWithCondition(SampleEntities.createFragment(random), ValueType.KEY_FRAGMENT, true);
+    putWithCondition(SampleEntities.createFragment(random), ValueType.KEY_FRAGMENT);
   }
 
   @Test
   public void putWithConditionL1() {
-    putWithCondition(SampleEntities.createL1(random), ValueType.L1, true);
+    putWithCondition(SampleEntities.createL1(random), ValueType.L1);
   }
 
   @Test
   public void putWithConditionL2() {
-    putWithCondition(SampleEntities.createL2(random), ValueType.L2, true);
+    putWithCondition(SampleEntities.createL2(random), ValueType.L2);
   }
 
   @Test
   public void putWithConditionL3() {
-    putWithCondition(SampleEntities.createL3(random), ValueType.L3, true);
+    putWithCondition(SampleEntities.createL3(random), ValueType.L3);
   }
 
   @Test
@@ -264,14 +264,47 @@ public abstract class AbstractTestStore<S extends Store> {
 
   @Test
   public void putToIncorrectCollection() {
-    final InternalRef sample = SampleEntities.createTag(random);
-    final Id id = sample.getId();
-    final InternalRef.Type type = InternalRef.Type.TAG;
-    final ConditionExpression condition = ConditionExpression.of(
-        ExpressionFunction.equals(ExpressionPath.builder(InternalRef.TYPE).build(), type.toEntity()),
-        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), id.toEntity()));
-    // Trying to put a TAG entity to the VALUE collection should fail.
-    assertThrows(IllegalArgumentException.class, () -> store.put(ValueType.VALUE, sample, Optional.of(condition)));
+    // Trying to put an entity to the wrong collection should fail.
+    for (ValueType value : ValueType.values()) {
+      if (value != ValueType.REF) {
+        assertThrows(IllegalArgumentException.class, () -> store.put(value, SampleEntities.createTag(random), Optional.empty()));
+      }
+    }
+    for (ValueType value : ValueType.values()) {
+      if (value != ValueType.REF) {
+        assertThrows(IllegalArgumentException.class, () -> store.put(value, SampleEntities.createTag(random), Optional.empty()));
+      }
+    }
+    for (ValueType value : ValueType.values()) {
+      if (value != ValueType.VALUE) {
+        assertThrows(IllegalArgumentException.class, () -> store.put(value, SampleEntities.createValue(random), Optional.empty()));
+      }
+    }
+    for (ValueType value : ValueType.values()) {
+      if (value != ValueType.COMMIT_METADATA) {
+        assertThrows(IllegalArgumentException.class, () -> store.put(value, SampleEntities.createCommitMetadata(random), Optional.empty()));
+      }
+    }
+    for (ValueType value : ValueType.values()) {
+      if (value != ValueType.KEY_FRAGMENT) {
+        assertThrows(IllegalArgumentException.class, () -> store.put(value, SampleEntities.createFragment(random), Optional.empty()));
+      }
+    }
+    for (ValueType value : ValueType.values()) {
+      if (value != ValueType.L1) {
+        assertThrows(IllegalArgumentException.class, () -> store.put(value, SampleEntities.createL1(random), Optional.empty()));
+      }
+    }
+    for (ValueType value : ValueType.values()) {
+      if (value != ValueType.L2) {
+        assertThrows(IllegalArgumentException.class, () -> store.put(value, SampleEntities.createL2(random), Optional.empty()));
+      }
+    }
+    for (ValueType value : ValueType.values()) {
+      if (value != ValueType.L3) {
+        assertThrows(IllegalArgumentException.class, () -> store.put(value, SampleEntities.createL3(random), Optional.empty()));
+      }
+    }
   }
 
   @Test
@@ -359,14 +392,14 @@ public abstract class AbstractTestStore<S extends Store> {
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(expression));
   }
 
-  private <T extends HasId> void putWithCondition(T sample, ValueType type, boolean putSucceeded) {
+  private <T extends HasId> void putWithCondition(T sample, ValueType type) {
     // Tests that attempting to put (update) an existing entry should only occur when the condition expression is met.
     putThenLoad(sample, type);
 
     final ExpressionPath keyName = ExpressionPath.builder(Store.KEY_NAME).build();
-    final Entity id  = Entity.ofString(sample.getId().toString());
+    final Entity id  = Entity.ofBinary(sample.getId().toBytes());
     final ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(keyName, id));
-    putConditional(sample, type, putSucceeded, Optional.of(conditionExpression));
+    putConditional(sample, type, true, Optional.of(conditionExpression));
   }
 
   protected <T extends HasId> void deleteConditional(T sample, ValueType type, boolean deleteSucceeded,

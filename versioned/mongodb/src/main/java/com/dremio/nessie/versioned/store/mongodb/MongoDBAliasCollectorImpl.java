@@ -18,6 +18,8 @@ package com.dremio.nessie.versioned.store.mongodb;
 import java.util.Base64;
 import java.util.stream.Collectors;
 
+import org.bson.BsonBinary;
+
 import com.dremio.nessie.versioned.impl.condition.AliasCollector;
 import com.dremio.nessie.versioned.store.Entity;
 
@@ -46,7 +48,7 @@ public class MongoDBAliasCollectorImpl implements AliasCollector {
   public String alias(Entity value) {
     switch (value.getType()) {
       case MAP:
-        return "{ $map {" + value.getMap().entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+        return "{ $map {" + value.getMap().entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), alias(e.getValue())))
           .collect(Collectors.joining(", ")) + "}}";
       case LIST:
         return "[" + value.getList().stream().map(Entity::toString).collect(Collectors.joining(", ")) + "]";
@@ -55,7 +57,7 @@ public class MongoDBAliasCollectorImpl implements AliasCollector {
       case STRING:
         return value.getString();
       case BINARY:
-        return Base64.getEncoder().encodeToString(value.getBinary().toByteArray());
+        return new BsonBinary(value.getBinary().toByteArray()).toString();
       case BOOLEAN:
         return Boolean.toString(value.getBoolean());
       default:
