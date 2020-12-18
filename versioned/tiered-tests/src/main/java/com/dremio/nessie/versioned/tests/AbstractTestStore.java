@@ -49,6 +49,11 @@ import com.google.common.collect.ImmutableList;
  * @param <S> The type of the Store being tested.
  */
 public abstract class AbstractTestStore<S extends Store> {
+  private static final String MISSING = "Missing";
+
+  protected static final Entity NON_EXISTENT = Entity.ofString(MISSING);
+
+
   protected static final ExpressionPath COMMITS = ExpressionPath.builder("commits").build();
   protected static final Entity ONE = Entity.ofNumber(1);
   protected static final Entity TWO = Entity.ofNumber(2);
@@ -254,11 +259,10 @@ public abstract class AbstractTestStore<S extends Store> {
   @Test
   public void putFailingConditionExpression() {
     final InternalRef sample = SampleEntities.createBranch(random);
-    final Entity nonExistent = Entity.ofString("Missing");
     final InternalRef.Type type = InternalRef.Type.BRANCH;
     final ConditionExpression condition = ConditionExpression.of(
         ExpressionFunction.equals(ExpressionPath.builder(InternalRef.TYPE).build(), type.toEntity()),
-        ExpressionFunction.equals(ExpressionPath.builder("name").build(), nonExistent));
+        ExpressionFunction.equals(ExpressionPath.builder("name").build(), NON_EXISTENT));
     putConditional(sample, ValueType.REF, false, Optional.of(condition));
   }
 
@@ -355,17 +359,15 @@ public abstract class AbstractTestStore<S extends Store> {
 
   @Test
   public void deleteConditionalMismatchAttributeValue() {
-    final Entity nonExistent = Entity.ofString("Missing");
-    final ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("value").build(), nonExistent);
+    final ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("value").build(), NON_EXISTENT);
     final ConditionExpression ex = ConditionExpression.of(expressionFunction);
     deleteConditional(SampleEntities.createValue(random), ValueType.VALUE, false, Optional.of(ex));
   }
 
   @Test
   public void deleteConditionalMismatchAttributeL1() {
-    final Entity nonExistent = Entity.ofString("Missing");
     final ExpressionFunction expressionFunction =
-        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), nonExistent);
+        ExpressionFunction.equals(ExpressionPath.builder("commit").build(), NON_EXISTENT);
     final ConditionExpression ex = ConditionExpression.of(expressionFunction);
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(ex));
   }

@@ -369,9 +369,8 @@ public class MongoDBStore implements Store {
   }
 
   private Bson toBson(ConditionExpression conditionUnAliased) {
-    final MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
     final MongoDBConditionAliasVisitor conditionAliasVisitor = new MongoDBConditionAliasVisitor();
-    final ConditionExpression aliased = conditionUnAliased.accept(conditionAliasVisitor, collector);
+    final ConditionExpression aliased = conditionUnAliased.accept(conditionAliasVisitor);
     final BsonConditionExpressionVisitor bsonConditionExpressionVisitor = BsonConditionExpressionVisitor.getInstance();
     return aliased.accept(bsonConditionExpressionVisitor);
   }

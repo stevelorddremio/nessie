@@ -27,41 +27,36 @@ public interface ConditionAliasVisitor {
   /**
    * The callback method in the visitor design pattern.
    * @param conditionExpression The object to be aliased.
-   * @param collector the class that does the aliasing.
    * @return The aliased ConditionExpression.
    */
-  ConditionExpression visit(ConditionExpression conditionExpression, AliasCollector collector);
+  ConditionExpression visit(ConditionExpression conditionExpression);
 
   /**
    * The callback method in the visitor design pattern.
    * @param expressionFunction The object to be aliased.
-   * @param collector the class that does the aliasing.
    * @return The aliased ExpressionFunction.
    */
   ExpressionFunction visit(ExpressionFunction expressionFunction, List<Value> arguments,
-                           ExpressionFunction.FunctionName name, AliasCollector collector);
+                           ExpressionFunction.FunctionName name);
 
   /**
    * The callback method in the visitor design pattern.
    * @param value The object to be aliased.
-   * @param collector the class that does the aliasing.
    * @return The aliased ExpressionPath.
    */
-  ExpressionPath visit(ExpressionPath value, AliasCollector collector);
+  ExpressionPath visit(ExpressionPath value);
 
   /**
    * The callback method in the visitor design pattern.
    * @param nameSegment The object to be aliased.
-   * @param collector the class that does the aliasing.
    * @return The aliased ExpressionPath.NameSegment
    */
-  ExpressionPath.NameSegment visit(ExpressionPath.NameSegment nameSegment, AliasCollector collector);
+  ExpressionPath.NameSegment visit(ExpressionPath.NameSegment nameSegment);
 
   /**
    * The callback method in the visitor design pattern.
    * @param value The object to be aliased.
-   * @param collector the class that does the aliasing.
    * @return The aliased Value.
    */
-  Value visit(Value value, Entity entity, AliasCollector collector);
+  Value visit(Value value, Entity entity);
 }

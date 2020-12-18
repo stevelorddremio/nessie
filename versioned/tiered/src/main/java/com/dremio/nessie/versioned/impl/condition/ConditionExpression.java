@@ -107,10 +107,9 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
    * This is part of the Visitor design pattern.
    * This method is called by visiting classes. In response their aliasVisit method is called back.
    * @param visitor the instance visiting.
-   * @param c The class doing the aliasing.
    * @return the aliased ConditionExpression.
    */
-  public ConditionExpression accept(ConditionAliasVisitor visitor, AliasCollector c) {
-    return visitor.visit(this, c);
+  public ConditionExpression accept(ConditionAliasVisitor visitor) {
+    return visitor.visit(this);
   }
 }

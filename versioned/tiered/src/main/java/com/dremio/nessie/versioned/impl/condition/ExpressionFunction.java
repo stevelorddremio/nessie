@@ -127,11 +127,10 @@ public class ExpressionFunction implements Value {
   /**
    * Accept from the Value interface is not valid for ExpressionFunctions.
    * @param visitor the instance visiting.
-   * @param collector The class doing the aliasing.
    * @return Not valid for ExpressionFunctions.
    */
   @Override
-  public Value acceptValue(ConditionAliasVisitor visitor, AliasCollector collector) {
+  public Value acceptValue(ConditionAliasVisitor visitor) {
     throw new UnsupportedOperationException();
   }
 
@@ -160,7 +159,7 @@ public class ExpressionFunction implements Value {
       operands.putAll(addToMap(v));
     }
     if (operands.containsKey(SIZE)) {
-      return visitor.visitGetSize(this, operands.get(SIZE).get(0), operands.get(OPERAND).get(0));
+      return visitor.visit(this, operands.get(SIZE).get(0), operands.get(OPERAND).get(0));
     }
     return null;
   }
@@ -169,11 +168,10 @@ public class ExpressionFunction implements Value {
    * This is part of the Visitor design pattern.
    * This method is called by visiting classes. In response their visit method is called back.
    * @param visitor the instance visiting.
-   * @param collector The class doing the aliasing.
    * @return the aliased ExpressionFunction.
    */
-  public ExpressionFunction acceptExpressionFunction(ConditionAliasVisitor visitor, AliasCollector collector) {
-    return visitor.visit(this, arguments, name, collector);
+  public ExpressionFunction acceptExpressionFunction(ConditionAliasVisitor visitor) {
+    return visitor.visit(this, arguments, name);
   }
 
   private ArrayListMultimap<String, String> addToMap(Value value) {

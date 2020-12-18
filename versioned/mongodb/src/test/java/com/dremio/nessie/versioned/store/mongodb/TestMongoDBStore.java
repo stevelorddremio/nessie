@@ -84,7 +84,7 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
   @Test
   public void deleteSelectedByConditionExpression1() {
     final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE))
-        .accept(CONDITION_ALIAS_VISITOR, COLLECTOR);
+        .accept(CONDITION_ALIAS_VISITOR);
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(expression));
   }
 
@@ -96,7 +96,7 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
   @Test
   public void deleteSelectedByConditionExpression2() {
     final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO))
-        .accept(CONDITION_ALIAS_VISITOR, COLLECTOR);
+        .accept(CONDITION_ALIAS_VISITOR);
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(expression));
   }
 }

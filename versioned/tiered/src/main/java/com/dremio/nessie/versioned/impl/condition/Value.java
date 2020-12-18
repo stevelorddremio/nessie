@@ -33,10 +33,9 @@ public interface Value extends Aliasable<Value> {
   /**
    * Entry point for visitors aliasing attribute names in @{Value}.
    * @param visitor  the instance visiting.
-   * @param collector The class doing the aliasing.
    * @return the aliased Value.
    */
-  Value acceptValue(ConditionAliasVisitor visitor, AliasCollector collector);
+  Value acceptValue(ConditionAliasVisitor visitor);
 
   /**
    * Return the string representation of this string, if possible.
@@ -92,12 +91,11 @@ public interface Value extends Aliasable<Value> {
      * This is part of the Visitor design pattern.
      * This method is called by visiting classes. In response their aliasVisit method is called back.
      * @param visitor the instance visiting.
-     * @param collector The class doing the aliasing.
      * @return the aliased Value.
      */
     @Override
-    public Value acceptValue(ConditionAliasVisitor visitor, AliasCollector collector) {
-      return visitor.visit(this, value, collector);
+    public Value acceptValue(ConditionAliasVisitor visitor) {
+      return visitor.visit(this, value);
     }
 
   }

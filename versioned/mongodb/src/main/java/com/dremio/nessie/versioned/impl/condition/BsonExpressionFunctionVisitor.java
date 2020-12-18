@@ -72,7 +72,7 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
    * @return the Bson representation of the size object.
    */
   @Override
-  public Bson visitGetSize(ExpressionFunction expressionFunction, String attributeName, String attributeSize) {
+  public Bson visit(ExpressionFunction expressionFunction, String attributeName, String attributeSize) {
     return Filters.size(attributeName, Integer.parseInt(attributeSize));
   }
 }
