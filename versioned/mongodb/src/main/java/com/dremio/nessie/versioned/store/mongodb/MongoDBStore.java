@@ -373,7 +373,7 @@ public class MongoDBStore implements Store {
     final MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
     final ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
     final ConditionExpression aliased = conditionUnAliased.accept(conditionExpressionAliasVisitor, collector);
-    final BsonConditionExpressionVisitor bsonConditionExpressionVisitor = new BsonConditionExpressionVisitor();
+    final BsonConditionExpressionVisitor bsonConditionExpressionVisitor = BsonConditionExpressionVisitor.getInstance();
     return aliased.accept(bsonConditionExpressionVisitor);
   }
 }

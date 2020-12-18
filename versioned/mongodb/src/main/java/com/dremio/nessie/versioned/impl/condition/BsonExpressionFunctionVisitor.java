@@ -27,6 +27,14 @@ import com.mongodb.client.model.Filters;
  * This uses the Visitor design pattern to retrieve object attributes.
  */
 public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<Bson> {
+  private static final BsonExpressionFunctionVisitor instance = new BsonExpressionFunctionVisitor();
+
+  public static BsonExpressionFunctionVisitor getInstance() {
+    return instance;
+  }
+
+  private BsonExpressionFunctionVisitor() {
+  }
 
   /**
    * This is a callback method that ExpressionFunction will call when this visitor is accepted.

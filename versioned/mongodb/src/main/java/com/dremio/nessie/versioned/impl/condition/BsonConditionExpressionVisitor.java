@@ -29,6 +29,15 @@ public class BsonConditionExpressionVisitor implements ConditionExpressionVisito
   // This class provides a separation of queries on @{ConditionExpression} from the object itself.
   // This uses the Visitor design pattern to retrieve object attributes.
 
+  private static final BsonConditionExpressionVisitor instance = new BsonConditionExpressionVisitor();
+
+  public static BsonConditionExpressionVisitor getInstance() {
+    return instance;
+  }
+
+  private BsonConditionExpressionVisitor() {
+  }
+
   /**
   * This is a callback method that ConditionExpression will call when this visitor is accepted.
   * It creates a BSON representation of the ConditionExpression object.
@@ -37,7 +46,7 @@ public class BsonConditionExpressionVisitor implements ConditionExpressionVisito
   */
   @Override
   public Bson visit(final ConditionExpression conditionExpression) {
-    final BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = new BsonExpressionFunctionVisitor();
+    final BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = BsonExpressionFunctionVisitor.getInstance();
     final List<Bson> expressionFunctionList = conditionExpression.getFunctions().stream()
         .map(f -> f.accept(bsonExpressionFunctionVisitor))
         .collect(Collectors.toList());

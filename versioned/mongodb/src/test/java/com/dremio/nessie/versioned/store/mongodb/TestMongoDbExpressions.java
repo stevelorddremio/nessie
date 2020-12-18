@@ -55,8 +55,8 @@ class TestMongoDbExpressions {
   private static final ConditionExpressionAliasVisitor CONDITION_EXPRESSION_ALIAS_VISITOR = new MongoDBConditionExpressionAliasVisitor();
   private static final MongoDBExpressionFunctionAliasVisitor EXPRESSION_FUNCTION_ALIAS_VISITOR =
       new MongoDBExpressionFunctionAliasVisitor();
-  private static final BsonConditionExpressionVisitor BSON_CONDITION_EXPRESSION_VISITOR = new BsonConditionExpressionVisitor();
-  private static final BsonExpressionFunctionVisitor BSON_EXPRESSION_FUNCTION_VISITOR = new BsonExpressionFunctionVisitor();
+  private static final BsonConditionExpressionVisitor BSON_CONDITION_EXPRESSION_VISITOR = BsonConditionExpressionVisitor.getInstance();
+  private static final BsonExpressionFunctionVisitor BSON_EXPRESSION_FUNCTION_VISITOR = BsonExpressionFunctionVisitor.getInstance();
 
   @Test
   void conditionExpressionEquals() {
