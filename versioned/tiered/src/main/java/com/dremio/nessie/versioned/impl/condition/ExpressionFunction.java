@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import com.dremio.nessie.versioned.store.Entity;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 
 public class ExpressionFunction implements Value {
@@ -61,6 +62,9 @@ public class ExpressionFunction implements Value {
     }
   }
 
+  private static final String OPERAND = "OPERAND";
+  private static final String SIZE = "SIZE";
+
   private final FunctionName name;
   private final List<Value> arguments;
 
@@ -96,11 +100,6 @@ public class ExpressionFunction implements Value {
     return new ExpressionFunction(FunctionName.IF_NOT_EXISTS, ImmutableList.of(path, Value.of(value)));
   }
 
-  @Override
-  public ExpressionFunction alias(AliasCollector c) {
-    return new ExpressionFunction(name, arguments.stream().map(v -> v.alias(c)).collect(ImmutableList.toImmutableList()));
-  }
-
   /**
    * Return this function as a Dynamo expression string.
    * @return The expression string.
@@ -113,6 +112,11 @@ public class ExpressionFunction implements Value {
   }
 
   @Override
+  public ExpressionFunction alias(AliasCollector c) {
+    return new ExpressionFunction(name, arguments.stream().map(v -> v.alias(c)).collect(ImmutableList.toImmutableList()));
+  }
+
+  @Override
   public Type getType() {
     return Type.FUNCTION;
   }
@@ -120,6 +124,17 @@ public class ExpressionFunction implements Value {
   @Override
   public ExpressionFunction getFunction() {
     return this;
+  }
+
+  /**
+   * Accept from the Value interface is not valid for ExpressionFunctions.
+   * @param visitor the instance visiting.
+   * @param collector The class doing the aliasing.
+   * @return Not valid for ExpressionFunctions.
+   */
+  @Override
+  public Value accept(ValueAliasVisitor visitor, AliasCollector collector) {
+    throw new UnsupportedOperationException();
   }
 
 
@@ -137,22 +152,17 @@ public class ExpressionFunction implements Value {
   /**
    * Creates a SIZE representation if the ExpressionFunction is a SIZE type.
    * @param visitor the instance visiting.
-   * @param leftOperand the attribute which is associated with size comparison.
-   *                     This normally comes from the parent ExpressionFunction.
+   * @param arguments the attributes of the ExpressionFunction.
    * @param <T> The class to which ExpressionFunction is converted
    * @return the converted class
    */
-  public <T> T accept(ExpressionFunctionVisitor<T> visitor, Value leftOperand, Value rightOperand) {
-    String attributeName = new String();
-    String attributeSize = new String();
-    if (leftOperand instanceof ExpressionFunction && ((ExpressionFunction)leftOperand).name == FunctionName.SIZE) {
-      attributeName = ((ExpressionFunction) leftOperand).arguments.get(0).asString();
+  public <T> T accept(ExpressionFunctionVisitor<T> visitor, List<Value> arguments) {
+    ArrayListMultimap<String, String> operands = ArrayListMultimap.create();
+    for (Value v : arguments) {
+      operands.putAll(addToMap(v));
     }
-    if (!(rightOperand instanceof ExpressionFunction)) {
-      attributeSize = rightOperand.asString();
-    }
-    if (!attributeName.isEmpty() && !attributeSize.isEmpty()) {
-      return visitor.visitGetSize(this, attributeName, attributeSize);
+    if (operands.containsKey(SIZE)) {
+      return visitor.visitGetSize(this, operands.get(SIZE).get(0), operands.get(OPERAND).get(0));
     }
     return null;
   }
@@ -168,15 +178,14 @@ public class ExpressionFunction implements Value {
     return visitor.visit(this, arguments, name, collector);
   }
 
-  /**
-   * Accept from the Value interface is not valid for ExpressionFunctions.
-   * @param visitor the instance visiting.
-   * @param collector The class doing the aliasing.
-   * @return Not valid for ExpressionFunctions.
-   */
-  @Override
-  public Value accept(ValueAliasVisitor visitor, AliasCollector collector) {
-    throw new UnsupportedOperationException();
+  private ArrayListMultimap<String, String> addToMap(Value value) {
+    ArrayListMultimap<String, String> map = ArrayListMultimap.create();
+    if (value instanceof ExpressionFunction && ((ExpressionFunction)value).name == FunctionName.SIZE) {
+      map.put(SIZE, ((ExpressionFunction) value).arguments.get(0).asString());
+    } else {
+      map.put(OPERAND, value.asString());
+    }
+    return map;
   }
 
 }

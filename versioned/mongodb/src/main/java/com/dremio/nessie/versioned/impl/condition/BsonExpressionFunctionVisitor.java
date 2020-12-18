@@ -43,7 +43,7 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
     }
     switch (name) {
       case EQUALS:
-        final Bson document = expressionFunction.accept(this, arguments.get(0), arguments.get(1));
+        final Bson document = expressionFunction.accept(this, arguments);
         if (document != null) {
           return document;
         }
