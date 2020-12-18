@@ -15,7 +15,6 @@
  */
 package com.dremio.nessie.versioned.store.mongodb;
 
-import java.util.Base64;
 import java.util.stream.Collectors;
 
 import org.bson.BsonBinary;
