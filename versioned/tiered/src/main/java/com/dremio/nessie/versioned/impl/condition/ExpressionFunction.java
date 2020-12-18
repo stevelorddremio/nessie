@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.dremio.nessie.versioned.store.Entity;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
@@ -68,7 +67,6 @@ public class ExpressionFunction implements Value {
   private final FunctionName name;
   private final List<Value> arguments;
 
-  @VisibleForTesting
   ExpressionFunction(FunctionName name, ImmutableList<Value> arguments) {
     this.name = name;
     this.arguments = ImmutableList.copyOf(arguments);
@@ -133,7 +131,7 @@ public class ExpressionFunction implements Value {
    * @return Not valid for ExpressionFunctions.
    */
   @Override
-  public Value accept(ValueAliasVisitor visitor, AliasCollector collector) {
+  public Value acceptValue(ConditionAliasVisitor visitor, AliasCollector collector) {
     throw new UnsupportedOperationException();
   }
 
@@ -174,7 +172,7 @@ public class ExpressionFunction implements Value {
    * @param collector The class doing the aliasing.
    * @return the aliased ExpressionFunction.
    */
-  public ExpressionFunction accept(ExpressionFunctionAliasVisitor visitor, AliasCollector collector) {
+  public ExpressionFunction acceptExpressionFunction(ConditionAliasVisitor visitor, AliasCollector collector) {
     return visitor.visit(this, arguments, name, collector);
   }
 

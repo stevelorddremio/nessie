@@ -26,11 +26,9 @@ import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
 import com.dremio.nessie.versioned.impl.condition.BsonExpressionFunctionVisitor;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
-import com.dremio.nessie.versioned.impl.condition.ConditionExpressionAliasVisitor;
 import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
 import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
-import com.dremio.nessie.versioned.impl.condition.MongoDBConditionExpressionAliasVisitor;
-import com.dremio.nessie.versioned.impl.condition.MongoDBExpressionFunctionAliasVisitor;
+import com.dremio.nessie.versioned.impl.condition.MongoDBConditionAliasVisitor;
 import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.Store;
 import com.mongodb.client.model.Filters;
@@ -52,16 +50,14 @@ class TestMongoDbExpressions {
   private static final ExpressionPath KEY_NAME = ExpressionPath.builder(Store.KEY_NAME).build();
 
   private static final MongoDBAliasCollectorImpl COLLECTOR = new MongoDBAliasCollectorImpl();
-  private static final ConditionExpressionAliasVisitor CONDITION_EXPRESSION_ALIAS_VISITOR = new MongoDBConditionExpressionAliasVisitor();
-  private static final MongoDBExpressionFunctionAliasVisitor EXPRESSION_FUNCTION_ALIAS_VISITOR =
-      new MongoDBExpressionFunctionAliasVisitor();
+  private static final MongoDBConditionAliasVisitor CONDITION_ALIAS_VISITOR = new MongoDBConditionAliasVisitor();
   private static final BsonConditionExpressionVisitor BSON_CONDITION_EXPRESSION_VISITOR = BsonConditionExpressionVisitor.getInstance();
   private static final BsonExpressionFunctionVisitor BSON_EXPRESSION_FUNCTION_VISITOR = BsonExpressionFunctionVisitor.getInstance();
 
   @Test
   void conditionExpressionEquals() {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(P0, AV0))
-        .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+        .accept(CONDITION_ALIAS_VISITOR, COLLECTOR);
     final Bson expected = Filters.and(Filters.eq(P0.asString(), AV0.getBoolean()));
     equals(expected, ex.accept(BSON_CONDITION_EXPRESSION_VISITOR));
   }
@@ -69,7 +65,7 @@ class TestMongoDbExpressions {
   @Test
   void conditionExpressionArrayEquals() {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(P2, AV2))
-        .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+        .accept(CONDITION_ALIAS_VISITOR, COLLECTOR);
     final Bson expected = Filters.and(Filters.eq(P2.asString(), AV2.getString()));
     equals(expected, ex.accept(BSON_CONDITION_EXPRESSION_VISITOR));
   }
@@ -79,7 +75,7 @@ class TestMongoDbExpressions {
     final ConditionExpression ex = ConditionExpression.of(
         ExpressionFunction.equals(
           ExpressionFunction.size(P0), ONE))
-        .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+        .accept(CONDITION_ALIAS_VISITOR, COLLECTOR);
 
     final Bson expected = Filters.and(Filters.size(P0.asString(), 1));
     equals(expected, ex.accept(BSON_CONDITION_EXPRESSION_VISITOR));
@@ -89,7 +85,7 @@ class TestMongoDbExpressions {
   void conditionExpressionOfBranchAndWithSize() {
     ConditionExpression conditionExpression = ConditionExpression.of(ExpressionFunction.equals(COMMIT_0_ID, ID));
     conditionExpression = conditionExpression.and(ExpressionFunction.equals(ExpressionFunction.size(P0), ONE))
-      .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+      .accept(CONDITION_ALIAS_VISITOR, COLLECTOR);
 
     final Bson expected = Filters.and(
         Filters.eq(COMMIT_0_ID.asString(), ID.getString()),
@@ -101,7 +97,7 @@ class TestMongoDbExpressions {
   @Test
   void conditionExpressionAndEquals() {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(P0, AV0), ExpressionFunction.equals(P1, AV1))
-        .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+        .accept(CONDITION_ALIAS_VISITOR, COLLECTOR);
     final Bson expected = Filters.and(
         Filters.eq(P0.asString(), AV0.getBoolean()),
         Filters.eq(P1.asString(), AV1.getBoolean()));
@@ -111,7 +107,7 @@ class TestMongoDbExpressions {
   @Test
   void equalsExpression() {
     final ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), AV0);
-    final ExpressionFunction aliasedExpressionFunction = expressionFunction.accept(EXPRESSION_FUNCTION_ALIAS_VISITOR, COLLECTOR);
+    final ExpressionFunction aliasedExpressionFunction = expressionFunction.acceptExpressionFunction(CONDITION_ALIAS_VISITOR, COLLECTOR);
     final Bson expected = Filters.eq("foo", AV0.getBoolean());
     equals(expected, aliasedExpressionFunction.accept(BSON_EXPRESSION_FUNCTION_VISITOR));
   }
@@ -119,7 +115,7 @@ class TestMongoDbExpressions {
   @Test
   void conditionExpressionKeyHadId() {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(KEY_NAME, ID))
-        .accept(CONDITION_EXPRESSION_ALIAS_VISITOR, COLLECTOR);
+        .accept(CONDITION_ALIAS_VISITOR, COLLECTOR);
     final Bson expected = Filters.and(Filters.eq(KEY_NAME.asString(), ID.getString()));
     equals(expected, ex.accept(BSON_CONDITION_EXPRESSION_VISITOR));
   }

@@ -42,8 +42,7 @@ import org.reactivestreams.Subscription;
 import com.dremio.nessie.versioned.impl.InternalRef;
 import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
-import com.dremio.nessie.versioned.impl.condition.ConditionExpressionAliasVisitor;
-import com.dremio.nessie.versioned.impl.condition.MongoDBConditionExpressionAliasVisitor;
+import com.dremio.nessie.versioned.impl.condition.MongoDBConditionAliasVisitor;
 import com.dremio.nessie.versioned.impl.condition.UpdateExpression;
 import com.dremio.nessie.versioned.store.HasId;
 import com.dremio.nessie.versioned.store.Id;
@@ -371,8 +370,8 @@ public class MongoDBStore implements Store {
 
   private Bson toBson(ConditionExpression conditionUnAliased) {
     final MongoDBAliasCollectorImpl collector = new MongoDBAliasCollectorImpl();
-    final ConditionExpressionAliasVisitor conditionExpressionAliasVisitor = new MongoDBConditionExpressionAliasVisitor();
-    final ConditionExpression aliased = conditionUnAliased.accept(conditionExpressionAliasVisitor, collector);
+    final MongoDBConditionAliasVisitor conditionAliasVisitor = new MongoDBConditionAliasVisitor();
+    final ConditionExpression aliased = conditionUnAliased.accept(conditionAliasVisitor, collector);
     final BsonConditionExpressionVisitor bsonConditionExpressionVisitor = BsonConditionExpressionVisitor.getInstance();
     return aliased.accept(bsonConditionExpressionVisitor);
   }

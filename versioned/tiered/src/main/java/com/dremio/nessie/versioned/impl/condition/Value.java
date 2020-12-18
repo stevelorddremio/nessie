@@ -36,7 +36,7 @@ public interface Value extends Aliasable<Value> {
    * @param collector The class doing the aliasing.
    * @return the aliased Value.
    */
-  Value accept(ValueAliasVisitor visitor, AliasCollector collector);
+  Value acceptValue(ConditionAliasVisitor visitor, AliasCollector collector);
 
   /**
    * Return the string representation of this string, if possible.
@@ -96,7 +96,7 @@ public interface Value extends Aliasable<Value> {
      * @return the aliased Value.
      */
     @Override
-    public Value accept(ValueAliasVisitor visitor, AliasCollector collector) {
+    public Value acceptValue(ConditionAliasVisitor visitor, AliasCollector collector) {
       return visitor.visit(this, value, collector);
     }
 

@@ -110,7 +110,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
    * @param c The class doing the aliasing.
    * @return the aliased ConditionExpression.
    */
-  public ConditionExpression accept(ConditionExpressionAliasVisitor visitor, AliasCollector c) {
+  public ConditionExpression accept(ConditionAliasVisitor visitor, AliasCollector c) {
     return visitor.visit(this, c);
   }
 }
