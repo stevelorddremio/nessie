@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 import com.dremio.nessie.versioned.store.Entity;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 
 public class ExpressionFunction implements Value {
@@ -60,9 +59,6 @@ public class ExpressionFunction implements Value {
       this(text, 2, true);
     }
   }
-
-  private static final String OPERAND = "OPERAND";
-  private static final String SIZE = "SIZE";
 
   private final FunctionName name;
   private final List<Value> arguments;
@@ -124,16 +120,13 @@ public class ExpressionFunction implements Value {
     return this;
   }
 
-  /**
-   * Accept from the Value interface is not valid for ExpressionFunctions.
-   * @param visitor the instance visiting.
-   * @return Not valid for ExpressionFunctions.
-   */
-  @Override
-  public Value acceptValue(ConditionAliasVisitor visitor) {
-    throw new UnsupportedOperationException();
+  public FunctionName getName() {
+    return name;
   }
 
+  public List<Value> getArguments() {
+    return arguments;
+  }
 
   /**
    * This is part of the Visitor design pattern.
@@ -143,25 +136,7 @@ public class ExpressionFunction implements Value {
    * @return the converted class
    */
   public <T> T accept(ExpressionFunctionVisitor<T> visitor) {
-    return visitor.visit(this, arguments, name);
-  }
-
-  /**
-   * Creates a SIZE representation if the ExpressionFunction is a SIZE type.
-   * @param visitor the instance visiting.
-   * @param arguments the attributes of the ExpressionFunction.
-   * @param <T> The class to which ExpressionFunction is converted
-   * @return the converted class
-   */
-  public <T> T accept(ExpressionFunctionVisitor<T> visitor, List<Value> arguments) {
-    ArrayListMultimap<String, String> operands = ArrayListMultimap.create();
-    for (Value v : arguments) {
-      operands.putAll(addToMap(v));
-    }
-    if (operands.containsKey(SIZE)) {
-      return visitor.visit(this, operands.get(SIZE).get(0), operands.get(OPERAND).get(0));
-    }
-    return null;
+    return visitor.visit(this);
   }
 
   /**
@@ -170,18 +145,7 @@ public class ExpressionFunction implements Value {
    * @param visitor the instance visiting.
    * @return the aliased ExpressionFunction.
    */
-  public ExpressionFunction acceptExpressionFunction(ConditionAliasVisitor visitor) {
-    return visitor.visit(this, arguments, name);
+  public ExpressionFunction accept(ConditionAliasVisitor visitor) {
+    return visitor.visit(this);
   }
-
-  private ArrayListMultimap<String, String> addToMap(Value value) {
-    ArrayListMultimap<String, String> map = ArrayListMultimap.create();
-    if (value instanceof ExpressionFunction && ((ExpressionFunction)value).name == FunctionName.SIZE) {
-      map.put(SIZE, ((ExpressionFunction) value).arguments.get(0).asString());
-    } else {
-      map.put(OPERAND, value.asString());
-    }
-    return map;
-  }
-
 }

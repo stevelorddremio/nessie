@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.bson.conversions.Bson;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.mongodb.client.model.Filters;
 
 /**
@@ -28,6 +29,8 @@ import com.mongodb.client.model.Filters;
  */
 public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<Bson> {
   private static final BsonExpressionFunctionVisitor instance = new BsonExpressionFunctionVisitor();
+  private static final String OPERAND = "OPERAND";
+  private static final String SIZE = "SIZE";
 
   public static BsonExpressionFunctionVisitor getInstance() {
     return instance;
@@ -39,11 +42,13 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
   /**
    * This is a callback method that ExpressionFunction will call when this visitor is accepted.
    * Its purpose is c reates a BSON representation of the ExpressionFunction object.
-   * @param expressionFunction the object to be converteds
+   * @param expressionFunction the object to be converted
    * @return The ExpressionFunction represented as Bson
    */
   @Override
-  public Bson visit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name) {
+  public Bson visit(ExpressionFunction expressionFunction) {
+    final ExpressionFunction.FunctionName name = expressionFunction.getName();
+    final List<Value> arguments = expressionFunction.getArguments();
     if (arguments.size() != name.argCount) {
       throw new InvalidParameterException(
         String.format("Number of arguments provided %d does not match the number expected %d for %s.",
@@ -51,28 +56,47 @@ public class BsonExpressionFunctionVisitor implements ExpressionFunctionVisitor<
     }
     switch (name) {
       case EQUALS:
-        final Bson document = expressionFunction.accept(this, arguments);
+        final Bson document = createSizeDocument(arguments);
         if (document != null) {
           return document;
         }
         return Filters.eq(arguments.get(0).asString(), arguments.get(1).asString());
 
       case SIZE:
-        throw new UnsupportedOperationException(String.format("%s must be converted using visitGetSize().", name));
+        throw new UnsupportedOperationException(String.format("%s must be converted as part of an EQUALS ExpressionFunction", name));
       default:
         throw new UnsupportedOperationException(String.format("%s is not a supported function name.", name));
     }
   }
 
   /**
-   * Creates a Bson representation of a SIZE ConditionExpression from the hierachical representation required by ExpressionFunctions.
-   * @param expressionFunction  The object to be represented as class T.
-   * @param attributeName the attribute for which size is tested.
-   * @param attributeSize the expected size of the attribute.
-   * @return the Bson representation of the size object.
+   * Creates a SIZE representation if the ExpressionFunction is a SIZE type.
+   * @param arguments the attributes of the ExpressionFunction.
+   * @return the converted class
    */
-  @Override
-  public Bson visit(ExpressionFunction expressionFunction, String attributeName, String attributeSize) {
-    return Filters.size(attributeName, Integer.parseInt(attributeSize));
+  public Bson createSizeDocument(List<Value> arguments) {
+    ArrayListMultimap<String, String> operands = ArrayListMultimap.create();
+    for (Value v : arguments) {
+      operands.putAll(addToMap(v));
+    }
+    if (!operands.containsKey(SIZE)) {
+      return null;
+    }
+    return Filters.size(operands.get(SIZE).get(0), Integer.parseInt(operands.get(OPERAND).get(0)));
+  }
+
+  /**
+   * Creates a Multimap from the arguments in the value.
+   * @param value the item containing arguments.
+   * @return the Multimap of the arguments.
+   */
+  private ArrayListMultimap<String, String> addToMap(Value value) {
+    ArrayListMultimap<String, String> map = ArrayListMultimap.create();
+    if (value instanceof ExpressionFunction && ((ExpressionFunction)value).getName() == ExpressionFunction.FunctionName.SIZE) {
+      map.put(SIZE, ((ExpressionFunction) value).getArguments().get(0).asString());
+    } else {
+      map.put(OPERAND, value.asString());
+    }
+    return map;
   }
 }

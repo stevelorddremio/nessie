@@ -15,8 +15,6 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
-import java.util.List;
-
 /**
  * Classes requiring visiting rights to ConditionExpression must implement this
  * interface as part of the Visitor design pattern.
@@ -27,16 +25,6 @@ public interface ExpressionFunctionVisitor<T> {
    * Creates a representation of a ExpressionFunction in the class T.
    * Visitors should call an accept method on ExpressionFunction which will cause this callback method to be called.
    * @param expressionFunction The object to be represented as class T
-   * @param arguments the components of the expression function
-   * @param name the name of the expression function
    */
-  T visit(ExpressionFunction expressionFunction, List<Value> arguments, ExpressionFunction.FunctionName name);
-
-  /**
-   * Creates a representation of the ExpressionFunction if it is a size.
-   * @param expressionFunction  The object to be represented as class T.
-   * @param attributeName the attribute for which size is tested.
-   * @param attributeSize the expected size of the attribute.
-   */
-  T visit(ExpressionFunction expressionFunction, String attributeName, String attributeSize);
+  T visit(ExpressionFunction expressionFunction);
 }

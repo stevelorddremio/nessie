@@ -15,9 +15,6 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
-import java.util.List;
-
-import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.mongodb.MongoDBAliasCollectorImpl;
 import com.google.common.collect.ImmutableList;
 
@@ -36,21 +33,18 @@ public class MongoDBConditionAliasVisitor implements ConditionAliasVisitor {
   public ConditionExpression visit(ConditionExpression conditionExpression) {
     return ImmutableConditionExpression.builder()
       .functions(conditionExpression.getFunctions().stream()
-        .map(f -> f.acceptExpressionFunction(this)).collect(ImmutableList.toImmutableList()))
+        .map(f -> f.accept(this)).collect(ImmutableList.toImmutableList()))
       .build();
   }
 
   /**
    * The callback method in the visitor design pattern.
    * @param expressionFunction The object to be aliased.
-   * @param arguments constituent arguments of the object to be aliased.
-   * @param name the name of the object to be aliased.
    * @return the aliased ExpressionFunction.
    */
   @Override
-  public ExpressionFunction visit(ExpressionFunction expressionFunction, List<Value> arguments,
-                                  ExpressionFunction.FunctionName name) {
-    return new ExpressionFunction(name, arguments.stream().map(this::getArgumentValue)
+  public ExpressionFunction visit(ExpressionFunction expressionFunction) {
+    return new ExpressionFunction(expressionFunction.getName(), expressionFunction.getArguments().stream().map(this::getArgumentValue)
       .collect(ImmutableList.toImmutableList()));
   }
 
@@ -82,12 +76,11 @@ public class MongoDBConditionAliasVisitor implements ConditionAliasVisitor {
   /**
    * The callback method in the visitor design pattern.
    * @param value The object to be aliased.
-   * @param entity the internal class, ValueOfEntity, value which is private to Value but exposed here.
    * @return The aliased Value
    */
   @Override
-  public Value visit(Value value, Entity entity) {
-    return ExpressionPath.builder(collector.alias(entity)).build();
+  public Value visit(Value value) {
+    return ExpressionPath.builder(collector.alias(value.getValue())).build();
   }
 
   /**
@@ -98,11 +91,11 @@ public class MongoDBConditionAliasVisitor implements ConditionAliasVisitor {
   Value getArgumentValue(Value value) {
     switch (value.getType()) {
       case PATH:
-        return value.getPath().acceptExpressionPath(this);
+        return value.getPath().accept(this);
       case VALUE:
         return value.acceptValue(this);
       case FUNCTION:
-        return value.getFunction().acceptExpressionFunction(this);
+        return value.getFunction().accept(this);
       default:
         throw new UnsupportedOperationException();
     }

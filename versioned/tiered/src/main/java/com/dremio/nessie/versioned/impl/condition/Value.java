@@ -31,13 +31,6 @@ public interface Value extends Aliasable<Value> {
   Value alias(AliasCollector c);
 
   /**
-   * Entry point for visitors aliasing attribute names in @{Value}.
-   * @param visitor  the instance visiting.
-   * @return the aliased Value.
-   */
-  Value acceptValue(ConditionAliasVisitor visitor);
-
-  /**
    * Return the string representation of this string, if possible.
    * @return A DynamoDb expression fragment.
    */
@@ -48,6 +41,16 @@ public interface Value extends Aliasable<Value> {
    * @return A value type.
    */
   Type getType();
+
+
+  /**
+   * Entry point for visitors aliasing attribute names in @{Value}.
+   * @param visitor  the instance visiting.
+   * @return the aliased Value.
+   */
+  default Value acceptValue(ConditionAliasVisitor visitor) {
+    throw new IllegalArgumentException();
+  }
 
   default Entity getValue() {
     throw new IllegalArgumentException();
@@ -87,6 +90,10 @@ public interface Value extends Aliasable<Value> {
       return Type.VALUE;
     }
 
+    public Entity getValue() {
+      return value;
+    }
+
     /**
      * This is part of the Visitor design pattern.
      * This method is called by visiting classes. In response their aliasVisit method is called back.
@@ -95,7 +102,7 @@ public interface Value extends Aliasable<Value> {
      */
     @Override
     public Value acceptValue(ConditionAliasVisitor visitor) {
-      return visitor.visit(this, value);
+      return visitor.visit(this);
     }
 
   }

@@ -15,10 +15,6 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
-import java.util.List;
-
-import com.dremio.nessie.versioned.store.Entity;
-
 /**
  * Classes requiring visiting rights to alias classes in this package must implement this
  * interface as part of the Visitor design pattern.
@@ -36,8 +32,7 @@ public interface ConditionAliasVisitor {
    * @param expressionFunction The object to be aliased.
    * @return The aliased ExpressionFunction.
    */
-  ExpressionFunction visit(ExpressionFunction expressionFunction, List<Value> arguments,
-                           ExpressionFunction.FunctionName name);
+  ExpressionFunction visit(ExpressionFunction expressionFunction);
 
   /**
    * The callback method in the visitor design pattern.
@@ -58,5 +53,5 @@ public interface ConditionAliasVisitor {
    * @param value The object to be aliased.
    * @return The aliased Value.
    */
-  Value visit(Value value, Entity entity);
+  Value visit(Value value);
 }

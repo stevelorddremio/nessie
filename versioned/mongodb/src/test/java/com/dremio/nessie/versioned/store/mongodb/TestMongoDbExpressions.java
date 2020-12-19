@@ -106,7 +106,7 @@ class TestMongoDbExpressions {
   @Test
   void equalsExpression() {
     final ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), AV0);
-    final ExpressionFunction aliasedExpressionFunction = expressionFunction.acceptExpressionFunction(CONDITION_ALIAS_VISITOR);
+    final ExpressionFunction aliasedExpressionFunction = expressionFunction.accept(CONDITION_ALIAS_VISITOR);
     final Bson expected = Filters.eq("foo", AV0.getBoolean());
     equals(expected, aliasedExpressionFunction.accept(BSON_EXPRESSION_FUNCTION_VISITOR));
   }
