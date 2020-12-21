@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.impl.condition;
+package com.dremio.nessie.versioned.store.mongodb;
 
 import java.util.stream.Collectors;
 
 import org.bson.BsonDocument;
 import org.bson.conversions.Bson;
+
+import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
+import com.dremio.nessie.versioned.impl.condition.ConditionExpressionVisitor;
 
 /**
  * This class allows retrieval of ConditionExpression objects in BSON format.
@@ -38,7 +41,10 @@ public class BsonConditionExpressionVisitor implements ConditionExpressionVisito
         .map(f -> f.accept(EXPR_VISITOR))
         .collect(Collectors.joining(", "));
 
-    // TODO: Can this be done without reparsing the JSON?
+    // This intentionally builds up a JSON representation of the query, and then parses it back to a BSON Object
+    // representation. The reason for this is that the Value hierarchy in Nessie is a combination of Bson and BsonValue
+    // in MongoDB parlance, and those objects don't share a common parent, which makes the standard visitor need to
+    // return both.
     return BsonDocument.parse(String.format("{\"$and\": [%s]}", functions));
   }
 }

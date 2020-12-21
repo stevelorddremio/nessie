@@ -22,8 +22,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.dremio.nessie.versioned.impl.SampleEntities;
-import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
-import com.dremio.nessie.versioned.impl.condition.BsonValueVisitor;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
 import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
 import com.dremio.nessie.versioned.impl.condition.ExpressionPath;

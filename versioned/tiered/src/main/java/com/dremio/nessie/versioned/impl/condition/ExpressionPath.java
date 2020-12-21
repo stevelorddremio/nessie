@@ -151,15 +151,6 @@ public abstract class ExpressionPath implements Value {
     return ImmutableExpressionPath.builder().root(getRoot().alias(c)).build();
   }
 
-  /**
-   * Visit this object given the specific visitor.
-   * @param visitor the instance visiting.
-   * @return the aliased ExpressionPath.
-   */
-  public ExpressionPath accept(AliasVisitor visitor) {
-    return visitor.visit(this);
-  }
-
   @Override
   public <T> T accept(ValueVisitor<T> visitor) {
     return visitor.visit(this);
@@ -198,15 +189,6 @@ public abstract class ExpressionPath implements Value {
     @Override
     public <IN, OUT, EX extends Exception> OUT accept(PathVisitor<IN, OUT, EX> visitor, IN in) throws EX {
       return visitor.visitName(this, in);
-    }
-
-    /**
-     * Visit this object given the specific visitor.
-     * @param visitor the instance visiting.
-     * @return the aliased NameSegment
-     */
-    public NameSegment accept(AliasVisitor visitor) {
-      return visitor.visit(this);
     }
   }
 

@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 
 public class ExpressionFunction implements Value {
 
-  enum FunctionName {
+  public enum FunctionName {
     LIST_APPEND("list_append", 2),
     IF_NOT_EXISTS("if_not_exists", 2),
     EQUALS("="),
@@ -57,6 +57,10 @@ public class ExpressionFunction implements Value {
 
     FunctionName(String text) {
       this(text, 2, true);
+    }
+
+    public int getArgCount() {
+      return argCount;
     }
   }
 
@@ -130,16 +134,6 @@ public class ExpressionFunction implements Value {
 
   @Override
   public <T> T accept(ValueVisitor<T> visitor) {
-    return visitor.visit(this);
-  }
-
-  /**
-   * Visit this object given the specific visitor.
-   * @param visitor the instance visiting.
-   * @return the aliased ExpressionFunction.
-   */
-  @Override
-  public ExpressionFunction accept(AliasVisitor visitor) {
     return visitor.visit(this);
   }
 }

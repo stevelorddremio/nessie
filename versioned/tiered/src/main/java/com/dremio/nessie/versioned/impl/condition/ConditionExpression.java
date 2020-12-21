@@ -101,13 +101,4 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
   public <T> T accept(ConditionExpressionVisitor<T> visitor) {
     return visitor.visit(this);
   }
-
-  /**
-   * Visit this object given the specific visitor.
-   * @param visitor the instance visiting.
-   * @return the aliased ConditionExpression.
-   */
-  public ConditionExpression accept(AliasVisitor visitor) {
-    return visitor.visit(this);
-  }
 }

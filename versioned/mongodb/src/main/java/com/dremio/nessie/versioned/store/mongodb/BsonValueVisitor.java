@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.impl.condition;
+package com.dremio.nessie.versioned.store.mongodb;
 
 import java.security.InvalidParameterException;
 import java.util.List;
@@ -21,6 +21,10 @@ import java.util.stream.Collectors;
 
 import org.bson.internal.Base64;
 
+import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
+import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
+import com.dremio.nessie.versioned.impl.condition.Value;
+import com.dremio.nessie.versioned.impl.condition.ValueVisitor;
 import com.dremio.nessie.versioned.store.Entity;
 import com.google.common.base.Preconditions;
 
@@ -38,10 +42,10 @@ public class BsonValueVisitor implements ValueVisitor<String> {
   public String visit(ExpressionFunction value) {
     final ExpressionFunction.FunctionName name = value.getName();
     final List<Value> arguments = value.getArguments();
-    if (arguments.size() != name.argCount) {
+    if (arguments.size() != name.getArgCount()) {
       throw new InvalidParameterException(
         String.format("Number of arguments provided [%d] does not match the number expected [%d] for %s.",
-          arguments.size(), name.argCount, name));
+          arguments.size(), name.getArgCount(), name));
     }
 
     switch (name) {
@@ -96,11 +100,11 @@ public class BsonValueVisitor implements ValueVisitor<String> {
    * @param value the entity to convert.
    * @return the MongoDB string representation of the Entity.
    */
-  public static String toMongoExpr(Entity value) {
+  static String toMongoExpr(Entity value) {
     switch (value.getType()) {
       case MAP:
         return "{" + value.getMap().entrySet().stream().map(e -> String.format("\"%s\": %s", e.getKey(), toMongoExpr(e.getValue())))
-          .collect(Collectors.joining(", ")) + "}";
+            .collect(Collectors.joining(", ")) + "}";
       case LIST:
         return "[" + value.getList().stream().map(Entity::toString).collect(Collectors.joining(", ")) + "]";
       case NUMBER:

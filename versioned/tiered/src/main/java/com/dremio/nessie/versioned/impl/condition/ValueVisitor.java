@@ -16,17 +16,28 @@
 package com.dremio.nessie.versioned.impl.condition;
 
 /**
- * Classes requiring visiting rights to Value must implement this interface as part of the Visitor design pattern.
+ * Visitor for all classes in the Value hierarchy.
  * @param <T> The type to which the Value will be converted.
  */
 public interface ValueVisitor<T> {
   /**
-   * Creates a representation of a Value in the class T.
-   * Visitors should call an accept method on Value then this callback method is called.
+   * Visit the passed in Value.
+   * @param value the Value to visit.
+   * @return the possibly transformed value resulting from the visitation.
    */
   T visit(Value value);
 
+  /**
+   * Visit the passed in ExpressionFunction.
+   * @param value the ExpressionFunction to visit.
+   * @return the possibly transformed value resulting from the visitation.
+   */
   T visit(ExpressionFunction value);
 
+  /**
+   * Visit the passed in ExpressionPath.
+   * @param value the ExpressionPath to visit.
+   * @return the possibly transformed value resulting from the visitation.
+   */
   T visit(ExpressionPath value);
 }

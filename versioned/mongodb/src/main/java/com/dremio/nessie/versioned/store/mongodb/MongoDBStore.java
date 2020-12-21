@@ -40,7 +40,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import com.dremio.nessie.versioned.impl.InternalRef;
-import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
 import com.dremio.nessie.versioned.impl.condition.UpdateExpression;
 import com.dremio.nessie.versioned.store.HasId;
