@@ -42,13 +42,16 @@ public interface Value extends Aliasable<Value> {
    */
   Type getType();
 
-
   /**
    * Entry point for visitors aliasing attribute names in @{Value}.
    * @param visitor  the instance visiting.
    * @return the aliased Value.
    */
-  default Value acceptValue(ConditionAliasVisitor visitor) {
+  default Value accept(AliasVisitor visitor) {
+    throw new IllegalArgumentException();
+  }
+
+  default <T> T accept(ValueVisitor<T> visitor) {
     throw new IllegalArgumentException();
   }
 
@@ -64,11 +67,11 @@ public interface Value extends Aliasable<Value> {
     throw new IllegalArgumentException();
   }
 
-  public static enum Type {
-    VALUE, PATH, FUNCTION;
+  enum Type {
+    VALUE, PATH, FUNCTION
   }
 
-  static class ValueOfEntity implements Value {
+  class ValueOfEntity implements Value {
     private final Entity value;
 
     public ValueOfEntity(Entity value) {
@@ -95,15 +98,18 @@ public interface Value extends Aliasable<Value> {
     }
 
     /**
-     * This is part of the Visitor design pattern.
-     * This method is called by visiting classes. In response their aliasVisit method is called back.
+     * Visit this object given the specific visitor.
      * @param visitor the instance visiting.
      * @return the aliased Value.
      */
     @Override
-    public Value acceptValue(ConditionAliasVisitor visitor) {
+    public Value accept(AliasVisitor visitor) {
       return visitor.visit(this);
     }
 
+    @Override
+    public <T> T accept(ValueVisitor<T> visitor) {
+      return visitor.visit(this);
+    }
   }
 }

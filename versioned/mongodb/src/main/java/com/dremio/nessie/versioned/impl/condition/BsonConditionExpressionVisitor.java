@@ -15,28 +15,16 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
+import org.bson.BsonDocument;
 import org.bson.conversions.Bson;
-
-import com.mongodb.client.model.Filters;
 
 /**
  * This class allows retrieval of ConditionExpression objects in BSON format.
  */
 public class BsonConditionExpressionVisitor implements ConditionExpressionVisitor<Bson> {
-  // This class provides a separation of queries on @{ConditionExpression} from the object itself.
-  // This uses the Visitor design pattern to retrieve object attributes.
-
-  private static final BsonConditionExpressionVisitor instance = new BsonConditionExpressionVisitor();
-
-  public static BsonConditionExpressionVisitor getInstance() {
-    return instance;
-  }
-
-  private BsonConditionExpressionVisitor() {
-  }
+  private static final BsonValueVisitor EXPR_VISITOR = new BsonValueVisitor();
 
   /**
   * This is a callback method that ConditionExpression will call when this visitor is accepted.
@@ -46,11 +34,11 @@ public class BsonConditionExpressionVisitor implements ConditionExpressionVisito
   */
   @Override
   public Bson visit(final ConditionExpression conditionExpression) {
-    final BsonExpressionFunctionVisitor bsonExpressionFunctionVisitor = BsonExpressionFunctionVisitor.getInstance();
-    final List<Bson> expressionFunctionList = conditionExpression.getFunctions().stream()
-        .map(f -> f.accept(bsonExpressionFunctionVisitor))
-        .collect(Collectors.toList());
+    final String functions = conditionExpression.getFunctions().stream()
+        .map(f -> f.accept(EXPR_VISITOR))
+        .collect(Collectors.joining(", "));
 
-    return Filters.and(expressionFunctionList);
+    // TODO: Can this be done without reparsing the JSON?
+    return BsonDocument.parse(String.format("{\"$and\": [%s]}", functions));
   }
 }

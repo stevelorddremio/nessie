@@ -42,7 +42,6 @@ import org.reactivestreams.Subscription;
 import com.dremio.nessie.versioned.impl.InternalRef;
 import com.dremio.nessie.versioned.impl.condition.BsonConditionExpressionVisitor;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
-import com.dremio.nessie.versioned.impl.condition.MongoDBConditionAliasVisitor;
 import com.dremio.nessie.versioned.impl.condition.UpdateExpression;
 import com.dremio.nessie.versioned.store.HasId;
 import com.dremio.nessie.versioned.store.Id;
@@ -184,6 +183,7 @@ public class MongoDBStore implements Store {
           .put(ValueType.COMMIT_METADATA, MongoStoreConfig::getMetadataTableName)
           .put(ValueType.KEY_FRAGMENT, MongoStoreConfig::getKeyListTableName)
           .build();
+  private static final BsonConditionExpressionVisitor COND_EXPR_VISITOR = new BsonConditionExpressionVisitor();
 
   private final MongoStoreConfig config;
   private final MongoClientSettings mongoClientSettings;
@@ -265,7 +265,7 @@ public class MongoDBStore implements Store {
 
     Bson filter = Filters.eq(Store.KEY_NAME, ((HasId) value).getId());
     if (conditionUnAliased.isPresent()) {
-      filter = Filters.and(filter, toBson(conditionUnAliased.get()));
+      filter = Filters.and(filter, conditionUnAliased.get().accept(COND_EXPR_VISITOR));
     }
 
     // Use upsert so that if an item does not exist, it will be insert.
@@ -279,7 +279,7 @@ public class MongoDBStore implements Store {
 
     Bson filter = Filters.eq(Store.KEY_NAME, id.getId());
     if (condition.isPresent()) {
-      filter = Filters.and(filter, toBson(condition.get()));
+      filter = Filters.and(filter, condition.get().accept(COND_EXPR_VISITOR));
     }
 
     return 0 != await(collection.deleteOne(filter)).first().getDeletedCount();
@@ -366,12 +366,5 @@ public class MongoDBStore implements Store {
       throw new UnsupportedOperationException(String.format("Unsupported Entity type: %s", valueType.name()));
     }
     return (MongoCollection<V>) collection;
-  }
-
-  private Bson toBson(ConditionExpression conditionUnAliased) {
-    final MongoDBConditionAliasVisitor conditionAliasVisitor = new MongoDBConditionAliasVisitor();
-    final ConditionExpression aliased = conditionUnAliased.accept(conditionAliasVisitor);
-    final BsonConditionExpressionVisitor bsonConditionExpressionVisitor = BsonConditionExpressionVisitor.getInstance();
-    return aliased.accept(bsonConditionExpressionVisitor);
   }
 }

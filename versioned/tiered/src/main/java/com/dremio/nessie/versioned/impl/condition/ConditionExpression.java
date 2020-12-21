@@ -92,8 +92,7 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
   }
 
   /**
-   * This is part of the Visitor design pattern.
-   * This method is called by visiting classes. In response their visit method is called back.
+   * Visit this object given the specific visitor.
    *
    * @param visitor the instance visiting.
    * @param <T> The class to which ConditionExpression is converted
@@ -104,12 +103,11 @@ public abstract class ConditionExpression implements Aliasable<ConditionExpressi
   }
 
   /**
-   * This is part of the Visitor design pattern.
-   * This method is called by visiting classes. In response their aliasVisit method is called back.
+   * Visit this object given the specific visitor.
    * @param visitor the instance visiting.
    * @return the aliased ConditionExpression.
    */
-  public ConditionExpression accept(ConditionAliasVisitor visitor) {
+  public ConditionExpression accept(AliasVisitor visitor) {
     return visitor.visit(this);
   }
 }

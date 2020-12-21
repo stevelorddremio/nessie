@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
 import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
-import com.dremio.nessie.versioned.impl.condition.MongoDBConditionAliasVisitor;
 import com.dremio.nessie.versioned.store.ValueType;
 import com.dremio.nessie.versioned.tests.AbstractTestStore;
 
@@ -37,8 +36,6 @@ import com.dremio.nessie.versioned.tests.AbstractTestStore;
 class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
   private static final String testDatabaseName = "mydb";
   private String connectionString;
-  private static final MongoDBAliasCollectorImpl COLLECTOR = new MongoDBAliasCollectorImpl();
-  private static final MongoDBConditionAliasVisitor CONDITION_ALIAS_VISITOR = new MongoDBConditionAliasVisitor();
 
   @BeforeAll
   void init(String connectionString) {
@@ -83,8 +80,7 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
    */
   @Test
   public void deleteSelectedByConditionExpression1() {
-    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE))
-        .accept(CONDITION_ALIAS_VISITOR);
+    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE));
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(expression));
   }
 
@@ -95,8 +91,7 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
    */
   @Test
   public void deleteSelectedByConditionExpression2() {
-    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO))
-        .accept(CONDITION_ALIAS_VISITOR);
+    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO));
     deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(expression));
   }
 }

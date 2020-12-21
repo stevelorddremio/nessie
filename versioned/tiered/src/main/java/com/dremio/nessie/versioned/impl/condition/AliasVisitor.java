@@ -19,7 +19,7 @@ package com.dremio.nessie.versioned.impl.condition;
  * Classes requiring visiting rights to alias classes in this package must implement this
  * interface as part of the Visitor design pattern.
  */
-public interface ConditionAliasVisitor {
+public interface AliasVisitor {
   /**
    * The callback method in the visitor design pattern.
    * @param conditionExpression The object to be aliased.

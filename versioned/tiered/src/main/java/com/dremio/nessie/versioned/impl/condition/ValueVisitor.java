@@ -16,15 +16,17 @@
 package com.dremio.nessie.versioned.impl.condition;
 
 /**
- * Classes requiring visiting rights to ConditionExpression must implement this
- * interface as part of the Visitor design pattern.
- * @param <T> the class to which the ConditionExpression will be converted.
+ * Classes requiring visiting rights to Value must implement this interface as part of the Visitor design pattern.
+ * @param <T> The type to which the Value will be converted.
  */
-public interface ExpressionFunctionVisitor<T> {
+public interface ValueVisitor<T> {
   /**
-   * Creates a representation of a ExpressionFunction in the class T.
-   * Visitors should call an accept method on ExpressionFunction which will cause this callback method to be called.
-   * @param expressionFunction The object to be represented as class T
+   * Creates a representation of a Value in the class T.
+   * Visitors should call an accept method on Value then this callback method is called.
    */
-  T visit(ExpressionFunction expressionFunction);
+  T visit(Value value);
+
+  T visit(ExpressionFunction value);
+
+  T visit(ExpressionPath value);
 }

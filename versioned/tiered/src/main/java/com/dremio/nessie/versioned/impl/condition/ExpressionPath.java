@@ -148,16 +148,20 @@ public abstract class ExpressionPath implements Value {
 
   @Override
   public ExpressionPath alias(AliasCollector c) {
-    return ImmutableExpressionPath.builder().root((NameSegment) getRoot().alias(c)).build();
+    return ImmutableExpressionPath.builder().root(getRoot().alias(c)).build();
   }
 
   /**
-   * This is part of the Visitor design pattern.
-   * This method is called by visiting classes. In response their aliasVisit method is called back.
+   * Visit this object given the specific visitor.
    * @param visitor the instance visiting.
-   * @return the aliased ExpressionFunction.
+   * @return the aliased ExpressionPath.
    */
-  public ExpressionPath accept(ConditionAliasVisitor visitor) {
+  public ExpressionPath accept(AliasVisitor visitor) {
+    return visitor.visit(this);
+  }
+
+  @Override
+  public <T> T accept(ValueVisitor<T> visitor) {
     return visitor.visit(this);
   }
 
@@ -187,7 +191,7 @@ public abstract class ExpressionPath implements Value {
     public abstract String getName();
 
     @Override
-    public PathSegment alias(AliasCollector c) {
+    public NameSegment alias(AliasCollector c) {
       return ImmutableNameSegment.builder().name(c.escape(getName())).child(getChild().map(p -> p.alias(c))).build();
     }
 
@@ -197,12 +201,11 @@ public abstract class ExpressionPath implements Value {
     }
 
     /**
-     * This is part of the Visitor design pattern.
-     * This method is called by visiting classes. In response their aliasVisit method is called back.
+     * Visit this object given the specific visitor.
      * @param visitor the instance visiting.
-     * @return the aliased PathSegment
+     * @return the aliased NameSegment
      */
-    public PathSegment accept(ConditionAliasVisitor visitor) {
+    public NameSegment accept(AliasVisitor visitor) {
       return visitor.visit(this);
     }
   }

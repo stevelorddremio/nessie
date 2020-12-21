@@ -102,7 +102,7 @@ public class ExpressionFunction implements Value {
     if (name.binaryExpression) {
       return String.format("%s %s %s", arguments.get(0).asString(), name.protocolName, arguments.get(1).asString());
     }
-    return String.format("%s(%s)", name.protocolName, arguments.stream().map(v -> v.asString()).collect(Collectors.joining(", ")));
+    return String.format("%s(%s)", name.protocolName, arguments.stream().map(Value::asString).collect(Collectors.joining(", ")));
   }
 
   @Override
@@ -128,24 +128,18 @@ public class ExpressionFunction implements Value {
     return arguments;
   }
 
-  /**
-   * This is part of the Visitor design pattern.
-   * This method is called by visiting classes. In response their visit method is called back.
-   * @param visitor the instance visiting.
-   * @param <T> The class to which ExpressionFunction is converted
-   * @return the converted class
-   */
-  public <T> T accept(ExpressionFunctionVisitor<T> visitor) {
+  @Override
+  public <T> T accept(ValueVisitor<T> visitor) {
     return visitor.visit(this);
   }
 
   /**
-   * This is part of the Visitor design pattern.
-   * This method is called by visiting classes. In response their visit method is called back.
+   * Visit this object given the specific visitor.
    * @param visitor the instance visiting.
    * @return the aliased ExpressionFunction.
    */
-  public ExpressionFunction accept(ConditionAliasVisitor visitor) {
+  @Override
+  public ExpressionFunction accept(AliasVisitor visitor) {
     return visitor.visit(this);
   }
 }
