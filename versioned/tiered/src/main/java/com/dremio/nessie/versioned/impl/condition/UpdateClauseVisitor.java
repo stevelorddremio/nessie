@@ -15,7 +15,7 @@
  */
 package com.dremio.nessie.versioned.impl.condition;
 
-public interface UpdateVisitor<T> {
+public interface UpdateClauseVisitor<T> {
   /**
    * Visit the passed in AddClause.
    * @param clause the clause to visit.

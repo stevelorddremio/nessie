@@ -15,49 +15,71 @@
  */
 package com.dremio.nessie.versioned.store.mongodb;
 
-import com.mongodb.client.model.Updates;
 import org.bson.conversions.Bson;
 
 import com.dremio.nessie.versioned.impl.condition.AddClause;
 import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
 import com.dremio.nessie.versioned.impl.condition.RemoveClause;
 import com.dremio.nessie.versioned.impl.condition.SetClause;
-import com.dremio.nessie.versioned.impl.condition.UpdateVisitor;
+import com.dremio.nessie.versioned.impl.condition.UpdateClauseVisitor;
+import com.dremio.nessie.versioned.impl.condition.UpdateExpression;
+import com.dremio.nessie.versioned.impl.condition.UpdateExpressionVisitor;
+import com.dremio.nessie.versioned.impl.condition.Value;
+import com.google.common.collect.ImmutableList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.client.model.Updates;
 
 /**
- * This provides a separation of generation of expressions from @{UpdateClause} from the object itself.
+ * This provides a separation of generation of BSON expressions from @{UpdateExpression} from the object itself.
  */
-class BsonUpdateVisitor implements UpdateVisitor<Bson> {
-  @Override
-  public Bson visit(AddClause clause) {
-    final BsonPathVisitor visitor = new BsonPathVisitor();
-    clause.getPath().getRoot().accept(visitor, true);
-    if (isArrayPath(clause.getPath())) {
-      // TODO: Is it necessary to do this differently from a non-array addition?
-      return Updates.push(visitor.toString(), clause.getValue());
+class BsonUpdateVisitor implements UpdateExpressionVisitor<Bson> {
+  private static final class ClauseVisitor implements UpdateClauseVisitor<Bson> {
+    @Override
+    public Bson visit(AddClause clause) {
+      final BsonPathVisitor visitor = new BsonPathVisitor();
+      clause.getPath().getRoot().accept(visitor, true);
+      if (isArrayPath(clause.getPath())) {
+        return Updates.push(visitor.toString(), clause.getValue());
+      }
+
+      return Updates.set(visitor.toString(), clause.getValue());
     }
 
-    return Updates.set(visitor.toString(), clause.getValue());
-  }
-
-  @Override
-  public Bson visit(RemoveClause clause) {
-    final BsonPathVisitor visitor = new BsonPathVisitor();
-    clause.getPath().getRoot().accept(visitor, true);
-    return Updates.unset(visitor.toString());
-  }
-
-  @Override
-  public Bson visit(SetClause clause) {
-    return null;
-  }
-
-  private boolean isArrayPath(ExpressionPath path) {
-    ExpressionPath.PathSegment segment = path.getRoot();
-    while (segment.getChild().isPresent()) {
-      segment = segment.getChild().get();
+    @Override
+    public Bson visit(RemoveClause clause) {
+      final BsonPathVisitor visitor = new BsonPathVisitor();
+      clause.getPath().getRoot().accept(visitor, true);
+      return Updates.unset(visitor.toString());
     }
 
-    return segment.isPosition();
+    @Override
+    public Bson visit(SetClause clause) {
+      final BsonPathVisitor visitor = new BsonPathVisitor();
+      clause.getPath().getRoot().accept(visitor, true);
+
+      if (Value.Type.VALUE == clause.getValue().getType()) {
+        return Updates.set(visitor.toString(), clause.getValue());
+      }
+
+      return new BasicDBObject(visitor.toString(), clause.getValue().accept(new BsonValueVisitor()));
+    }
+
+    private boolean isArrayPath(ExpressionPath path) {
+      ExpressionPath.PathSegment segment = path.getRoot();
+      while (segment.getChild().isPresent()) {
+        segment = segment.getChild().get();
+      }
+
+      return segment.isPosition();
+    }
+  }
+
+  private static final ClauseVisitor CLAUSE_VISITOR = new ClauseVisitor();
+
+  @Override
+  public Bson visit(UpdateExpression expression) {
+    final ImmutableList.Builder<Bson> builder = ImmutableList.builder();
+    expression.getClauses().forEach(c -> c.accept(CLAUSE_VISITOR));
+    return Updates.combine(builder.build());
   }
 }

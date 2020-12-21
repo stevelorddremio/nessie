@@ -51,11 +51,13 @@ class BsonValueVisitor implements ValueVisitor<String> {
       case EQUALS:
         // Special case SIZE, as the object representation is awkward for how it should be represented by MongoDB.
         if (isSize(arguments.get(0))) {
-          return String.format("{%s: {$size: %s}}",
+          return String.format("{%s: {\"$size\": %s}}",
             arguments.get(0).getFunction().getArguments().get(0).accept(this), arguments.get(1).accept(this));
         }
 
         return String.format("{%s: %s}", arguments.get(0).accept(this), arguments.get(1).accept(this));
+      case LIST_APPEND:
+        return String.format("{\"$push\" {%s: %s}}", arguments.get(0).accept(this), arguments.get(1).accept(this));
       default:
         throw new UnsupportedOperationException(String.format("%s is not a supported top-level MongoDB function.", name));
     }
