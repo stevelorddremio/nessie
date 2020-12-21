@@ -26,13 +26,12 @@ import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
 import com.dremio.nessie.versioned.impl.condition.Value;
 import com.dremio.nessie.versioned.impl.condition.ValueVisitor;
 import com.dremio.nessie.versioned.store.Entity;
-import com.google.common.base.Preconditions;
 
 /**
  * This provides a separation of queries on @{ExpressionFunction} from the object itself.
  * This uses the Visitor design pattern to retrieve object attributes.
  */
-public class BsonValueVisitor implements ValueVisitor<String> {
+class BsonValueVisitor implements ValueVisitor<String> {
   @Override
   public String visit(Value value) {
     return toMongoExpr(value.getValue());
@@ -64,31 +63,9 @@ public class BsonValueVisitor implements ValueVisitor<String> {
 
   @Override
   public String visit(ExpressionPath value) {
-    final StringBuilder builder = new StringBuilder("\"");
-    value.getRoot().accept(new ExpressionPath.PathVisitor<Boolean, Void, RuntimeException>() {
-      @Override
-      public Void visitName(ExpressionPath.NameSegment segment, Boolean first) throws RuntimeException {
-        if (!first) {
-          builder.append(".");
-        }
-        builder.append(segment.getName());
-        return childOrNull(segment);
-      }
-
-      private Void childOrNull(ExpressionPath.PathSegment segment) {
-        segment.getChild().ifPresent(c -> c.accept(this,  false));
-        return null;
-      }
-
-      @Override
-      public Void visitPosition(ExpressionPath.PositionSegment segment, Boolean first) throws RuntimeException {
-        Preconditions.checkArgument(!first);
-        builder.append(".");
-        builder.append(segment.getPosition());
-        return childOrNull(segment);
-      }
-    }, true);
-    return builder.append("\"").toString();
+    final BsonPathVisitor visitor = new BsonPathVisitor();
+    value.getRoot().accept(visitor, true);
+    return visitor.toString();
   }
 
   private boolean isSize(Value value) {

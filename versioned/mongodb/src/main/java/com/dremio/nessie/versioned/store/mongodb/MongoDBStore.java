@@ -27,6 +27,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import com.dremio.nessie.versioned.impl.condition.UpdateClause;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.ReturnDocument;
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
 import org.bson.codecs.Codec;
@@ -324,7 +327,40 @@ public class MongoDBStore implements Store {
   @Override
   public <V> Optional<V> update(ValueType type, Id id, UpdateExpression update, Optional<ConditionExpression> condition)
       throws NotFoundException {
-    throw new UnsupportedOperationException();
+    final MongoCollection<V> collection = getCollection(type);
+
+
+    Bson filter = Filters.eq(Store.KEY_NAME, id.getId());
+    if (condition.isPresent()) {
+      filter = Filters.and(filter, condition.get().accept(COND_EXPR_VISITOR));
+    }
+
+    final List<V> updated = await(collection.findOneAndUpdate(
+      filter,
+      processUpdateExpression(update),
+      new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER))).getReceived();
+    if (updated.isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(updated.get(0));
+  }
+
+  private Bson processUpdateExpression(UpdateExpression update) {
+
+    for (UpdateClause clause : update.getClauses()) {
+      switch (clause.getType()) {
+        case ADD:
+          break;
+        case REMOVE:
+          break;
+        case DELETE:
+          break;
+        case SET:
+          break;
+      }
+    }
+    return null;
   }
 
   @Override

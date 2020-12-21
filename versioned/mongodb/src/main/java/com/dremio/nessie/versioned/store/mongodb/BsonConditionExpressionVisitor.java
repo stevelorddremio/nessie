@@ -26,7 +26,7 @@ import com.dremio.nessie.versioned.impl.condition.ConditionExpressionVisitor;
 /**
  * This class allows retrieval of ConditionExpression objects in BSON format.
  */
-public class BsonConditionExpressionVisitor implements ConditionExpressionVisitor<Bson> {
+class BsonConditionExpressionVisitor implements ConditionExpressionVisitor<Bson> {
   private static final BsonValueVisitor EXPR_VISITOR = new BsonValueVisitor();
 
   /**
