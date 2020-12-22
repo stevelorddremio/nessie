@@ -49,10 +49,7 @@ import com.google.common.collect.ImmutableList;
  * @param <S> The type of the Store being tested.
  */
 public abstract class AbstractTestStore<S extends Store> {
-  private static final String MISSING = "Missing";
-
-  protected static final Entity NON_EXISTENT = Entity.ofString(MISSING);
-
+  protected static final Entity NON_EXISTENT = Entity.ofString("Missing");
 
   protected static final ExpressionPath COMMITS = ExpressionPath.builder("commits").build();
   protected static final Entity ONE = Entity.ofNumber(1);
