@@ -15,17 +15,10 @@
  */
 package com.dremio.nessie.versioned.store.mongodb;
 
-import java.util.Optional;
-
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import com.dremio.nessie.versioned.impl.SampleEntities;
-import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
-import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
-import com.dremio.nessie.versioned.store.ValueType;
 import com.dremio.nessie.versioned.tests.AbstractTestStore;
 
 /**
@@ -71,27 +64,5 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
   @Override
   protected void resetStoreState() {
     store.resetCollections();
-  }
-
-  /**
-   * This test creates a branch which has two commits in the history.
-   * The test is to try to delete the branch specifying the commit history size should be one.
-   * The delete should fail.
-   */
-  @Test
-  public void deleteSelectedByConditionExpression1() {
-    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), ONE));
-    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, false, Optional.of(expression));
-  }
-
-  /**
-   * This test creates a branch which has two commits in the history.
-   * The test is to try to delete the branch specifying the commit history size should be two.
-   * The delete should succeed.
-   */
-  @Test
-  public void deleteSelectedByConditionExpression2() {
-    final ConditionExpression expression = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(COMMITS), TWO));
-    deleteConditional(SampleEntities.createBranch(random), ValueType.REF, true, Optional.of(expression));
   }
 }
