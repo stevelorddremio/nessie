@@ -21,41 +21,27 @@ import com.google.common.base.Preconditions;
 /**
  * Visitor for creating Bson valid paths from ExpressionPaths.
  */
-class BsonPathVisitor implements ExpressionPath.PathVisitor<Boolean, Void, RuntimeException> {
-  private final StringBuilder builder;
+class BsonPathVisitor implements ExpressionPath.PathVisitor<Boolean, String, RuntimeException> {
+  static final BsonPathVisitor INSTANCE = new BsonPathVisitor();
 
-  BsonPathVisitor() {
-    this(new StringBuilder());
-  }
-
-  BsonPathVisitor(StringBuilder builder) {
-    this.builder = builder;
+  private BsonPathVisitor() {
   }
 
   @Override
-  public Void visitName(ExpressionPath.NameSegment segment, Boolean first) throws RuntimeException {
-    if (!first) {
-      builder.append(".");
+  public String visitName(ExpressionPath.NameSegment segment, Boolean first) throws RuntimeException {
+    if (first) {
+      return "\"" + segment.getName() + visitChildOrEmpty(segment) + "\"";
     }
-    builder.append(segment.getName());
-    return childOrNull(segment);
-  }
-
-  private Void childOrNull(ExpressionPath.PathSegment segment) {
-    segment.getChild().ifPresent(c -> c.accept(this,  false));
-    return null;
+    return segment.getName() + visitChildOrEmpty(segment);
   }
 
   @Override
-  public Void visitPosition(ExpressionPath.PositionSegment segment, Boolean first) throws RuntimeException {
+  public String visitPosition(ExpressionPath.PositionSegment segment, Boolean first) throws RuntimeException {
     Preconditions.checkArgument(!first);
-    builder.append(".");
-    builder.append(segment.getPosition());
-    return childOrNull(segment);
+    return segment.getPosition() + visitChildOrEmpty(segment);
   }
 
-  @Override
-  public String toString() {
-    return "\"" + builder + "\"";
+  private String visitChildOrEmpty(ExpressionPath.PathSegment segment) {
+    return segment.getChild().map(c -> "." + c.accept(this, false)).orElse("");
   }
 }

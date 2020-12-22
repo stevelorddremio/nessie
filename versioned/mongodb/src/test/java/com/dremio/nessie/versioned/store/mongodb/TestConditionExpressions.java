@@ -28,7 +28,7 @@ import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
 import com.dremio.nessie.versioned.store.Entity;
 import com.dremio.nessie.versioned.store.Store;
 
-class TestMongoDBExpressions {
+class TestConditionExpressions {
   private static final Random RANDOM = new Random(8612341233543L);
   private static final Entity AV0 = Entity.ofBoolean(true);
   private static final Entity AV1 = Entity.ofBoolean(false);
@@ -43,8 +43,7 @@ class TestMongoDBExpressions {
 
   private static final ExpressionPath KEY_NAME = ExpressionPath.builder(Store.KEY_NAME).build();
 
-  private static final BsonConditionExpressionVisitor BSON_CONDITION_EXPRESSION_VISITOR = new BsonConditionExpressionVisitor();
-  private static final BsonValueVisitor BSON_EXPRESSION_FUNCTION_VISITOR = new BsonValueVisitor();
+  private static final BsonConditionVisitor COND_VISITOR = new BsonConditionVisitor();
 
   @Test
   void conditionExpressionEquals() {
@@ -70,7 +69,7 @@ class TestMongoDBExpressions {
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(COMMIT_0_ID, ID));
     ex = ex.and(ExpressionFunction.equals(ExpressionFunction.size(P0), Entity.ofNumber(1)));
 
-    equals(String.format("{\"$and\": [{\"commits.0.id\": %s}, {\"p0\": {\"$size\": 1}}]}", BsonValueVisitor.toMongoExpr(ID)), ex);
+    equals(String.format("{\"$and\": [{\"commits.0.id\": %s}, {\"p0\": {\"$size\": 1}}]}", BsonConditionVisitor.toMongoExpr(ID)), ex);
   }
 
   @Test
@@ -82,16 +81,16 @@ class TestMongoDBExpressions {
   @Test
   void equalsExpression() {
     final ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), AV0);
-    Assertions.assertEquals("{\"foo\": true}", expressionFunction.accept(BSON_EXPRESSION_FUNCTION_VISITOR));
+    Assertions.assertEquals("{\"foo\": true}", expressionFunction.accept(BsonConditionVisitor.VALUE_VISITOR));
   }
 
   @Test
   void conditionExpressionKeyHadId() {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(KEY_NAME, ID));
-    equals(String.format("{\"$and\": [{\"id\": %s}]}", BsonValueVisitor.toMongoExpr(ID)), ex);
+    equals(String.format("{\"$and\": [{\"id\": %s}]}", BsonConditionVisitor.toMongoExpr(ID)), ex);
   }
 
   private void equals(String expected, ConditionExpression input) {
-    Assertions.assertEquals(BsonDocument.parse(expected), input.accept(BSON_CONDITION_EXPRESSION_VISITOR));
+    Assertions.assertEquals(BsonDocument.parse(expected), input.accept(COND_VISITOR));
   }
 }

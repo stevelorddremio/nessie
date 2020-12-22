@@ -36,32 +36,29 @@ class BsonUpdateVisitor implements UpdateExpressionVisitor<Bson> {
   private static final class ClauseVisitor implements UpdateClauseVisitor<Bson> {
     @Override
     public Bson visit(AddClause clause) {
-      final BsonPathVisitor visitor = new BsonPathVisitor();
-      clause.getPath().getRoot().accept(visitor, true);
+      final String path = clause.getPath().getRoot().accept(BsonPathVisitor.INSTANCE, true);
       if (isArrayPath(clause.getPath())) {
-        return Updates.push(visitor.toString(), clause.getValue());
+        return Updates.push(path, clause.getValue());
       }
 
-      return Updates.set(visitor.toString(), clause.getValue());
+      return Updates.set(path, clause.getValue());
     }
 
     @Override
     public Bson visit(RemoveClause clause) {
-      final BsonPathVisitor visitor = new BsonPathVisitor();
-      clause.getPath().getRoot().accept(visitor, true);
-      return Updates.unset(visitor.toString());
+      final String path = clause.getPath().getRoot().accept(BsonPathVisitor.INSTANCE, true);
+      return Updates.unset(path);
     }
 
     @Override
     public Bson visit(SetClause clause) {
-      final BsonPathVisitor visitor = new BsonPathVisitor();
-      clause.getPath().getRoot().accept(visitor, true);
+      final String path = clause.getPath().getRoot().accept(BsonPathVisitor.INSTANCE, true);
 
       if (Value.Type.VALUE == clause.getValue().getType()) {
-        return Updates.set(visitor.toString(), clause.getValue());
+        return Updates.set(path, clause.getValue());
       }
 
-      return new BasicDBObject(visitor.toString(), clause.getValue().accept(new BsonValueVisitor()));
+      return new BasicDBObject(path, clause.getValue().accept(BsonConditionVisitor.VALUE_VISITOR));
     }
 
     private boolean isArrayPath(ExpressionPath path) {

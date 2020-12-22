@@ -184,7 +184,7 @@ public class MongoDBStore implements Store {
           .put(ValueType.COMMIT_METADATA, MongoStoreConfig::getMetadataTableName)
           .put(ValueType.KEY_FRAGMENT, MongoStoreConfig::getKeyListTableName)
           .build();
-  private static final BsonConditionExpressionVisitor CONDITION_VISITOR = new BsonConditionExpressionVisitor();
+  private static final BsonConditionVisitor CONDITION_VISITOR = new BsonConditionVisitor();
   private static final BsonUpdateVisitor UPDATE_VISITOR = new BsonUpdateVisitor();
 
   private final MongoStoreConfig config;
