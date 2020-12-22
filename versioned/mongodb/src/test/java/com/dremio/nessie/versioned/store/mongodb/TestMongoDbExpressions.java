@@ -287,7 +287,7 @@ class TestMongoDBExpressions {
   }
 
   @Test
-  void conditionNestedAttributeNotExistsNotSupported1() {
+  void conditionNestedAttributeNotExistsNotSupported() {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.attributeNotExists(P0), TWO));
     failsUnsupportedOperationException(ex);
   }
