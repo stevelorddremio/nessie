@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.dremio.nessie.versioned.impl.InternalRef;
@@ -51,7 +52,7 @@ import com.google.common.collect.Multimap;
  * @param <S> The type of the Store being tested.
  */
 public abstract class AbstractTestStore<S extends Store> {
-  private Random random;
+  protected Random random;
   protected S store;
 
   /**
@@ -207,6 +208,7 @@ public abstract class AbstractTestStore<S extends Store> {
   }
 
   @Test
+  @Disabled
   public void getRefs() {
     final List<InternalRef> expected = ImmutableList.of(SampleEntities.createBranch(random), SampleEntities.createTag(random));
     expected.forEach(e -> putThenLoad(e, ValueType.REF));

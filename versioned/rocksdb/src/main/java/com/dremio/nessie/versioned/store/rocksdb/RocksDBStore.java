@@ -247,7 +247,8 @@ public class RocksDBStore implements Store {
   public Stream<InternalRef> getRefs() {
     final ColumnFamilyHandle columnFamilyHandle = getColumnFamilyHandle(ValueType.REF);
 
-    // TODO: Do we need to lock the database at all?
+    // TODO: Do we need to lock the database at all? Yes, use of Iterator must be synchronized.
+    // Note: this is being refactored to getValues().
     final Iterable<InternalRef> iterable = () -> new AbstractIterator<InternalRef>() {
       private final RocksIterator itr = rocksDB.newIterator(columnFamilyHandle);
       private boolean isFirst = true;
