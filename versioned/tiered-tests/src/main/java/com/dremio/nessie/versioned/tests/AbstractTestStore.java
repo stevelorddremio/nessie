@@ -245,8 +245,7 @@ public abstract class AbstractTestStore<S extends Store> {
     final List<SaveOp<?>> saveOps = ImmutableList.of(
         new SaveOp<>(ValueType.L1, l1),
         new SaveOp<>(ValueType.L2, l2),
-// TODO: Check store.save to allow multiple entries of same ValueType to be saved.
-//        new SaveOp<>(ValueType.REF, branch),
+        new SaveOp<>(ValueType.REF, branch),
         new SaveOp<>(ValueType.REF, tag)
     );
     store.save(saveOps);
@@ -266,7 +265,7 @@ public abstract class AbstractTestStore<S extends Store> {
         new SaveOp<>(ValueType.L2, SampleEntities.createL2(random)),
         new SaveOp<>(ValueType.L3, SampleEntities.createL3(random)),
         new SaveOp<>(ValueType.REF, SampleEntities.createBranch(random)),
-//      new SaveOp<>(ValueType.REF, SampleEntities.createTag(random)),
+        new SaveOp<>(ValueType.REF, SampleEntities.createTag(random)),
         new SaveOp<>(ValueType.COMMIT_METADATA, SampleEntities.createCommitMetadata(random)),
         new SaveOp<>(ValueType.VALUE, SampleEntities.createValue(random)),
         new SaveOp<>(ValueType.KEY_FRAGMENT, SampleEntities.createFragment(random))
@@ -291,6 +290,7 @@ public abstract class AbstractTestStore<S extends Store> {
   }
 
   @Test
+  @Disabled
   public void saveMultithreaded() {
 
     final int threadCount = 100;

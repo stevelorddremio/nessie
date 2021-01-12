@@ -15,19 +15,31 @@
  */
 package com.dremio.nessie.versioned.store.rocksdb;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.io.TempDir;
+import org.rocksdb.ColumnFamilyHandle;
 
+import com.dremio.nessie.versioned.store.ValueType;
 import com.dremio.nessie.versioned.tests.AbstractTestStore;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimaps;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TestRocksDBStore extends AbstractTestStore<RocksDBStore> {
@@ -102,4 +114,16 @@ class TestRocksDBStore extends AbstractTestStore<RocksDBStore> {
     Assertions.assertThrows(UnsupportedOperationException.class, () -> super.putIfAbsentL3());
   }
 
+  public void createMultimap() {
+    List<Integer> integerList = Arrays.asList(0, 1, 2);
+
+    final ListMultimap<ColumnFamilyHandle, Integer> mm = Multimaps.index(integerList, l -> store.getColumnFamilyHandle(ValueType.VALUE));
+  }
+
+  @Test
+  public void saveMultiple() {
+    for (int i = 0; i < 1; i++) {
+      createMultimap();
+    }
+  }
 }

@@ -78,7 +78,7 @@ public class RocksDBStore implements Store {
   }
 
   private final String dbDirectory;
-  private RocksDB rocksDB;
+  RocksDB rocksDB;
   private Map<ValueType, ColumnFamilyHandle> valueTypeToColumnFamily;
 
   /**
@@ -307,7 +307,8 @@ public class RocksDBStore implements Store {
         "ValueType %s doesn't extend expected type %s.", value.getClass().getName(), type.getObjectClass().getName());
   }
 
-  private ColumnFamilyHandle getColumnFamilyHandle(ValueType valueType) {
+  @VisibleForTesting
+  ColumnFamilyHandle getColumnFamilyHandle(ValueType valueType) {
     final ColumnFamilyHandle columnFamilyHandle = valueTypeToColumnFamily.get(valueType);
     if (null == columnFamilyHandle) {
       throw new UnsupportedOperationException(String.format("Unsupported Entity type: %s", valueType.name()));
