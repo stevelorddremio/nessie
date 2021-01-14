@@ -117,12 +117,12 @@ class TestRocksDBStore extends AbstractTestStore<RocksDBStore> {
   public void createMultimap() {
     List<Integer> integerList = Arrays.asList(0, 1, 2);
 
-    final ListMultimap<ColumnFamilyHandle, Integer> mm = Multimaps.index(integerList, l -> store.getColumnFamilyHandle(ValueType.VALUE));
+    final ListMultimap<ValueType, Integer> mm = Multimaps.index(integerList, l -> ValueType.VALUE);
   }
 
   @Test
   public void saveMultiple() {
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 100; i++) {
       createMultimap();
     }
   }

@@ -180,7 +180,16 @@ public class RocksDBStore implements Store {
   @Override
   public <V> boolean putIfAbsent(ValueType type, V value) {
     typeCheck(type, value);
-    throw new UnsupportedOperationException();
+
+    final ColumnFamilyHandle columnFamilyHandle = getColumnFamilyHandle(type);
+    final HasId valueAsHasId = (HasId) value;
+
+    try {
+      rocksDB.merge(new WriteOptions(), valueAsHasId.getId().toBytes(), VALUE_SERDE.serialize(type, value));
+    } catch (RocksDBException e) {
+      throw new RuntimeException(e);
+    }
+    return true;
   }
 
   @Override
@@ -209,13 +218,13 @@ public class RocksDBStore implements Store {
 
   @Override
   public void save(List<SaveOp<?>> ops) {
-    final ListMultimap<ColumnFamilyHandle, SaveOp<?>> mm = Multimaps.index(ops, l -> getColumnFamilyHandle(l.getType()));
+    final ListMultimap<ValueType, SaveOp<?>> mm = Multimaps.index(ops, l -> l.getType());
 
     try {
       final WriteBatch batch = new WriteBatch();
-      for (Map.Entry<ColumnFamilyHandle, SaveOp<?>> entry : mm.entries()) {
+      for (Map.Entry<ValueType, SaveOp<?>> entry : mm.entries()) {
         final SaveOp<?> op = entry.getValue();
-        batch.put(entry.getKey(), op.getValue().getId().toBytes(), VALUE_SERDE.serialize(op.getType(), op.getValue()));
+        batch.put(getColumnFamilyHandle(entry.getKey()), op.getValue().getId().toBytes(), VALUE_SERDE.serialize(op.getType(), op.getValue()));
       }
       rocksDB.write(new WriteOptions(), batch);
     } catch (RocksDBException e) {

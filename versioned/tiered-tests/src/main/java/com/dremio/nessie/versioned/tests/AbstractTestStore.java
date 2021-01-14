@@ -290,7 +290,6 @@ public abstract class AbstractTestStore<S extends Store> {
   }
 
   @Test
-  @Disabled
   public void saveMultithreaded() {
 
     final int threadCount = 100;
