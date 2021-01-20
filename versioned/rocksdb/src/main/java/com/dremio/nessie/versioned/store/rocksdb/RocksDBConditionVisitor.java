@@ -38,7 +38,7 @@ class RocksDBConditionVisitor implements ConditionExpressionVisitor<String> {
   private static class RocksDBValueVisitor implements ValueVisitor<String> {
     @Override
     public String visit(Value value) {
-      throw new UnsupportedOperationException();
+      return toRocksDBString(value.getValue());
     }
 
     @Override
@@ -67,7 +67,7 @@ class RocksDBConditionVisitor implements ConditionExpressionVisitor<String> {
 
     @Override
     public String visit(ExpressionPath value) {
-      return value.getRoot().accept(RocksDBPathVisitor.INSTANCE, true);
+      return value.getRoot().accept(RocksDBPathVisitor.INSTANCE_NO_QUOTE, true);
     }
 
     private boolean isSize(Value value) {
@@ -90,5 +90,31 @@ class RocksDBConditionVisitor implements ConditionExpressionVisitor<String> {
         .collect(Collectors.joining("& "));
 
     return functions;
+  }
+
+  /**
+   * Convert the Entity chain to an equivalent value that can be interpretted by RocksDB.
+   * @param value the entity to convert.
+   * @return the RocksDB string representation of the Entity.
+   */
+  static String toRocksDBString(Entity value) {
+    switch (value.getType()) {
+      case MAP:
+        return "{" + value.getMap().entrySet().stream().map(e -> String.format("\"%s\": %s", e.getKey(), toRocksDBString(e.getValue())))
+          .collect(Collectors.joining(", ")) + "}";
+      case LIST:
+        return "[" + value.getList().stream().map(RocksDBConditionVisitor::toRocksDBString).collect(Collectors.joining(", ")) + "]";
+      case NUMBER:
+        return String.valueOf(value.getNumber());
+      case STRING:
+        return value.getString();
+      case BINARY:
+        // TODO: This needs converting to suitable type
+        return String.format("{\"$binary\": {\"base64\": \"%s\", \"subType\": \"00\"}}", value.getBinary().toString());
+      case BOOLEAN:
+        return Boolean.toString(value.getBoolean());
+      default:
+        throw new UnsupportedOperationException(String.format("Unable to convert type '%s' to String.", value.getType()));
+    }
   }
 }

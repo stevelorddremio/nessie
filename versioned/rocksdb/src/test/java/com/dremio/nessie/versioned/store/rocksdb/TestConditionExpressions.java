@@ -27,6 +27,7 @@ import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
 import com.dremio.nessie.versioned.impl.condition.ExpressionFunction;
 import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
 import com.dremio.nessie.versioned.store.Entity;
+import com.dremio.nessie.versioned.store.Store;
 import com.google.common.collect.ImmutableMap;
 
 class TestConditionExpressions {
@@ -51,26 +52,28 @@ class TestConditionExpressions {
     equals(expected, ex);
   }
 
-  /*
   @Test
   void equalsBooleanFalse() {
     final String path = createPath();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), FALSE_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": false}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "false");
+    equals(expected, ex);
   }
 
   @Test
   void equalsList() {
     final String path = createPath();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), LIST_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": [\"one\", \"two\", \"three\"]}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "[one, two, three]");
+    equals(expected, ex);
   }
 
   @Test
   void equalsMap() {
     final String path = createPath();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), MAP_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": {\"key_one\": \"one\", \"key_two\": \"two\", \"key_three\": \"three\"}}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "{\"key_one\": one, \"key_two\": two, \"key_three\": three}");
+    equals(expected, ex);
   }
 
   @Test
@@ -78,7 +81,8 @@ class TestConditionExpressions {
     final String path = createPath();
     final Entity numEntity = Entity.ofNumber(RANDOM.nextLong());
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), numEntity));
-    equals(String.format("{\"$and\": [{\"%s\": %d}]}", path, numEntity.getNumber()), ex);
+    String expected = String.format("%s,%s,%d", ExpressionFunctionHolder.EQUALS, path, numEntity.getNumber());
+    equals(expected, ex);
   }
 
   @Test
@@ -86,7 +90,8 @@ class TestConditionExpressions {
     final String path = createPath();
     final Entity strEntity = SampleEntities.createStringEntity(RANDOM, 7);
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), strEntity));
-    equals(String.format("{\"$and\": [{\"%s\": \"%s\"}]}", path, strEntity.getString()), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, strEntity.getString());
+    equals(expected, ex);
   }
 
   @Test
@@ -94,7 +99,8 @@ class TestConditionExpressions {
     final String path = createPath();
     final Entity binaryEntity = Entity.ofBinary(SampleEntities.createBinary(RANDOM, 15));
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), binaryEntity));
-    equals(String.format("{\"$and\": [{\"%s\": %s}]}", path, BsonConditionVisitor.toMongoExpression(binaryEntity)), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, RocksDBConditionVisitor.toRocksDBString(binaryEntity));
+    equals(expected, ex);
   }
 
   // Single ExpressionFunction array equals tests
@@ -102,28 +108,32 @@ class TestConditionExpressions {
   void arraySubpathEqualsBooleanTrue() {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), TRUE_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": true}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "true");
+    equals(expected, ex);
   }
 
   @Test
   void arraySubpathEqualsBooleanFalse() {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), FALSE_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": false}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "false");
+    equals(expected, ex);
   }
 
   @Test
   void arraySubpathEqualsList() {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), LIST_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": [\"one\", \"two\", \"three\"]}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "[one, two, three]");
+    equals(expected, ex);
   }
 
   @Test
   void arraySubpathEqualsMap() {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), MAP_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": {\"key_one\": \"one\", \"key_two\": \"two\", \"key_three\": \"three\"}}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "{\"key_one\": one, \"key_two\": two, \"key_three\": three}");
+    equals(expected, ex);
   }
 
   @Test
@@ -131,14 +141,16 @@ class TestConditionExpressions {
     final String path = createPathPos();
     final Entity numEntity = Entity.ofNumber(RANDOM.nextLong());
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), numEntity));
-    equals(String.format("{\"$and\": [{\"%s\": %d}]}", path, numEntity.getNumber()), ex);
+    String expected = String.format("%s,%s,%d", ExpressionFunctionHolder.EQUALS, path, numEntity.getNumber());
+    equals(expected, ex);
   }
 
   @Test
   void arraySubpathEqualsString() {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), THREE));
-    equals(String.format("{\"$and\": [{\"%s\": \"three\"}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "three");
+    equals(expected, ex);
   }
 
   @Test
@@ -146,7 +158,8 @@ class TestConditionExpressions {
     final String path = createPathPos();
     final Entity binaryEntity = Entity.ofBinary(SampleEntities.createBinary(RANDOM, 8));
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), binaryEntity));
-    equals(String.format("{\"$and\": [{\"%s\": %s}]}", path, BsonConditionVisitor.toMongoExpression(binaryEntity)), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, RocksDBConditionVisitor.toRocksDBString(binaryEntity));
+    equals(expected, ex);
   }
 
   // Single ExpressionFunction array equals tests
@@ -154,28 +167,32 @@ class TestConditionExpressions {
   void subpathEqualsBooleanTrue() {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), TRUE_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": true}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "true");
+    equals(expected, ex);
   }
 
   @Test
   void subpathEqualsBooleanFalse() {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), FALSE_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": false}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "false");
+    equals(expected, ex);
   }
 
   @Test
   void subpathEqualsList() {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), LIST_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": [\"one\", \"two\", \"three\"]}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "[one, two, three]");
+    equals(expected, ex);
   }
 
   @Test
   void subpathEqualsMap() {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), MAP_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": {\"key_one\": \"one\", \"key_two\": \"two\", \"key_three\": \"three\"}}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "{\"key_one\": one, \"key_two\": two, \"key_three\": three}");
+    equals(expected, ex);
   }
   // TODO: map with list
 
@@ -184,14 +201,16 @@ class TestConditionExpressions {
     final String path = createPathName();
     final Entity numEntity = Entity.ofNumber(RANDOM.nextLong());
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), numEntity));
-    equals(String.format("{\"$and\": [{\"%s\": %d}]}", path, numEntity.getNumber()), ex);
+    String expected = String.format("%s,%s,%d", ExpressionFunctionHolder.EQUALS, path, numEntity.getNumber());
+    equals(expected, ex);
   }
 
   @Test
   void subpathEqualsString() {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), THREE));
-    equals(String.format("{\"$and\": [{\"%s\": \"three\"}]}", path), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, "three");
+    equals(expected, ex);
   }
 
   @Test
@@ -199,7 +218,8 @@ class TestConditionExpressions {
     final String path = createPathName();
     final Entity binaryEntity = Entity.ofBinary(SampleEntities.createBinary(RANDOM, 24));
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), binaryEntity));
-    equals(String.format("{\"$and\": [{\"%s\": %s}]}", path, BsonConditionVisitor.toMongoExpression(binaryEntity)), ex);
+    String expected = String.format("%s,%s,%s", ExpressionFunctionHolder.EQUALS, path, RocksDBConditionVisitor.toRocksDBString(binaryEntity));
+    equals(expected, ex);
   }
 
   // Single ExpressionFunction size tests
@@ -208,7 +228,8 @@ class TestConditionExpressions {
     final String path = createPath();
     final ConditionExpression ex =
         ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(ofPath(path)), Entity.ofNumber(4)));
-    equals(String.format("{\"$and\": [{\"%s\": {\"$size\": 4}}]}", path), ex);
+    String expected = String.format("%s,%s,%d", ExpressionFunctionHolder.SIZE, path, 4);
+    equals(expected, ex);
   }
 
   @Test
@@ -219,8 +240,8 @@ class TestConditionExpressions {
     final Entity id = SampleEntities.createId(RANDOM).toEntity();
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), id));
     ex = ex.and(ExpressionFunction.equals(ExpressionFunction.size(ofPath(path2)), Entity.ofNumber(1)));
-    equals(String.format("{\"$and\": [{\"%s\": %s}, {\"%s\": {\"$size\": 1}}]}", path, BsonConditionVisitor.toMongoExpression(id), path2),
-        ex);
+    String expected = String.format("%s,%s,%s&%s,%s,%d", ExpressionFunctionHolder.EQUALS, path, id, ExpressionFunctionHolder.SIZE, path2, 1);
+    equals(expected, ex);
   }
 
   // Multiple ExpressionFunctions
@@ -273,16 +294,15 @@ class TestConditionExpressions {
   @Test
   void equalsExpression() {
     final ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), TRUE_ENTITY);
-    Assertions.assertEquals("{\"foo\": true}", expressionFunction.accept(BsonConditionVisitor.VALUE_VISITOR));
+    Assertions.assertEquals("{\"foo\": true}", expressionFunction.accept(RocksDBConditionVisitor.VALUE_VISITOR));
   }
 
   @Test
   void binaryEquals() {
     final Entity id = SampleEntities.createId(RANDOM).toEntity();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ExpressionPath.builder(Store.KEY_NAME).build(), id));
-    equals(String.format("{\"$and\": [{\"id\": %s}]}", BsonConditionVisitor.toMongoExpression(id)), ex);
+    equals(String.format("{\"$and\": [{\"id\": %s}]}", RocksDBConditionVisitor.toRocksDBString(id)), ex);
   }
-*/
 
   /**
    * Create a path from a . delimited string.

@@ -68,7 +68,7 @@ public interface Value extends Aliasable<Value> {
     VALUE, PATH, FUNCTION;
   }
 
-  static class ValueOfEntity implements Value {
+  class ValueOfEntity implements Value {
     private final Entity value;
 
     public ValueOfEntity(Entity value) {

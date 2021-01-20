@@ -67,7 +67,7 @@ public class ExpressionFunction implements Value {
   private final FunctionName name;
   private final List<Value> arguments;
 
-  private ExpressionFunction(FunctionName name, ImmutableList<Value> arguments) {
+  ExpressionFunction(FunctionName name, ImmutableList<Value> arguments) {
     this.name = name;
     this.arguments = ImmutableList.copyOf(arguments);
     Preconditions.checkArgument(this.arguments.size() == name.argCount, "Unexpected argument count.");

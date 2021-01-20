@@ -218,7 +218,7 @@ public class SampleEntities {
         .toString();
   }
 
-  private static Id createId(Random random) {
+  public static Id createId(Random random) {
     return Id.of(createBinary(random, 20));
   }
 
@@ -226,7 +226,7 @@ public class SampleEntities {
     return Entity.ofBinary(createBinary(random, 20));
   }
 
-  private static Entity createStringEntity(Random random, int numChars) {
+  public static Entity createStringEntity(Random random, int numChars) {
     return Entity.ofString(createString(random, numChars));
   }
 }
