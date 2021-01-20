@@ -240,7 +240,7 @@ class TestConditionExpressions {
     final Entity id = SampleEntities.createId(RANDOM).toEntity();
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), id));
     ex = ex.and(ExpressionFunction.equals(ExpressionFunction.size(ofPath(path2)), Entity.ofNumber(1)));
-    String expected = String.format("%s,%s,%s&%s,%s,%d", ExpressionFunctionHolder.EQUALS, path, id, ExpressionFunctionHolder.SIZE, path2, 1);
+    String expected = String.format("%s,%s,%s& %s,%s,%d", ExpressionFunctionHolder.EQUALS, path, id, ExpressionFunctionHolder.SIZE, path2, 1);
     equals(expected, ex);
   }
 
@@ -251,7 +251,9 @@ class TestConditionExpressions {
     final String path2 = SampleEntities.createString(RANDOM, RANDOM.nextInt(15));
     final ConditionExpression ex = ConditionExpression.of(
         ExpressionFunction.equals(ofPath(path1), TRUE_ENTITY), ExpressionFunction.equals(ofPath(path2), FALSE_ENTITY));
-    equals(String.format("{\"$and\": [{\"%s\": true}, {\"%s\": false}]}", path1, path2), ex);
+    String expected = String.format("%s,%s,%s& %s,%s,%s", ExpressionFunctionHolder.EQUALS, path1, "true",
+      ExpressionFunctionHolder.EQUALS, path2, "false");
+    equals(expected, ex);
   }
 
   @Test
@@ -262,9 +264,10 @@ class TestConditionExpressions {
     final Entity strEntity = SampleEntities.createStringEntity(RANDOM, 10);
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path1), TRUE_ENTITY),
         ExpressionFunction.equals(ofPath(path2), FALSE_ENTITY), ExpressionFunction.equals(ofPath(pathPos), strEntity));
-    equals(
-        String.format("{\"$and\": [{\"%s\": true}, {\"%s\": false}, {\"%s\": \"%s\"}]}", path1, path2, pathPos, strEntity.getString()),
-        ex);
+    String expected = String.format("%s,%s,%s& %s,%s,%s& %s,%s,%s", ExpressionFunctionHolder.EQUALS, path1, "true",
+      ExpressionFunctionHolder.EQUALS, path2, "false",
+      ExpressionFunctionHolder.EQUALS, pathPos, strEntity.getString());
+    equals(expected, ex);
   }
 
   // Negative tests
@@ -293,15 +296,17 @@ class TestConditionExpressions {
   // other tests
   @Test
   void equalsExpression() {
-    final ExpressionFunction expressionFunction = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), TRUE_ENTITY);
-    Assertions.assertEquals("{\"foo\": true}", expressionFunction.accept(RocksDBConditionVisitor.VALUE_VISITOR));
+    final ExpressionFunction ex = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), TRUE_ENTITY);
+    String expected = String.format("%s,foo,%s", ExpressionFunctionHolder.EQUALS, "true");
+    Assertions.assertEquals(expected, ex.accept(RocksDBConditionVisitor.VALUE_VISITOR));
   }
 
   @Test
   void binaryEquals() {
     final Entity id = SampleEntities.createId(RANDOM).toEntity();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ExpressionPath.builder(Store.KEY_NAME).build(), id));
-    equals(String.format("{\"$and\": [{\"id\": %s}]}", RocksDBConditionVisitor.toRocksDBString(id)), ex);
+    String expected = String.format("%s,id,%s", ExpressionFunctionHolder.EQUALS, RocksDBConditionVisitor.toRocksDBString(id));
+    equals(expected, ex);
   }
 
   /**
