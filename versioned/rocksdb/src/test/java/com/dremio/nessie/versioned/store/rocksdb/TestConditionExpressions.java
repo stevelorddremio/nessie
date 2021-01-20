@@ -240,7 +240,8 @@ class TestConditionExpressions {
     final Entity id = SampleEntities.createId(RANDOM).toEntity();
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), id));
     ex = ex.and(ExpressionFunction.equals(ExpressionFunction.size(ofPath(path2)), Entity.ofNumber(1)));
-    String expected = String.format("%s,%s,%s& %s,%s,%d", ExpressionFunctionHolder.EQUALS, path, id, ExpressionFunctionHolder.SIZE, path2, 1);
+    String expected = String.format("%s,%s,%s& %s,%s,%d", ExpressionFunctionHolder.EQUALS, path, RocksDBConditionVisitor.toRocksDBString(id),
+      ExpressionFunctionHolder.SIZE, path2, 1);
     equals(expected, ex);
   }
 
