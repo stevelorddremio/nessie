@@ -317,6 +317,21 @@ class TestConditionExpressions {
     equals(expected, ex);
   }
 
+  @Test
+  void stringEqualsHolder() {
+    final String path = createPath();
+    final Entity strEntity = SampleEntities.createStringEntity(RANDOM, 7);
+    final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), strEntity));
+
+    final ExpressionFunctionHolder expectedFunction = new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, strEntity);
+    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
+    expectedCondition.expressionFunctionHolderList.add(expectedFunction);
+
+    final ConditionExpressionHolder conditionHolder = new ConditionExpressionHolder();
+    conditionHolder.build(ex.accept(ROCKS_DB_CONDITION_EXPRESSION_VISITOR));
+    Assertions.assertTrue(expectedFunction.equals(conditionHolder.expressionFunctionHolderList.get(0)));
+  }
+
   /**
    * Create a path from a . delimited string.
    * @param path the input string where parts of the path are . delimited.

@@ -39,4 +39,15 @@ public class ExpressionFunctionHolder {
     this.path = path;
     this.value = value;
   }
+
+  /**
+   * Compares for equality with a provided ExpressionFunctionHolder object.
+   * @param ex object to compare
+   * @return true if this is equal to provided object
+   */
+  public boolean equals(ExpressionFunctionHolder ex) {
+    return (this.operator.equals(ex.operator)
+        && this.path.equals(ex.path)
+        && this.value.equals(ex.value));
+  }
 }

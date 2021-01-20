@@ -16,7 +16,10 @@
 package com.dremio.nessie.versioned.store.rocksdb;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import com.dremio.nessie.versioned.store.Entity;
 
 public class ConditionExpressionHolder {
 
@@ -35,6 +38,12 @@ public class ConditionExpressionHolder {
    * @param conditionExpressionStr the string from which to build this object.
    */
   public void build(String conditionExpressionStr) {
-
+    List<String> expressionFunctions = new ArrayList<>(Arrays.asList((conditionExpressionStr.split("\\s*&\\s*"))));
+    for (String expressionFunctionStr : expressionFunctions) {
+      // Split into three elements
+      List<String> elements = new ArrayList<>(Arrays.asList((expressionFunctionStr.split("\\s*,\\s*"))));
+      ExpressionFunctionHolder holder = new ExpressionFunctionHolder(elements.get(0), elements.get(1), Entity.ofString(elements.get(2)));
+      expressionFunctionHolderList.add(holder);
+    }
   }
 }
