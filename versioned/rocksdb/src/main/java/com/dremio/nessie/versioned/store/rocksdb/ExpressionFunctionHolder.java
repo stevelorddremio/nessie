@@ -17,6 +17,9 @@ package com.dremio.nessie.versioned.store.rocksdb;
 
 import com.dremio.nessie.versioned.store.Entity;
 
+/**
+ * An expression that is asserted against an Entity.
+ */
 public class ExpressionFunctionHolder {
   static final String EQUALS = "equals";
   static final String SIZE = "size";
@@ -25,6 +28,12 @@ public class ExpressionFunctionHolder {
   String path;
   Entity value;
 
+  /**
+   * ExpressionFunction representation.
+   * @param operator type of assertion to be applied
+   * @param path the path to be tested
+   * @param value the expected value of path
+   */
   public ExpressionFunctionHolder(String operator, String path, Entity value) {
     this.operator = operator;
     this.path = path;

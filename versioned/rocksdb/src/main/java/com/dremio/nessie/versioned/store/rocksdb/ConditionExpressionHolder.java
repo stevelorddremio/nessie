@@ -25,4 +25,16 @@ public class ConditionExpressionHolder {
   public ConditionExpressionHolder() {
     this.expressionFunctionHolderList = new ArrayList<>();
   }
+
+  /**
+   * TODO: This will likely take a ConditionExpression instead. For now we build this object from a string.
+   * The format is:
+   *    "ExpressionFunction&ExpressionFunction&ExpressionFunction"
+   *      where ExpressionFunction format is:
+   *      "ExpressionFunctionOperator,ExpressionFunctionPath,ExpressionFunctionValue"
+   * @param conditionExpressionStr the string from which to build this object.
+   */
+  public void build(String conditionExpressionStr) {
+
+  }
 }
