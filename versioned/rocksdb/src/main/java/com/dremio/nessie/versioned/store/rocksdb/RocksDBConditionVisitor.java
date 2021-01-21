@@ -30,12 +30,12 @@ import com.dremio.nessie.versioned.store.Entity;
 /**
  * This class allows conversion of ConditionExpression objects to ConditionExpressionHolder objects.
  */
-class RocksDBConditionVisitor implements ConditionExpressionVisitor<String> {
+class RocksDBConditionVisitor implements ConditionExpressionVisitor<ConditionExpressionHolder> {
   /**
    * This provides a separation of queries on @{ExpressionFunction} from the object itself.
    * This uses the Visitor design pattern to retrieve object attributes.
    */
-  private static class RocksDBValueVisitor implements ValueVisitor<String> {
+  private static class RocksDBStrValueVisitor implements ValueVisitor<String> {
     @Override
     public String visit(Value value) {
       return toRocksDBString(value.getValue());
@@ -75,7 +75,53 @@ class RocksDBConditionVisitor implements ConditionExpressionVisitor<String> {
     }
   }
 
-  static final RocksDBValueVisitor VALUE_VISITOR = new RocksDBValueVisitor();
+  /**
+   * This provides a separation of queries on @{ExpressionFunction} from the object itself.
+   * This uses the Visitor design pattern to retrieve object attributes.
+   */
+  private static class RocksDBFunctionHolderValueVisitor implements ValueVisitor<ExpressionFunctionHolder> {
+    @Override
+    public ExpressionFunctionHolder visit(Value value) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ExpressionFunctionHolder visit(ExpressionFunction value) {
+      final ExpressionFunction.FunctionName name = value.getName();
+      final List<Value> arguments = value.getArguments();
+      if (arguments.size() != name.getArgCount()) {
+        throw new InvalidParameterException(
+          String.format("Number of arguments provided [%d] does not match the number expected [%d] for %s.",
+            arguments.size(), name.getArgCount(), name));
+      }
+
+      switch (name) {
+        case EQUALS:
+          // Special case SIZE, as the object representation is not contained in one level of ExpressionFunction.
+          if (isSize(arguments.get(0))) {
+            return new ExpressionFunctionHolder(ExpressionFunctionHolder.SIZE,
+                arguments.get(0).getFunction().getArguments().get(0).accept(STR_VALUE_VISITOR), arguments.get(1).getValue());
+          }
+
+          return new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS,
+            arguments.get(0).accept(STR_VALUE_VISITOR), arguments.get(1).getValue());
+        default:
+          throw new UnsupportedOperationException(String.format("%s is not a supported top-level RocksDB function.", name));
+      }
+    }
+
+    @Override
+    public ExpressionFunctionHolder visit(ExpressionPath value) {
+      throw new UnsupportedOperationException();
+    }
+
+    private boolean isSize(Value value) {
+      return (value.getType() == Value.Type.FUNCTION) && (((ExpressionFunction)value).getName() == ExpressionFunction.FunctionName.SIZE);
+    }
+  }
+
+  static final RocksDBStrValueVisitor STR_VALUE_VISITOR = new RocksDBStrValueVisitor();
+  static final RocksDBFunctionHolderValueVisitor FUNC_VALUE_VISITOR = new RocksDBFunctionHolderValueVisitor();
 
   /**
   * This is a callback method that ConditionExpression will call when this visitor is accepted.
@@ -84,12 +130,16 @@ class RocksDBConditionVisitor implements ConditionExpressionVisitor<String> {
   * @return the converted ConditionExpression object in BSON format.
   */
   @Override
-  public String visit(final ConditionExpression conditionExpression) {
-    final String functions = conditionExpression.getFunctions().stream()
-        .map(f -> f.accept(VALUE_VISITOR))
-        .collect(Collectors.joining("& "));
+  public ConditionExpressionHolder visit(final ConditionExpression conditionExpression) {
+//    final String functions = conditionExpression.getFunctions().stream()
+//      .map(f -> f.accept(STR_VALUE_VISITOR))
+//      .collect(Collectors.joining("& "));
 
-    return functions;
+    ConditionExpressionHolder holder = new ConditionExpressionHolder();
+    holder.expressionFunctionHolderList = conditionExpression.getFunctions().stream()
+        .map(f -> f.accept(FUNC_VALUE_VISITOR))
+        .collect(Collectors.toList());
+    return holder;
   }
 
   /**
