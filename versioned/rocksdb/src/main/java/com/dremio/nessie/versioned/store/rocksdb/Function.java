@@ -20,7 +20,7 @@ import com.dremio.nessie.versioned.store.Entity;
 /**
  * An expression that is asserted against an Entity.
  */
-public class ExpressionFunctionHolder {
+public class Function {
   static final String EQUALS = "equals";
   static final String SIZE = "size";
 
@@ -34,18 +34,18 @@ public class ExpressionFunctionHolder {
    * @param path the path to be tested
    * @param value the expected value of path
    */
-  public ExpressionFunctionHolder(String operator, String path, Entity value) {
+  public Function(String operator, String path, Entity value) {
     this.operator = operator;
     this.path = path;
     this.value = value;
   }
 
   /**
-   * Compares for equality with a provided ExpressionFunctionHolder object.
+   * Compares for equality with a provided Function object.
    * @param ex object to compare
    * @return true if this is equal to provided object
    */
-  public boolean equals(ExpressionFunctionHolder ex) {
+  public boolean equals(Function ex) {
     return (this.operator.equals(ex.operator)
         && this.path.equals(ex.path)
         && this.value.equals(ex.value));

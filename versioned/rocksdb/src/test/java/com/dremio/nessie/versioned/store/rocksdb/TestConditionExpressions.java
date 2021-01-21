@@ -51,9 +51,9 @@ class TestConditionExpressions {
     final String path = createPath();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), TRUE_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, TRUE_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, TRUE_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -61,9 +61,9 @@ class TestConditionExpressions {
     final String path = createPath();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), FALSE_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, FALSE_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, FALSE_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -71,9 +71,9 @@ class TestConditionExpressions {
     final String path = createPath();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), LIST_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, LIST_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, LIST_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -81,9 +81,9 @@ class TestConditionExpressions {
     final String path = createPath();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), MAP_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, MAP_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, MAP_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -92,9 +92,9 @@ class TestConditionExpressions {
     final Entity numEntity = Entity.ofNumber(RANDOM.nextLong());
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), numEntity));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, numEntity));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, numEntity));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -103,9 +103,9 @@ class TestConditionExpressions {
     final Entity strEntity = SampleEntities.createStringEntity(RANDOM, 7);
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), strEntity));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, strEntity));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, strEntity));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -114,9 +114,9 @@ class TestConditionExpressions {
     final Entity binaryEntity = Entity.ofBinary(SampleEntities.createBinary(RANDOM, 15));
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), binaryEntity));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, binaryEntity));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, binaryEntity));
+    equals(expectedCondition, ex);
   }
 
   // Single ExpressionFunction array equals tests
@@ -125,9 +125,9 @@ class TestConditionExpressions {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), TRUE_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, TRUE_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, TRUE_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -135,9 +135,9 @@ class TestConditionExpressions {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), FALSE_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, FALSE_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, FALSE_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -145,9 +145,9 @@ class TestConditionExpressions {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), LIST_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, LIST_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, LIST_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -155,9 +155,9 @@ class TestConditionExpressions {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), MAP_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, MAP_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, MAP_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -166,9 +166,9 @@ class TestConditionExpressions {
     final Entity numEntity = Entity.ofNumber(RANDOM.nextLong());
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), numEntity));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, numEntity));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, numEntity));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -176,9 +176,9 @@ class TestConditionExpressions {
     final String path = createPathPos();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), THREE));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, THREE));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, THREE));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -187,9 +187,9 @@ class TestConditionExpressions {
     final Entity binaryEntity = Entity.ofBinary(SampleEntities.createBinary(RANDOM, 8));
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), binaryEntity));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, binaryEntity));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, binaryEntity));
+    equals(expectedCondition, ex);
   }
 
   // Single ExpressionFunction array equals tests
@@ -198,9 +198,9 @@ class TestConditionExpressions {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), TRUE_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, TRUE_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, TRUE_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -208,9 +208,9 @@ class TestConditionExpressions {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), FALSE_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, FALSE_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, FALSE_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -218,9 +218,9 @@ class TestConditionExpressions {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), LIST_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, LIST_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, LIST_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -228,9 +228,9 @@ class TestConditionExpressions {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), MAP_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, MAP_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, MAP_ENTITY));
+    equals(expectedCondition, ex);
   }
   // TODO: map with list
 
@@ -240,9 +240,9 @@ class TestConditionExpressions {
     final Entity numEntity = Entity.ofNumber(RANDOM.nextLong());
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), numEntity));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, numEntity));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, numEntity));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -250,9 +250,9 @@ class TestConditionExpressions {
     final String path = createPathName();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), THREE));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, THREE));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, THREE));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -261,9 +261,9 @@ class TestConditionExpressions {
     final Entity binaryEntity = Entity.ofBinary(SampleEntities.createBinary(RANDOM, 24));
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), binaryEntity));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, binaryEntity));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, binaryEntity));
+    equals(expectedCondition, ex);
   }
 
   // Single ExpressionFunction size tests
@@ -273,9 +273,9 @@ class TestConditionExpressions {
     final ConditionExpression ex =
         ConditionExpression.of(ExpressionFunction.equals(ExpressionFunction.size(ofPath(path)), NUM_FOUR));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.SIZE, path, NUM_FOUR));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.SIZE, path, NUM_FOUR));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -287,10 +287,10 @@ class TestConditionExpressions {
     ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), id));
     ex = ex.and(ExpressionFunction.equals(ExpressionFunction.size(ofPath(path2)), NUM_ONE));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, id));
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.SIZE, path2, NUM_ONE));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path, id));
+    expectedCondition.add(new Function(Function.SIZE, path2, NUM_ONE));
+    equals(expectedCondition, ex);
   }
 
   // Multiple ExpressionFunctions
@@ -301,10 +301,10 @@ class TestConditionExpressions {
     final ConditionExpression ex = ConditionExpression.of(
         ExpressionFunction.equals(ofPath(path1), TRUE_ENTITY), ExpressionFunction.equals(ofPath(path2), FALSE_ENTITY));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path1, TRUE_ENTITY));
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.SIZE, path2, FALSE_ENTITY));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path1, TRUE_ENTITY));
+    expectedCondition.add(new Function(Function.SIZE, path2, FALSE_ENTITY));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -316,11 +316,11 @@ class TestConditionExpressions {
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path1), TRUE_ENTITY),
         ExpressionFunction.equals(ofPath(path2), FALSE_ENTITY), ExpressionFunction.equals(ofPath(pathPos), strEntity));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path1, TRUE_ENTITY));
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path2, FALSE_ENTITY));
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, pathPos, strEntity));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, path1, TRUE_ENTITY));
+    expectedCondition.add(new Function(Function.EQUALS, path2, FALSE_ENTITY));
+    expectedCondition.add(new Function(Function.EQUALS, pathPos, strEntity));
+    equals(expectedCondition, ex);
   }
 
   // Negative tests
@@ -350,8 +350,8 @@ class TestConditionExpressions {
   @Test
   void equalsExpression() {
     final ExpressionFunction ex = ExpressionFunction.equals(ExpressionPath.builder("foo").build(), TRUE_ENTITY);
-    String expected = String.format("%s,foo,%s", ExpressionFunctionHolder.EQUALS, "true");
-    ExpressionFunctionHolder expected2 = new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, "foo", TRUE_ENTITY);
+    String expected = String.format("%s,foo,%s", Function.EQUALS, "true");
+    Function expected2 = new Function(Function.EQUALS, "foo", TRUE_ENTITY);
     Assertions.assertEquals(expected, ex.accept(RocksDBConditionVisitor.STR_VALUE_VISITOR));
   }
 
@@ -360,9 +360,9 @@ class TestConditionExpressions {
     final Entity id = SampleEntities.createId(RANDOM).toEntity();
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ExpressionPath.builder(Store.KEY_NAME).build(), id));
 
-    final ConditionExpressionHolder expectedCondition = new ConditionExpressionHolder();
-    expectedCondition.expressionFunctionHolderList.add(new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, Store.KEY_NAME, id));
-    newEquals(expectedCondition, ex);
+    final Condition expectedCondition = new Condition();
+    expectedCondition.add(new Function(Function.EQUALS, Store.KEY_NAME, id));
+    equals(expectedCondition, ex);
   }
 
   @Test
@@ -371,9 +371,9 @@ class TestConditionExpressions {
     final Entity strEntity = SampleEntities.createStringEntity(RANDOM, 7);
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), strEntity));
 
-    final ExpressionFunctionHolder expectedFunction = new ExpressionFunctionHolder(ExpressionFunctionHolder.EQUALS, path, strEntity);
+    final Function expectedFunction = new Function(Function.EQUALS, path, strEntity);
 
-    Assertions.assertTrue(expectedFunction.equals(ex.accept(ROCKS_DB_CONDITION_EXPRESSION_VISITOR).expressionFunctionHolderList.get(0)));
+    Assertions.assertTrue(expectedFunction.equals(ex.accept(ROCKS_DB_CONDITION_EXPRESSION_VISITOR).functionList.get(0)));
   }
 
   /**
@@ -411,14 +411,9 @@ class TestConditionExpressions {
         + SampleEntities.createString(RANDOM, RANDOM.nextInt(10) + 1);
   }
 
-  private static void equals(String expected, ConditionExpression input) {
-    Assertions.assertEquals(expected, input.accept(ROCKS_DB_CONDITION_EXPRESSION_VISITOR));
-  }
-
-  private static void newEquals(ConditionExpressionHolder expected, ConditionExpression input) {
-    ConditionExpressionHolder actual = input.accept(ROCKS_DB_CONDITION_EXPRESSION_VISITOR);
-    Assertions.assertTrue(actual.expressionFunctionHolderList.get(0).equals(expected.expressionFunctionHolderList.get(0)));
-//    Assertions.assertEquals(expected, input.accept(ROCKS_DB_CONDITION_EXPRESSION_VISITOR));
+  private static void equals(Condition expected, ConditionExpression input) {
+    Condition actual = input.accept(ROCKS_DB_CONDITION_EXPRESSION_VISITOR);
+    Assertions.assertTrue(actual.functionList.get(0).equals(expected.functionList.get(0)));
   }
 
   private static void failsUnsupportedOperationException(ConditionExpression input) {
