@@ -18,6 +18,9 @@ package com.dremio.nessie.versioned.store.rocksdb;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A set of conditions that are asserted against an Entity.
+ */
 public class Condition {
 
   public List<Function> functionList;
