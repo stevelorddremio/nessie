@@ -69,7 +69,7 @@ public class RocksRef extends RocksBaseValue<Ref> implements Ref, Evaluator {
       // TODO: do we need to subtype?
       for (Function function: condition.functionList) {
         // Branch evaluation
-        List<String> path = Arrays.asList(function.getPath().split(Pattern.quote(".")));
+        List<String> path = function.getPathAsList();
         String segment = path.get(0);
         if (segment.equals(ID)) {
           result &= ((path.size() == 1)
@@ -100,7 +100,7 @@ public class RocksRef extends RocksBaseValue<Ref> implements Ref, Evaluator {
     } else if (this.type == RefType.TAG) {
       for (Function function: condition.functionList) {
         // Tag evaluation
-        List<String> path = Arrays.asList(function.getPath().split(Pattern.quote(".")));
+        List<String> path = function.getPathAsList();
         String segment = path.get(0);
         switch (segment) {
           case ID:

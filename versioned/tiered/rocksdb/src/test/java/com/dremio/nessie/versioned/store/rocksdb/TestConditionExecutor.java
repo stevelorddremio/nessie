@@ -25,9 +25,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import com.dremio.nessie.tiered.builder.Fragment;
 import com.dremio.nessie.tiered.builder.L1;
 import com.dremio.nessie.tiered.builder.Ref;
 import com.dremio.nessie.versioned.Key;
+import com.dremio.nessie.versioned.impl.EntityType;
+import com.dremio.nessie.versioned.impl.InternalFragment;
 import com.dremio.nessie.versioned.impl.SampleEntities;
 import com.dremio.nessie.versioned.impl.condition.ExpressionPath;
 import com.dremio.nessie.versioned.store.Entity;
@@ -383,6 +386,17 @@ public class TestConditionExecutor {
       .type(Ref.RefType.TAG)
       .name(sampleName)
       .commit(ID_2);
+  }
+
+  /**
+   *
+   * @param random
+   * @return
+   */
+  public static Fragment createFragment(Random random) {
+    return new RocksFragment().keys(IntStream.range(0, 10)
+      .mapToObj(
+        i -> Key.of(createString(random, 5), createString(random, 9), String.valueOf(i))));
   }
 
   /**

@@ -52,7 +52,11 @@ public class RocksL1 extends RocksBaseValue<L1> implements L1, Evaluator {
   static Id EMPTY_ID = EMPTY.getId();
 
   public RocksL1() {
-    super(EMPTY_ID, 0);
+    super(Id.EMPTY, 0L);
+    this.metadataId = null;
+    this.parentList = null;
+    this.keyMutations = null;
+    this.tree = null;
   }
 
   private RocksL1(Id commitId, Stream<Id> tree, Id id, Stream<Key.Mutation> keyList, Stream<Id> parentList, Long dt) {
@@ -61,13 +65,6 @@ public class RocksL1 extends RocksBaseValue<L1> implements L1, Evaluator {
     this.parentList = parentList;
     this.keyMutations = keyList;
     this.tree = tree;
-
-    //    if (tree.size() != SIZE) {
-    //      throw new AssertionError("tree.size(" + tree.size() + ") != " + SIZE);
-    //    }
-    //    if (id != null && !id.equals(generateId())) {
-    //      throw new AssertionError("wrong id=" + id + ", expected=" + generateId());
-    //    }
   }
 
   @Override
@@ -116,7 +113,7 @@ public class RocksL1 extends RocksBaseValue<L1> implements L1, Evaluator {
     boolean result = true;
     for (Function function: condition.functionList) {
       // Retrieve entity at function.path
-      List<String> path = Arrays.asList(function.getPath().split(Pattern.quote(".")));
+      List<String> path = function.getPathAsList();
       String segment = path.get(0);
       if (segment.equals(ID)) {
         result &= ((path.size() == 1)

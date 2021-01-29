@@ -15,6 +15,10 @@
  */
 package com.dremio.nessie.versioned.store.rocksdb;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+
 import com.dremio.nessie.versioned.store.Entity;
 
 /**
@@ -49,6 +53,14 @@ public class Function {
     return (this.operator.equals(ex.operator)
         && this.path.equals(ex.path)
         && this.value.equals(ex.value));
+  }
+
+  /**
+   * Provides path segments as a list. List indexes, if present, are returned with the segment to which they relate.
+   * @return the List of path segments.
+   */
+  public List<String> getPathAsList() {
+    return Arrays.asList(path.split(Pattern.quote(".")));
   }
 
   public String getOperator() {
