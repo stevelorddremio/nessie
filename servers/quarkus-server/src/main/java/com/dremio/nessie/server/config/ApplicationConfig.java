@@ -40,6 +40,7 @@ public class ApplicationConfig {
   private final VersionStoreConfig versionStoreConfig;
   private final VersionStoreJGitConfig versionStoreJGitConfig;
   private final VersionStoreDynamoConfig versionStoreDynamoConfig;
+  private final VersionStoreRocksConfig versionStoreRocksConfig;
 
   /**
    * inject all configs form config providers.
@@ -48,14 +49,15 @@ public class ApplicationConfig {
   public ApplicationConfig(BackendsConfig backendsConfig,
                            VersionStoreConfig versionStoreConfig,
                            VersionStoreJGitConfig versionStoreJGitConfig,
-                           VersionStoreDynamoConfig versionStoreDynamoConfig) {
+                           VersionStoreDynamoConfig versionStoreDynamoConfig,
+                           VersionStoreRocksConfig versionStoreRocksConfig) {
 
     this.backendsConfig = backendsConfig;
     this.versionStoreConfig = versionStoreConfig;
     this.versionStoreJGitConfig = versionStoreJGitConfig;
     this.versionStoreDynamoConfig = versionStoreDynamoConfig;
+    this.versionStoreRocksConfig = versionStoreRocksConfig;
   }
-
 
   public BackendsConfig getBackendsConfig() {
     return backendsConfig;
@@ -73,6 +75,10 @@ public class ApplicationConfig {
     return versionStoreDynamoConfig;
   }
 
+  public VersionStoreRocksConfig getVersionStoreRocksConfig() {
+    return versionStoreRocksConfig;
+  }
+
   @ConfigProperties(prefix = "nessie.server")
   public interface ServerConfigImpl extends ServerConfig {
 
@@ -83,7 +89,6 @@ public class ApplicationConfig {
     @ConfigProperty(name = "send-stacktrace-to-client", defaultValue = "main")
     @Override
     boolean shouldSendstackTraceToAPIClient();
-
   }
 
   @ConfigProperties(prefix = "nessie.backends")
@@ -99,7 +104,6 @@ public class ApplicationConfig {
     @ConfigProperty(name = "type", defaultValue = "INMEMORY")
     VersionStoreType getVersionStoreType();
   }
-
 
   @ConfigProperties(prefix = "nessie.version.store.jgit")
   public interface VersionStoreJGitConfig {
@@ -119,6 +123,12 @@ public class ApplicationConfig {
 
     @ConfigProperty(defaultValue = DynamoStoreConfig.TABLE_PREFIX)
     String getTablePrefix();
+  }
 
+  @ConfigProperties(prefix = "nessie.version.store.rocks")
+  public interface VersionStoreRocksConfig {
+
+    @ConfigProperty(name = "directory", defaultValue = "")
+    String getDbDirectory();
   }
 }

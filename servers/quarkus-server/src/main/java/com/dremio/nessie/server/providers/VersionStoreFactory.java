@@ -39,6 +39,7 @@ import com.dremio.nessie.model.CommitMeta;
 import com.dremio.nessie.model.Contents;
 import com.dremio.nessie.server.config.ApplicationConfig;
 import com.dremio.nessie.server.config.ApplicationConfig.VersionStoreDynamoConfig;
+import com.dremio.nessie.server.config.ApplicationConfig.VersionStoreRocksConfig;
 import com.dremio.nessie.server.config.converters.VersionStoreType;
 import com.dremio.nessie.services.config.ServerConfig;
 import com.dremio.nessie.versioned.BranchName;
@@ -53,6 +54,8 @@ import com.dremio.nessie.versioned.impl.TieredVersionStore;
 import com.dremio.nessie.versioned.memory.InMemoryVersionStore;
 import com.dremio.nessie.versioned.store.dynamo.DynamoStore;
 import com.dremio.nessie.versioned.store.dynamo.DynamoStoreConfig;
+import com.dremio.nessie.versioned.store.rocksdb.RocksDBStore;
+import com.dremio.nessie.versioned.store.rocksdb.RocksDBStoreConfig;
 
 import software.amazon.awssdk.regions.Region;
 
@@ -86,7 +89,7 @@ public class VersionStoreFactory {
   @Singleton
   public VersionStore<Contents, CommitMeta> configuration(
       TableCommitMetaStoreWorker storeWorker, Repository repository, ServerConfig config) {
-    VersionStore<Contents, CommitMeta> store = getVersionStore(storeWorker, repository);
+    final VersionStore<Contents, CommitMeta> store = getVersionStore(storeWorker, repository);
     try (Stream<WithHash<NamedRef>> str = store.getNamedRefs()) {
       if (!str.findFirst().isPresent()) {
         // if this is a new database, create a branch with the default branch name.
@@ -104,19 +107,22 @@ public class VersionStoreFactory {
   private VersionStore<Contents, CommitMeta> getVersionStore(TableCommitMetaStoreWorker storeWorker, Repository repository) {
     switch (config.getVersionStoreConfig().getVersionStoreType()) {
       case DYNAMO:
-        LOGGER.info("Using Dyanmo Version store");
+        LOGGER.info("Using Dynamo Version store");
         return new TieredVersionStore<>(storeWorker, createDynamoConnection(), false);
       case JGIT:
-        LOGGER.info("Using JGit Version Store");
+        LOGGER.info("Using JGit Version store");
         return new JGitVersionStore<>(repository, storeWorker);
+      case ROCKSDB:
+        LOGGER.info("Using Rocks Version store");
+        return new TieredVersionStore<>(storeWorker, createRocksConnection(), false);
       case INMEMORY:
-        LOGGER.info("Using In Memory version store");
+        LOGGER.info("Using In Memory Version store");
         return InMemoryVersionStore.<Contents, CommitMeta>builder()
             .metadataSerializer(storeWorker.getMetadataSerializer())
             .valueSerializer(storeWorker.getValueWorker())
             .build();
       default:
-        throw new RuntimeException(String.format("unknown jgit repo type %s", config.getVersionStoreConfig().getVersionStoreType()));
+        throw new RuntimeException(String.format("unknown JGit repo type %s", config.getVersionStoreConfig().getVersionStoreType()));
     }
   }
 
@@ -144,6 +150,22 @@ public class VersionStoreFactory {
           .build());
     dynamo.start();
     return dynamo;
+  }
+
+  /**
+   * Create a RocksDB store based on config.
+   */
+  private RocksDBStore createRocksConnection() {
+    if (!config.getVersionStoreConfig().getVersionStoreType().equals(VersionStoreType.ROCKSDB)) {
+      return null;
+    }
+
+    final VersionStoreRocksConfig in = config.getVersionStoreRocksConfig();
+    final RocksDBStore rocks = new RocksDBStore(RocksDBStoreConfig.builder()
+        .dbDirectory(in.getDbDirectory())
+        .build());
+    rocks.start();
+    return rocks;
   }
 
   /**
