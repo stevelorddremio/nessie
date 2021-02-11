@@ -87,7 +87,7 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    */
   boolean evaluateStream(Function function, Stream<Id> stream) {
     // EQUALS will either compare a specified position or the whole stream as a List.
-    if (function.getOperator().equals(Function.EQUALS)) {
+    if (function.getOperator().equals(Function.Operator.EQUALS)) {
       final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
       if (pathSegment == null) {
         return toEntity(stream).equals(function.getValue());
@@ -97,7 +97,7 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
           return toEntity(stream, position).equals(function.getValue());
         }
       }
-    } else if (function.getOperator().equals(Function.SIZE)) {
+    } else if (function.getOperator().equals(Function.Operator.SIZE)) {
       return (stream.count() == function.getValue().getNumber());
     }
 
