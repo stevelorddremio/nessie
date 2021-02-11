@@ -52,7 +52,29 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   private enum Type {
-    INIT, TAG, BRANCH
+    INIT(null),
+    TAG("t"),
+    BRANCH("b");
+
+    private String identifier;
+    Type(String identifier) {
+      this.identifier = identifier;
+    }
+
+    /**
+     * Get the type associated with this type tag.
+     * @param identifier The type tag to classify.
+     * @return The type classified.
+     */
+    public static Type getType(String identifier) {
+      if (identifier.equals("b")) {
+        return BRANCH;
+      } else if (identifier.equals("t")) {
+        return TAG;
+      } else {
+        throw new IllegalArgumentException(String.format("Unknown identifier name [%s].", identifier));
+      }
+    }
   }
 
   private Type type = Type.INIT;
@@ -79,6 +101,9 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     switch (segment) {
       case ID:
         return idEvaluates(function);
+      case TYPE:
+        return (function.isRootNameSegmentChildlessAndEquals()
+          && type.equals(Type.getType(function.getValue().getString())));
       case NAME:
         return (function.isRootNameSegmentChildlessAndEquals()
           && name.equals(function.getValue().getString()));
@@ -112,6 +137,9 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     switch (segment) {
       case ID:
         return idEvaluates(function);
+      case TYPE:
+        return (function.isRootNameSegmentChildlessAndEquals()
+          && type.equals(Type.getType(function.getValue().getString())));
       case NAME:
         return (function.getOperator().equals(Function.EQUALS)
           && name.equals(function.getValue().getString()));
