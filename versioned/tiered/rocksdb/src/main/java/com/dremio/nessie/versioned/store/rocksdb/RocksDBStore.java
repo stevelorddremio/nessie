@@ -190,11 +190,11 @@ public class RocksDBStore implements Store {
 
     try (final Transaction transaction = rocksDB.beginTransaction(new WriteOptions())) {
       if (condition.isPresent()) {
-        final RocksBaseValue<C> consumer = RocksSerDe.getConsumer(saveOp.getType());
         final byte[] buffer = transaction.getForUpdate(new ReadOptions(), columnFamilyHandle, saveOp.getId().toBytes(), true);
         if (null == buffer) {
           throw new NotFoundException("Unable to load item with ID: " + saveOp.getId());
         }
+        final RocksBaseValue<C> consumer = RocksSerDe.getConsumer(saveOp.getType());
         RocksSerDe.deserializeToConsumer(saveOp.getType(), buffer, consumer);
 
         if (!consumer.evaluate(translate(condition.get()))) {
