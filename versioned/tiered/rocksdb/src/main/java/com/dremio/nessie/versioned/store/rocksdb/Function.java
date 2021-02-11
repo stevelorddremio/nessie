@@ -27,10 +27,6 @@ import com.dremio.nessie.versioned.store.Entity;
  */
 @Immutable
 abstract class Function {
-  // TODO: remove
-  //static final String EQUALS = "equals";
-  //static final String SIZE = "size";
-
   /**
    * An enum encapsulating.
    */
