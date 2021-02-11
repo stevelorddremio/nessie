@@ -84,4 +84,9 @@ class TestRocksDBStore extends AbstractTestStore<RocksDBStore> {
   private static Path getRawPath() {
     return DB_PATH.resolve("raw");
   }
+
+  @Override
+  protected boolean supportsUpdate() {
+    return false;
+  }
 }
