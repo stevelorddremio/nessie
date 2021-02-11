@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -38,7 +37,6 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
-import org.rocksdb.Status;
 import org.rocksdb.Transaction;
 import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
@@ -69,16 +67,11 @@ import com.google.common.collect.ImmutableMap;
 public class RocksDBStore implements Store {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RocksDBStore.class);
-  private static final long OPEN_SLEEP_MILLIS = 100L;
-  private static final List<byte[]> COLUMN_FAMILIES;
   private static final RocksDBValueVisitor VALUE_VISITOR = new RocksDBValueVisitor();
   private static final String DEFAULT_COLUMN_FAMILY = new String(RocksDB.DEFAULT_COLUMN_FAMILY, UTF_8);
 
   static {
     RocksDB.loadLibrary();
-    COLUMN_FAMILIES = Stream.concat(
-      Stream.of(RocksDB.DEFAULT_COLUMN_FAMILY),
-      ValueType.values().stream().map(v -> v.getValueName().getBytes(UTF_8))).collect(ImmutableList.toImmutableList());
   }
 
   private TransactionDB rocksDB;
@@ -98,35 +91,20 @@ public class RocksDBStore implements Store {
     final String dbPath = verifyPath();
     final List<ColumnFamilyDescriptor> columnFamilies = getColumnFamilies(dbPath);
 
-    // TODO: currently an infinite loop, need to configure
-    while (true) {
-      try (final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true)) {
-        // TODO: Consider setting WAL limits.
-        final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
-        rocksDB = TransactionDB.open(dbOptions, new TransactionDBOptions(), dbPath, columnFamilies, columnFamilyHandles);
-        final ImmutableMap.Builder<ValueType<?>, ColumnFamilyHandle> builder = new ImmutableMap.Builder<>();
-        for (ColumnFamilyHandle handle : columnFamilyHandles) {
-          final String valueTypeName = new String(handle.getName(), UTF_8);
-          if (!valueTypeName.equals(DEFAULT_COLUMN_FAMILY)) {
-            builder.put(ValueType.byValueName(valueTypeName), handle);
-          }
+    try (final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true)) {
+      // TODO: Consider setting WAL limits.
+      final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+      rocksDB = TransactionDB.open(dbOptions, new TransactionDBOptions(), dbPath, columnFamilies, columnFamilyHandles);
+      final ImmutableMap.Builder<ValueType<?>, ColumnFamilyHandle> builder = new ImmutableMap.Builder<>();
+      for (ColumnFamilyHandle handle : columnFamilyHandles) {
+        final String valueTypeName = new String(handle.getName(), UTF_8);
+        if (!valueTypeName.equals(DEFAULT_COLUMN_FAMILY)) {
+          builder.put(ValueType.byValueName(valueTypeName), handle);
         }
-        valueTypeToColumnFamily = builder.build();
-        break;
-      } catch (RocksDBException e) {
-        if (e.getStatus().getCode() != Status.Code.IOError || !e.getStatus().getState().contains("While lock")) {
-          throw new RuntimeException(e);
-        }
-
-        LOGGER.info("Lock file to RocksDB is currently held by another process. Will wait until lock is freed.");
       }
-
-      // Wait a bit before the next attempt.
-      try {
-        TimeUnit.MILLISECONDS.sleep(OPEN_SLEEP_MILLIS);
-      } catch (InterruptedException e) {
-        throw new RuntimeException("Interrupted while opening Nessie RocksDB.", e);
-      }
+      valueTypeToColumnFamily = builder.build();
+    } catch (RocksDBException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -212,7 +190,7 @@ public class RocksDBStore implements Store {
 
     try (final Transaction transaction = rocksDB.beginTransaction(new WriteOptions())) {
       if (condition.isPresent()) {
-        final RocksBaseValue consumer = RocksSerDe.getConsumer(saveOp.getType());
+        final RocksBaseValue<C> consumer = RocksSerDe.getConsumer(saveOp.getType());
         final byte[] buffer = transaction.getForUpdate(new ReadOptions(), columnFamilyHandle, saveOp.getId().toBytes(), true);
         if (null == buffer) {
           throw new NotFoundException("Unable to load item with ID: " + saveOp.getId());
@@ -367,11 +345,15 @@ public class RocksDBStore implements Store {
   }
 
   private List<ColumnFamilyDescriptor> getColumnFamilies(String dbPath) {
+    final List<byte[]> defaultColumnFamilies = Stream.concat(
+        Stream.of(RocksDB.DEFAULT_COLUMN_FAMILY),
+        ValueType.values().stream().map(v -> v.getValueName().getBytes(UTF_8))).collect(ImmutableList.toImmutableList());
+
     List<byte[]> columnFamilies = null;
     try (final Options options = new Options().setCreateIfMissing(true)) {
       columnFamilies = RocksDB.listColumnFamilies(options, dbPath);
 
-      if (!columnFamilies.isEmpty() && !COLUMN_FAMILIES.equals(columnFamilies)) {
+      if (!columnFamilies.isEmpty() && !defaultColumnFamilies.equals(columnFamilies)) {
         throw new RuntimeException(String.format("Unexpected format for Nessie database at '%s'.", dbPath));
       }
     } catch (RocksDBException e) {
@@ -379,7 +361,7 @@ public class RocksDBStore implements Store {
     }
 
     if (columnFamilies == null || columnFamilies.isEmpty()) {
-      columnFamilies = COLUMN_FAMILIES;
+      columnFamilies = defaultColumnFamilies;
     }
 
     return columnFamilies.stream()

@@ -73,23 +73,7 @@ abstract class Function {
    */
   boolean isRootNameSegmentChildlessAndEquals() {
     return !getRootPathAsNameSegment().getChild().isPresent()
-      && isEquals();
-  }
-
-  /**
-   * Evaluates if this expression is for equality.
-   * @return true if this function relates to a EQUALS evaluation.
-   */
-  boolean isEquals() {
-    return getOperator().equals(EQUALS);
-  }
-
-  /**
-   * Evaluates if this expression is for size.
-   * @return true if this function relates to a SIZE evaluation.
-   */
-  boolean isSize() {
-    return getOperator().equals(SIZE);
+      && getOperator().equals(Function.EQUALS);
   }
 
   /**

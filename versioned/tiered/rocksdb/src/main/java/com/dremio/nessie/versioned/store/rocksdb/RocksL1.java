@@ -109,7 +109,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       case KEY_LIST:
         return false;
       case INCREMENTAL_KEY_LIST:
-        if (!nameSegment.getChild().isPresent() || !function.isEquals()) {
+        if (!nameSegment.getChild().isPresent() || !function.getOperator().equals(Function.EQUALS)) {
           return false;
         }
         final String childName = nameSegment.getChild().get().asName().getName();

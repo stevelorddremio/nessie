@@ -204,6 +204,7 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
     store.resetCollections();
   }
 
+  @Override
   protected int loadSize() {
     return MongoDBStore.LOAD_SIZE;
   }

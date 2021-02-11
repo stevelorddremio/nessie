@@ -79,9 +79,9 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
         if (function.getRootPathAsNameSegment().getChild().isPresent()) {
           return false;
         }
-        if (function.isEquals()) {
+        if (function.getOperator().equals(Function.EQUALS)) {
           return keysAsEntityList(keys).equals(function.getValue());
-        } else if (function.isSize()) {
+        } else if (function.getOperator().equals(Function.SIZE)) {
           return (keys.count() == function.getValue().getNumber());
         } else {
           return false;

@@ -241,6 +241,7 @@ public class MongoDBStore implements Store {
     throw new UnsupportedOperationException();
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Override
   public void save(List<SaveOp<?>> ops) {
     final Map<ValueType<?>, List<SaveOp<?>>> perType = ops.stream().collect(Collectors.groupingBy(SaveOp::getType));

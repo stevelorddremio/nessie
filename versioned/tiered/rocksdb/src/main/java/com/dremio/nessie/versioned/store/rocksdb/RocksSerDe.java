@@ -113,8 +113,9 @@ final class RocksSerDe {
    * @param <C> The consumer type.
    * @return the consumer.
    */
-  static <C extends BaseValue<C>> RocksBaseValue getConsumer(ValueType<C> type) {
-    return CONSUMERS.get(type).get();
+  @SuppressWarnings("unchecked")
+  static <C extends BaseValue<C>> RocksBaseValue<C> getConsumer(ValueType<C> type) {
+    return (RocksBaseValue<C>) CONSUMERS.get(type).get();
   }
 
   /**

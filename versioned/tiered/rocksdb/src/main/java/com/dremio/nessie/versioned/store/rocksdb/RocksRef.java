@@ -113,10 +113,10 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       case ID:
         return idEvaluates(function);
       case NAME:
-        return (function.isEquals()
+        return (function.getOperator().equals(Function.EQUALS)
           && name.equals(function.getValue().getString()));
       case COMMIT:
-        return (function.isEquals()
+        return (function.getOperator().equals(Function.EQUALS)
           && commit.toEntity().equals(function.getValue()));
       default:
         return false;

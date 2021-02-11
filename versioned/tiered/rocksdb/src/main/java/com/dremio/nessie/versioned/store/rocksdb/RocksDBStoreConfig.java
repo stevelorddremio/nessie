@@ -22,33 +22,8 @@ import org.immutables.value.Value.Immutable;
 public abstract class RocksDBStoreConfig {
 
   @Default
-  public String getRefTableName() {
-    return "refs";
-  }
-
-  @Default
   public String getDbDirectory() {
     return "";
-  }
-
-  @Default
-  public String getTreeTableName() {
-    return "nessie_objects";
-  }
-
-  @Default
-  public String getValueTableName() {
-    return "values";
-  }
-
-  @Default
-  public String getKeyListTableName() {
-    return "keys";
-  }
-
-  @Default
-  public String getMetadataTableName() {
-    return "commit_metadata";
   }
 
   public static ImmutableRocksDBStoreConfig.Builder builder() {
