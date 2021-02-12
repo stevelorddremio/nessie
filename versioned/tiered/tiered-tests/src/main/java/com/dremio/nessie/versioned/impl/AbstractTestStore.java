@@ -56,7 +56,7 @@ import com.google.common.collect.Multimap;
  */
 public abstract class AbstractTestStore<S extends Store> {
 
-  static class CreatorPair {
+  private static class CreatorPair {
     final ValueType<?> type;
     final Supplier<PersistentBase<?>> supplier;
 
@@ -111,7 +111,9 @@ public abstract class AbstractTestStore<S extends Store> {
    */
   protected abstract S createStore();
 
-  protected abstract S createRawStore();
+  protected S createRawStore() {
+    return createStore();
+  }
 
   protected abstract long getRandomSeed();
 
@@ -795,10 +797,26 @@ public abstract class AbstractTestStore<S extends Store> {
   protected <T extends HasId> void testLoadSingle(ValueType<?> type, T sample) {
     final T read = (T) EntityType.forType(type).loadSingle(store, sample.getId());
     assertEquals(sample, read);
+    Assertions.assertEquals(sample.getId(), read.getId());
   }
 
   protected static void assertEquals(HasId expected, HasId actual) {
     Assertions.assertEquals(expected, actual);
     Assertions.assertEquals(expected.getId(), actual.getId());
+  }
+
+  protected <C extends BaseValue<C>> void testPut(ValueType type, HasId sample) {
+    testPut(type, sample, Optional.empty());
+  }
+
+  private <C extends BaseValue<C>, T extends PersistentBase<C>> void testPut(ValueType type, HasId sample,
+                                                                             Optional<ConditionExpression> conditionExpression) {
+    try {
+      store.put(new EntitySaveOp<>(type, (PersistentBase<C>) sample).saveOp, conditionExpression);
+    } catch (ConditionFailedException e) {
+      Assertions.fail(e);
+    }
+
+    testLoadSingle(type, sample);
   }
 }
