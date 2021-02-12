@@ -30,7 +30,7 @@ abstract class Function {
   /**
    * An enum encapsulating.
    */
-  public enum Operator {
+  enum Operator {
     // An operator comparing the equality of entities.
     EQUALS,
 
