@@ -15,8 +15,6 @@
  */
 package com.dremio.nessie.versioned.store.rocksdb;
 
-import static com.dremio.nessie.versioned.store.rocksdb.Function.SIZE;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -141,10 +139,10 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         return (function.isRootNameSegmentChildlessAndEquals()
           && type.equals(Type.getType(function.getValue().getString())));
       case NAME:
-        return (function.getOperator().equals(Function.EQUALS)
+        return (function.getOperator().equals(Function.Operator.EQUALS)
           && name.equals(function.getValue().getString()));
       case COMMIT:
-        return (function.getOperator().equals(Function.EQUALS)
+        return (function.getOperator().equals(Function.Operator.EQUALS)
           && commit.toEntity().equals(function.getValue()));
       default:
         return false;
