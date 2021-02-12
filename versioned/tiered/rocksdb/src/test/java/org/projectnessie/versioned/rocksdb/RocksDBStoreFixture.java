@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 
-import com.dremio.nessie.versioned.impl.AbstractTieredStoreFixture;
+import org.projectnessie.versioned.impl.AbstractTieredStoreFixture;
 
 /**
  * RocksDB Store fixture.

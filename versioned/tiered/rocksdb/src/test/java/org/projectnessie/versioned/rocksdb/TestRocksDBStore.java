@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.io.TempDir;
 
-import com.dremio.nessie.versioned.impl.AbstractTestStore;
+import org.projectnessie.versioned.impl.AbstractTestStore;
 import com.google.common.collect.ImmutableList;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

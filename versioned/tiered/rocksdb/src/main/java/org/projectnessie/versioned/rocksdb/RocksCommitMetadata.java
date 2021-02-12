@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
 import com.dremio.nessie.tiered.builder.CommitMetadata;
 import com.dremio.nessie.versioned.store.Id;

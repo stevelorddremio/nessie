@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 syntax = "proto3";
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
-option java_package = "com.dremio.nessie.versioned.store.rocksdb";
+option java_package = "org.projectnessie.versioned.rocksdb";
 option java_outer_classname = "ValueProtos";
 option java_generate_equals_and_hash = true;
 

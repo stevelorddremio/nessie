@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.dremio.nessie.tiered.builder.BaseValue;
-import com.dremio.nessie.tiered.builder.CommitMetadata;
-import com.dremio.nessie.tiered.builder.Fragment;
-import com.dremio.nessie.tiered.builder.L1;
-import com.dremio.nessie.tiered.builder.L2;
-import com.dremio.nessie.tiered.builder.L3;
-import com.dremio.nessie.tiered.builder.Ref;
-import com.dremio.nessie.tiered.builder.Value;
-import com.dremio.nessie.versioned.store.SaveOp;
-import com.dremio.nessie.versioned.store.ValueType;
+import org.projectnessie.versioned.store.SaveOp;
+import org.projectnessie.versioned.store.ValueType;
+import org.projectnessie.versioned.tiered.BaseValue;
+import org.projectnessie.versioned.tiered.CommitMetadata;
+import org.projectnessie.versioned.tiered.Fragment;
+import org.projectnessie.versioned.tiered.L1;
+import org.projectnessie.versioned.tiered.L2;
+import org.projectnessie.versioned.tiered.L3;
+import org.projectnessie.versioned.tiered.Ref;
+import org.projectnessie.versioned.tiered.Value;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 

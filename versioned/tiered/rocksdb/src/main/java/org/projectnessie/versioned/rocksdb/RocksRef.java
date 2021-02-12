@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
-import static com.dremio.nessie.versioned.store.rocksdb.Function.SIZE;
+import static org.projectnessie.versioned.rocksdb.Function.SIZE;
 
 import java.util.ArrayList;
 import java.util.List;

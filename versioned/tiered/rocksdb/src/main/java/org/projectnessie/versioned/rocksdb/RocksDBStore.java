@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -45,17 +45,17 @@ import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dremio.nessie.tiered.builder.BaseValue;
-import com.dremio.nessie.versioned.impl.condition.ConditionExpression;
-import com.dremio.nessie.versioned.impl.condition.UpdateExpression;
-import com.dremio.nessie.versioned.store.ConditionFailedException;
-import com.dremio.nessie.versioned.store.Id;
-import com.dremio.nessie.versioned.store.LoadOp;
-import com.dremio.nessie.versioned.store.LoadStep;
-import com.dremio.nessie.versioned.store.NotFoundException;
-import com.dremio.nessie.versioned.store.SaveOp;
-import com.dremio.nessie.versioned.store.Store;
-import com.dremio.nessie.versioned.store.ValueType;
+import org.projectnessie.versioned.tiered.BaseValue;
+import org.projectnessie.versioned.impl.condition.ConditionExpression;
+import org.projectnessie.versioned.impl.condition.UpdateExpression;
+import org.projectnessie.versioned.store.ConditionFailedException;
+import org.projectnessie.versioned.store.Id;
+import org.projectnessie.versioned.store.LoadOp;
+import org.projectnessie.versioned.store.LoadStep;
+import org.projectnessie.versioned.store.NotFoundException;
+import org.projectnessie.versioned.store.SaveOp;
+import org.projectnessie.versioned.store.Store;
+import org.projectnessie.versioned.store.ValueType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;

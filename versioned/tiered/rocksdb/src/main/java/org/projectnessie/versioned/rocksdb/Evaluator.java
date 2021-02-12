@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
-import org.immutables.value.Value.Default;
-import org.immutables.value.Value.Immutable;
+import java.util.List;
 
-@Immutable
-public abstract class RocksDBStoreConfig {
-
-  @Default
-  public String getDbDirectory() {
-    return "";
-  }
-
-  public static ImmutableRocksDBStoreConfig.Builder builder() {
-    return ImmutableRocksDBStoreConfig.builder();
-  }
+/**
+ * Provides evaluation of a collection of {@link org.projectnessie.versioned.rocksdb.Function} against the
+ * implementing class.
+ */
+interface Evaluator {
+  /**
+   * Checks that each Function in the collection is met by the implementing class.
+   * @param functions the functions to check
+   * @return true if the functions are met
+   */
+  boolean evaluate(List<Function> functions);
 }

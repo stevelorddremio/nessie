@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dremio.nessie.versioned.store.rocksdb;
+package org.projectnessie.versioned.rocksdb;
 
 import com.dremio.nessie.tiered.builder.Value;
 import com.dremio.nessie.versioned.store.Id;
