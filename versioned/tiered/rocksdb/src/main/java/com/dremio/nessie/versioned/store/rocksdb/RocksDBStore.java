@@ -192,7 +192,7 @@ public class RocksDBStore implements Store {
       if (condition.isPresent()) {
         final byte[] buffer = transaction.getForUpdate(new ReadOptions(), columnFamilyHandle, saveOp.getId().toBytes(), true);
         if (null == buffer) {
-          throw new NotFoundException("Unable to load item with ID: " + saveOp.getId());
+          throw new ConditionFailedException("Unable to load item with ID: " + saveOp.getId());
         }
         final RocksBaseValue<C> consumer = RocksSerDe.getConsumer(saveOp.getType());
         RocksSerDe.deserializeToConsumer(saveOp.getType(), buffer, consumer);
