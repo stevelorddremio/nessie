@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
@@ -125,6 +126,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     } else {
       throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
+
   }
 
   /**
@@ -302,11 +304,12 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     public Branch children(Stream<Id> children) {
       final List<ByteString> childList = children.map(Id::getValue).collect(Collectors.toList());
 
-      if (!refBuilder.hasBranch()) {
+      if (refBuilder.getRefValueCase() != ValueProtos.Ref.RefValueCase.BRANCH) {
         refBuilder.setBranch(
             ValueProtos.Branch
                 .newBuilder()
                 .addAllChildren(childList)
+                .build()
         );
       } else {
         refBuilder.setBranch(
@@ -314,6 +317,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
                 .newBuilder(refBuilder.getBranch())
                 .clearChildren()
                 .addAllChildren(childList)
+                .build()
         );
       }
 
@@ -367,7 +371,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
     @Override
     public BranchCommit done() {
-      RocksRef.this.refBuilder.setBranch(ValueProtos.Branch.newBuilder(RocksRef.this.refBuilder.getBranch()).addCommits(builder.build()));
+      refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).addCommits(builder.build()));
       builder.clear();
       return this;
     }
@@ -378,7 +382,8 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       builder.addDelta(ValueProtos.Delta.newBuilder()
           .setPosition(position)
           .setOldId(oldId.getValue())
-          .setNewId(newId.getValue()));
+          .setNewId(newId.getValue())
+          .build());
       return this;
     }
 
@@ -397,17 +402,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
   @Override
   byte[] build() {
-    checkPresent(refBuilder.getName(), NAME);
-
-    if (refBuilder.hasTag()) {
-      checkPresent(refBuilder.getTag().getId(), COMMIT);
-    } else {
-      checkPresent(refBuilder.getBranch().getCommitsList(), COMMITS);
-      checkPresent(refBuilder.getBranch().getChildrenList(), CHILDREN);
-      checkPresent(refBuilder.getBranch().getMetadataId(), METADATA);
-    }
-
-    return refBuilder.setBase(buildBase()).build().toByteArray();
+    return refBuilder.build().toByteArray();
   }
 
   /**
@@ -451,34 +446,6 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       } else {
         consumer.saved().parent(Id.of(commit.getParent())).done();
       }
-    }
-  }
-
-  String getName() {
-    return refBuilder.getName();
-  }
-
-  Stream<Id> getChildren() {
-    if (refBuilder.hasBranch()) {
-      return refBuilder.getBranch().getChildrenList().stream().map(Id::of);
-    } else {
-      return Stream.empty();
-    }
-  }
-
-  Id getMetadata() {
-    if (refBuilder.hasBranch()) {
-      return Id.of(refBuilder.getBranch().getMetadataId());
-    } else {
-      return null;
-    }
-  }
-
-  Id getCommit() {
-    if (refBuilder.hasTag()) {
-      return Id.of(refBuilder.getTag().getId());
-    } else {
-      return null;
     }
   }
 }

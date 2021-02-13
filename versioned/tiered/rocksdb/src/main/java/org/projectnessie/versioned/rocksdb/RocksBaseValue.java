@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
@@ -226,6 +227,9 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     }
   }
 
+  // TODO: we might be able to provide implementation here and just have
+  // abstract methods for SET and REMOVE, which will be implemented by the
+  // specific classes L1, L2 etc.
   /**
    * Filters through the list of UpdateClause objects to remove conflicting updates. The order of
    * the updates is preserved. Conflicts are defined as follows:
