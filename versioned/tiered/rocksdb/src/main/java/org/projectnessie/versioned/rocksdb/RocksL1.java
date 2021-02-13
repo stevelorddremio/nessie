@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
@@ -134,6 +135,20 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       // Catch exceptions raise due to malformed ConditionExpressions.
       return false;
     }
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    final Function function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+
+    switch (function.getOperator()) {
+      case "SET":
+        break;
+      case "REMOVE":
+        break;
+      default:
+    }
+    return true;
   }
 
   @Override
