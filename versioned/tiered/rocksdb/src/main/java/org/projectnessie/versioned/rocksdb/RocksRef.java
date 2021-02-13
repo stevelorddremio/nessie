@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
@@ -122,7 +123,6 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     } else {
       throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
-
   }
 
   /**
@@ -137,6 +137,11 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         || !Id.of(builder.getTag().getId()).toEntity().equals(function.getValue())) {
       throw new ConditionFailedException(conditionNotMatchedMessage(function));
     }
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    throw new UnsupportedOperationException();
   }
 
   @Override

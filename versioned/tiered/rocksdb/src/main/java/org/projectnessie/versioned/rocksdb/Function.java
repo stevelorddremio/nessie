@@ -15,71 +15,18 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
-import java.util.Objects;
-
-import org.immutables.value.Value.Immutable;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.store.Entity;
 
 /**
- * An expression that is asserted against an Entity.
+ * An operation that is performed against an Entity.
  */
-@Immutable
 abstract class Function {
-  /**
-   * An enum encapsulating.
-   */
-  enum Operator {
-    // An operator comparing the equality of entities.
-    EQUALS,
-
-    // An operator comparing the size of entities.
-    SIZE
-  }
-
-  /**
-   * Compares for equality with a provided Function object.
-   * @param object  the object to compare
-   * @return true if this is equal to provided object
-   */
-  @Override
-  public boolean equals(Object object) {
-    if (object == this) {
-      return true;
-    }
-
-    if (!(object instanceof Function)) {
-      return false;
-    }
-
-    final Function function = (Function) object;
-    return (getOperator().equals(function.getOperator())
-        && getPath().equals(function.getPath())
-        && getValue().equals(function.getValue()));
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getOperator(), getPath(), getValue());
-  }
-
-  abstract Operator getOperator();
-
   abstract ExpressionPath getPath();
 
   abstract Entity getValue();
 
   ExpressionPath.NameSegment getRootPathAsNameSegment() {
     return getPath().getRoot().asName();
-  }
-
-  /**
-   * A utility to aid evaluation of the Function in checking for equality on
-   * a leaf {@link org.projectnessie.versioned.impl.condition.ExpressionPath.NameSegment}.
-   * @return true if both root nameSegment is childless and function has an equality operator
-   */
-  boolean isRootNameSegmentChildlessAndEquals() {
-    return !getRootPathAsNameSegment().getChild().isPresent()
-      && getOperator().equals(Operator.EQUALS);
   }
 }

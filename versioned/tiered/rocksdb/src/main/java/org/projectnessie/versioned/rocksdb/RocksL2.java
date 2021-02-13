@@ -19,6 +19,7 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
@@ -48,7 +49,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   }
 
   @Override
-  public void evaluate(Function function) throws ConditionFailedException {
+  public void evaluate(ConditionFunction function) throws ConditionFailedException {
     final String segment = function.getRootPathAsNameSegment().getName();
     switch (segment) {
       case ID:
@@ -62,6 +63,11 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
         throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
 
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    throw new UnsupportedOperationException();
   }
 
   @Override

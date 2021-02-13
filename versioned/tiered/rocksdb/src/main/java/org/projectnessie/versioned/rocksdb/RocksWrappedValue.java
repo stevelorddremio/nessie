@@ -15,6 +15,7 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.BaseWrappedValue;
@@ -52,6 +53,11 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
         // Invalid Condition Function.
         throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    throw new UnsupportedOperationException();
   }
 
   @SuppressWarnings("unchecked")

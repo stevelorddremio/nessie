@@ -16,6 +16,7 @@
 
 package org.projectnessie.versioned.rocksdb;
 
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.tiered.CommitMetadata;
 
@@ -32,5 +33,10 @@ class RocksCommitMetadata extends RocksWrappedValue<CommitMetadata> implements C
 
   RocksCommitMetadata() {
     super();
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    throw new UnsupportedOperationException();
   }
 }

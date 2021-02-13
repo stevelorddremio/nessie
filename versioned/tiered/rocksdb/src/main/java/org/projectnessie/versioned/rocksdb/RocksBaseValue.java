@@ -18,6 +18,7 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
@@ -166,11 +167,18 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
       function.getRootPathAsNameSegment().getName());
   }
 
+  /**
+   * Entry point to update this object with a series of UpdateClauses.
+   * @param updates the updates to apply
+   */
   @Override
   public void update(UpdateExpression updates) {
     updates.getClauses().forEach(clause -> updateWithClause(clause));
   }
 
+  // TODO: we might be able to provide implementation here and just have
+  // abstract methods for SET and REMOVE, which will be implemented by the
+  // specific classes L1, L2 etc.
   /**
    * Applies an update to the implementing class.
    * @param updateClause the update to apply to the implementing class.

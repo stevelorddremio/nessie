@@ -16,10 +16,10 @@
 
 package org.projectnessie.versioned.rocksdb;
 
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.KeyDelta;
@@ -59,13 +59,18 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
   }
 
   @Override
-  public void evaluate(Function function) throws ConditionFailedException {
+  public void evaluate(ConditionFunction function) throws ConditionFailedException {
     final String segment = function.getRootPathAsNameSegment().getName();
     if (segment.equals(ID)) {
       evaluatesId(function);
     } else {
       throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    throw new UnsupportedOperationException();
   }
 
   @Override

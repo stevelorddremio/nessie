@@ -58,9 +58,9 @@ class TestConditionExecutor {
   @Test
   void executorL1Empty() {
     final String path = createPath();
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(path))
           .value(TRUE_ENTITY)
           .build());
@@ -83,9 +83,9 @@ class TestConditionExecutor {
   @Test
   void executorL1IncrementalKeyListCheckpointId() {
     final ExpressionPath expressionPath = ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST).name(RocksL1.CHECKPOINT_ID).build();
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(expressionPath)
           .value(ID.toEntity())
           .build());
@@ -99,9 +99,9 @@ class TestConditionExecutor {
   void executorL1IncrementalKeyListDistanceFromCheckpoint() {
     final ExpressionPath expressionPath = ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST)
         .name(RocksL1.DISTANCE_FROM_CHECKPOINT).build();
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(expressionPath)
           .value(ONE)
           .build());
@@ -113,9 +113,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL1ChildrenSize() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.SIZE)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.SIZE)
           .path(ofPath(RocksL1.CHILDREN))
           .value(Entity.ofNumber(RocksL1.SIZE))
           .build());
@@ -136,9 +136,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL1ChildrenEqualsListPosition() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ExpressionPath.builder(RocksL1.CHILDREN).position(3).build())
           .value(ID.toEntity())
           .build());
@@ -150,9 +150,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL1AncestorsSize() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.SIZE)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.SIZE)
           .path(ofPath(RocksL1.ANCESTORS))
           .value(Entity.ofNumber(RocksL1.SIZE))
           .build());
@@ -173,9 +173,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL1AncestorsEqualsListPosition() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ExpressionPath.builder(RocksL1.ANCESTORS).position(3).build())
           .value(ID.toEntity())
           .build());
@@ -187,9 +187,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL1FragmentsSize() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.SIZE)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.SIZE)
           .path(ofPath(RocksL1.COMPLETE_KEY_LIST))
           .value(Entity.ofNumber(RocksL1.SIZE))
           .build());
@@ -205,9 +205,9 @@ class TestConditionExecutor {
     for (int i = 0; i < RocksL1.SIZE; i++) {
       idsAsEntity.add(ID.toEntity());
     }
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(RocksL1.COMPLETE_KEY_LIST))
           .value(Entity.ofList(idsAsEntity))
           .build());
@@ -219,9 +219,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL1FragmentsEqualsListPosition() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ExpressionPath.builder(RocksL1.COMPLETE_KEY_LIST).position(3).build())
           .value(ID.toEntity())
           .build());
@@ -234,9 +234,9 @@ class TestConditionExecutor {
   @Test
   void executorL2Empty() {
     final String path = createPath();
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(path))
           .value(TRUE_ENTITY)
           .build());
@@ -253,9 +253,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL2ChildrenSize() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.SIZE)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.SIZE)
           .path(ofPath(RocksL1.CHILDREN))
           .value(Entity.ofNumber(RocksL1.SIZE))
           .build());
@@ -276,9 +276,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL2ChildrenEqualsListPosition() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ExpressionPath.builder(RocksL1.CHILDREN).position(3).build())
           .value(ID.toEntity())
           .build());
@@ -291,9 +291,9 @@ class TestConditionExecutor {
   @Test
   void executorL3Empty() {
     final String path = createPath();
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(path))
           .value(TRUE_ENTITY)
           .build());
@@ -305,9 +305,9 @@ class TestConditionExecutor {
 
   @Test
   void executorL3ID() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(RocksL3.ID))
           .value(Id.EMPTY.toEntity())
           .build());
@@ -320,9 +320,9 @@ class TestConditionExecutor {
   @Test
   void executorCommitMetadataId() {
     final Id id = Id.build("test-id");
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(RocksCommitMetadata.ID))
           .value(id.toEntity())
           .build());
@@ -336,9 +336,9 @@ class TestConditionExecutor {
   @Test
   void executorCommitMetadataValue() {
     final ByteString value = ByteString.copyFrom(SampleEntities.createBinary(random, 6));
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(RocksCommitMetadata.VALUE))
           .value(Entity.ofBinary(value))
           .build());
@@ -352,9 +352,9 @@ class TestConditionExecutor {
   void executorCommitMetadataIdNoMatch() {
     final Id searchId = Id.build("search-id");
     final Id actualId = Id.build("actual-id");
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(RocksCommitMetadata.ID))
           .value(searchId.toEntity())
           .build());
@@ -368,9 +368,9 @@ class TestConditionExecutor {
   void executorCommitMetadataValueNoMatch() {
     final ByteString searchValue = ByteString.copyFrom(SampleEntities.createBinary(random, 6));
     final ByteString actualValue = ByteString.copyFrom(SampleEntities.createBinary(random, 6));
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(RocksCommitMetadata.VALUE))
           .value(Entity.ofBinary(searchValue))
           .build());
@@ -383,9 +383,9 @@ class TestConditionExecutor {
   @Test
   void executorTagEmpty() {
     final String path = createPath();
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(path))
           .value(TRUE_ENTITY)
           .build());
@@ -397,9 +397,9 @@ class TestConditionExecutor {
 
   @Test
   void executorTagID() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(RocksRef.ID))
           .value(Id.EMPTY.toEntity())
           .build());
@@ -422,9 +422,9 @@ class TestConditionExecutor {
   // Children do not exist for Tags
   @Test
   void executorTagChildrenEqualsListPosition() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ExpressionPath.builder(RocksRef.CHILDREN).position(6).build())
           .value(ID.toEntity())
           .build());
@@ -446,9 +446,9 @@ class TestConditionExecutor {
 
   @Test
   void executorBranchChildrenSize() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.SIZE)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.SIZE)
           .path(ofPath(RocksRef.CHILDREN))
           .value(Entity.ofNumber(RocksL1.SIZE))
           .build());
@@ -469,9 +469,9 @@ class TestConditionExecutor {
 
   @Test
   void executorBranchChildrenEqualsListPosition() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ExpressionPath.builder(RocksRef.CHILDREN).position(8).build())
           .value(ID.toEntity())
           .build());
@@ -488,9 +488,9 @@ class TestConditionExecutor {
 
   @Test
   void executorBranchCommitsSize() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.SIZE)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.SIZE)
           .path(ofPath(RocksRef.COMMITS))
           .value(Entity.ofNumber(2))
           .build());
@@ -517,9 +517,9 @@ class TestConditionExecutor {
 
   @Test
   void executorFragmentSizeKeys() {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.SIZE)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.SIZE)
           .path(ofPath(RocksFragment.KEY_LIST))
           .value(Entity.ofNumber(keyListSize))
           .build());
@@ -554,9 +554,9 @@ class TestConditionExecutor {
   }
 
   private static void equalsRocksBaseValue(String path, Entity entity, RocksBaseValue<?> rocksBaseValue) {
-    final List<Function> expectedFunctions = ImmutableList.of(
-        ImmutableFunction.builder()
-          .operator(Function.Operator.EQUALS)
+    final List<ConditionFunction> expectedFunctions = ImmutableList.of(
+        ImmutableConditionFunction.builder()
+          .operator(ConditionFunction.Operator.EQUALS)
           .path(ofPath(path))
           .value(entity)
           .build());
