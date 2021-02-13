@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
+import org.projectnessie.versioned.impl.condition.UpdateClause;
+import org.projectnessie.versioned.impl.condition.UpdateExpression;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
@@ -32,7 +34,7 @@ import com.google.common.base.Preconditions;
  * An implementation of @{BaseValue} used for ConditionExpression and UpdateExpression evaluation.
  * @param <C> Specialization of a specific BaseValue interface.
  */
-abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, Evaluator {
+abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, Evaluator, Updater {
 
   static final String ID = "id";
   private final ValueProtos.BaseValue.Builder builder = ValueProtos.BaseValue.newBuilder();
@@ -163,6 +165,18 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     return String.format("Condition %s did not match the actual value for %s", function.getValue().getType(),
       function.getRootPathAsNameSegment().getName());
   }
+
+  @Override
+  public void update(UpdateExpression updates) {
+    updates.getClauses().forEach(clause -> updateWithClause(clause));
+  }
+
+  /**
+   * Applies an update to the implementing class.
+   * @param updateClause the update to apply to the implementing class.
+   * @return true if the update was successful
+   */
+  abstract boolean updateWithClause(UpdateClause updateClause);
 
   /**
    * Serialize the value to protobuf format.
