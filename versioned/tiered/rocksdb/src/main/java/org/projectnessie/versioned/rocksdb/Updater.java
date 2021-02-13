@@ -18,6 +18,10 @@ package org.projectnessie.versioned.rocksdb;
 
 import org.projectnessie.versioned.impl.condition.UpdateExpression;
 
+/**
+ * Applies updates from a collection of {@link org.projectnessie.versioned.rocksdb.UpdateFunction} against the
+ * implementing class's attributes.
+ */
 public interface Updater {
 
   /**

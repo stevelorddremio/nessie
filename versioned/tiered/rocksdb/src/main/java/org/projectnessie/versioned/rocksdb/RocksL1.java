@@ -139,16 +139,46 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   public boolean updateWithClause(UpdateClause updateClause) {
-    final Function function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
 
     switch (function.getOperator()) {
-      case "SET":
+      case SET:
         break;
-      case "REMOVE":
+      case REMOVE:
         break;
       default:
     }
     return true;
+  }
+
+  private boolean updateSetClause(UpdateFunction function) {
+    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
+    final String segment = nameSegment.getName();
+    switch (segment) {
+      case ID:
+        id(Id.of(function.getValue().getBinary()));
+        break;
+      default:
+    }
+    return true;
+  }
+
+  /**
+   * Set a specific value in this object.
+   * @param function the set function to apply
+   * @return true if this operation succeeds
+   */
+  private boolean setUpdate(Function function) {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Remove a specific value in this object.
+   * @param function the set function to apply
+   * @return true if this operation succeeds
+   */
+  private boolean removeUpdate(Function function) {
+    throw new UnsupportedOperationException();
   }
 
   @Override

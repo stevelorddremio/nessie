@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.Fragment;
@@ -106,5 +107,10 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
    */
   private Entity keysAsEntityList(List<Key> keys) {
     return Entity.ofList(keys.stream().map(k -> Entity.ofList(k.getElements().stream().map(Entity::ofString))));
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    throw new UnsupportedOperationException();
   }
 }

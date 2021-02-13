@@ -23,30 +23,28 @@ import org.projectnessie.versioned.impl.condition.UpdateClauseVisitor;
 import org.projectnessie.versioned.store.Entity;
 
 /**
- * This provides a separation of generation of Function from @{UpdateExpression} from the object itself.
+ * This provides a separation of generation of UpdateFunction from @{UpdateExpression} from the object itself.
  */
-class RocksDBUpdateClauseVisitor implements UpdateClauseVisitor<Function> {
+class RocksDBUpdateClauseVisitor implements UpdateClauseVisitor<UpdateFunction> {
   static final RocksDBUpdateClauseVisitor ROCKS_DB_UPDATE_CLAUSE_VISITOR = new RocksDBUpdateClauseVisitor();
 
   @Override
-  public Function visit(RemoveClause clause) {
-    return ImmutableFunction.builder().operator(Function.EQUALS).path(clause.getPath()).build();
+  public UpdateFunction visit(RemoveClause clause) {
+    return ImmutableUpdateFunction.builder().operator(UpdateFunction.Operator.REMOVE).path(clause.getPath()).build();
   }
 
   @Override
-  public Function visit(SetClause clause) {
+  public UpdateFunction visit(SetClause clause) {
     switch (clause.getValue().getType()) {
       case VALUE:
-        return ImmutableFunction.builder()
-            // TODO: define correct function for update
-            .operator(Function.SIZE)
+        return ImmutableUpdateFunction.builder()
+            .operator(UpdateFunction.Operator.REMOVE)
             .path(clause.getPath())
             .value(clause.getValue().getValue())
             .build();
       case FUNCTION:
-        return ImmutableFunction.builder()
-            // TODO: define correct function for update
-            .operator(Function.SIZE)
+        return ImmutableUpdateFunction.builder()
+            .operator(UpdateFunction.Operator.REMOVE)
             .path(clause.getPath())
             .value(handleFunction(clause.getValue().getFunction()))
             .build();

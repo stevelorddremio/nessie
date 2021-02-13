@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.Ref;
@@ -128,7 +129,6 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       // Catch exceptions raise due to malformed ConditionExpressions.
       return false;
     }
-
   }
 
   /**
@@ -159,6 +159,11 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       // Catch exceptions raise due to malformed ConditionExpressions.
       return false;
     }
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    throw new UnsupportedOperationException();
   }
 
   @Override

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.L2;
@@ -46,7 +47,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   }
 
   @Override
-  public boolean evaluate(Function function) {
+  public boolean evaluate(ConditionFunction function) {
     final String segment = function.getRootPathAsNameSegment().getName();
     try {
       switch (segment) {
@@ -63,6 +64,11 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
       return false;
     }
 
+  }
+
+  @Override
+  public boolean updateWithClause(UpdateClause updateClause) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
