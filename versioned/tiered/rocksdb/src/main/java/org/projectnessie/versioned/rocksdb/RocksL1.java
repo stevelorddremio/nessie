@@ -143,12 +143,12 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
     switch (function.getOperator()) {
       case SET:
-        break;
+        return updateSetClause(function);
       case REMOVE:
-        break;
+        throw new UnsupportedOperationException();
       default:
+        throw new UnsupportedOperationException();
     }
-    return true;
   }
 
   private boolean updateSetClause(UpdateFunction function) {
@@ -161,24 +161,6 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       default:
     }
     return true;
-  }
-
-  /**
-   * Set a specific value in this object.
-   * @param function the set function to apply
-   * @return true if this operation succeeds
-   */
-  private boolean setUpdate(Function function) {
-    throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Remove a specific value in this object.
-   * @param function the set function to apply
-   * @return true if this operation succeeds
-   */
-  private boolean removeUpdate(Function function) {
-    throw new UnsupportedOperationException();
   }
 
   @Override
