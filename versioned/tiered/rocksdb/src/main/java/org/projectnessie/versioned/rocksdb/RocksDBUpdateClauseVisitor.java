@@ -38,13 +38,13 @@ class RocksDBUpdateClauseVisitor implements UpdateClauseVisitor<UpdateFunction> 
     switch (clause.getValue().getType()) {
       case VALUE:
         return ImmutableUpdateFunction.builder()
-            .operator(UpdateFunction.Operator.REMOVE)
+            .operator(UpdateFunction.Operator.SET)
             .path(clause.getPath())
             .value(clause.getValue().getValue())
             .build();
       case FUNCTION:
         return ImmutableUpdateFunction.builder()
-            .operator(UpdateFunction.Operator.REMOVE)
+            .operator(UpdateFunction.Operator.SET)
             .path(clause.getPath())
             .value(handleFunction(clause.getValue().getFunction()))
             .build();
