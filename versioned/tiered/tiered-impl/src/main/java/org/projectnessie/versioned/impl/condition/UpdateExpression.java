@@ -51,9 +51,8 @@ public abstract class UpdateExpression implements Aliasable<UpdateExpression> {
    */
   public String toUpdateExpressionString() {
     Preconditions.checkArgument(!getClauses().isEmpty(), "At least one clauses must be defined.");
-    ListMultimap<UpdateClause.Type, UpdateClause> clauses = Multimaps.index(getClauses(), c -> c.getType());
-    StringBuilder sb = new StringBuilder();
-    addIfExist(sb, clauses.get(Type.ADD), Type.ADD);
+    final ListMultimap<UpdateClause.Type, UpdateClause> clauses = Multimaps.index(getClauses(), UpdateClause::getType);
+    final StringBuilder sb = new StringBuilder();
     addIfExist(sb, clauses.get(Type.SET), Type.SET);
     addIfExist(sb, clauses.get(Type.REMOVE), Type.REMOVE);
     addIfExist(sb, clauses.get(Type.DELETE), Type.DELETE);
@@ -86,7 +85,7 @@ public abstract class UpdateExpression implements Aliasable<UpdateExpression> {
    * Collect update expressions into a single compound update expression.
    * @return combined update.
    */
-  public static final Collector<UpdateExpression, List<UpdateClause>, UpdateExpression> toUpdateExpression() {
+  public static Collector<UpdateExpression, List<UpdateClause>, UpdateExpression> toUpdateExpression() {
     return Collector.of(
       Lists::newArrayList,
       (o1, l1) -> o1.addAll(l1.getClauses()),

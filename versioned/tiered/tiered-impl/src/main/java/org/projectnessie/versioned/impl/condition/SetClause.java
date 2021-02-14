@@ -47,5 +47,8 @@ public abstract class SetClause implements UpdateClause {
     return String.format("%s = %s", getPath().asString(), getValue().asString());
   }
 
-
+  @Override
+  public <T> T accept(UpdateClauseVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

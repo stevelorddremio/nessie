@@ -15,23 +15,18 @@
  */
 package org.projectnessie.versioned.impl.condition;
 
-import org.projectnessie.versioned.impl.condition.AliasCollector.Aliasable;
-
-public interface UpdateClause extends Aliasable<UpdateClause> {
-
-  enum Type {
-    SET, REMOVE, DELETE;
-  }
-
-  Type getType();
-
-  String toClauseString();
-
+public interface UpdateClauseVisitor<T> {
   /**
-   * Acceptor for any visitors of the UpdateClause hierarchy.
-   * @param visitor the visitor that will be invoked.
-   * @param <T> the type of the returned value.
+   * Visit the passed in RemoveClause.
+   * @param clause the clause to visit.
    * @return the possibly transformed value resulting from the visitation.
    */
-  <T> T accept(UpdateClauseVisitor<T> visitor);
+  T visit(RemoveClause clause);
+
+  /**
+   * Visit the passed in SetClause.
+   * @param clause the clause to visit.
+   * @return the possibly transformed value resulting from the visitation.
+   */
+  T visit(SetClause clause);
 }

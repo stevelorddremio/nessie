@@ -384,7 +384,7 @@ public abstract class AbstractTestStore<S extends Store> {
 
   @Nested
   @DisplayName("put() tests")
-  class PutWithoutConditionExpressionTests {
+  class PutTests {
     @Test
     void putWithConditionValue() {
       putWithCondition(ValueType.VALUE, SampleEntities.createValue(random));
@@ -465,7 +465,7 @@ public abstract class AbstractTestStore<S extends Store> {
 
     @SuppressWarnings("unchecked")
     private <C extends BaseValue<C>> void putConditional(ValueType<C> type, HasId sample, boolean shouldSucceed,
-                                                           Optional<ConditionExpression> conditionExpression) {
+                                                         Optional<ConditionExpression> conditionExpression) {
       if (!supportsConditionExpression()) {
         return;
       }
@@ -742,7 +742,7 @@ public abstract class AbstractTestStore<S extends Store> {
           ValueType.KEY_FRAGMENT,
           fragment.getId(),
           UpdateExpression.of(SetClause.appendToList(
-              ExpressionPath.builder("keys").build(), Entity.ofList(Entity.ofList(Entity.ofString(key))))),
+              ExpressionPath.builder("keys").build(), Entity.ofList(Entity.ofString(key)))),
           Optional.empty(),
           Optional.of(builder));
       Assertions.assertTrue(result);

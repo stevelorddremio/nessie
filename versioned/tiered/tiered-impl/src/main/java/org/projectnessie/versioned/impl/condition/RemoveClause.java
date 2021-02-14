@@ -40,5 +40,8 @@ public abstract class RemoveClause implements UpdateClause {
     return getPath().asString();
   }
 
-
+  @Override
+  public <T> T accept(UpdateClauseVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

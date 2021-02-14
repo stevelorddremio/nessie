@@ -88,7 +88,7 @@ final class MongoSerDe {
     // empty
   }
 
-  static <C extends BaseValue<C>> void produceToConsumer(Document d, ValueType<C> valueType, C consumer) {
+  static <C extends BaseValue<C>> void produceToConsumer(Document d, ValueType<C> valueType, BaseValue<C> consumer) {
     DESERIALIZERS.get(valueType).accept(d, consumer);
   }
 

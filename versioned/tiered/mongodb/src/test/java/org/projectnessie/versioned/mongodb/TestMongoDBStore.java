@@ -27,7 +27,6 @@ import org.projectnessie.versioned.impl.AbstractTestStore;
 @ExtendWith(LocalMongo.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
-  private static final String testDatabaseName = "mydb";
   private String connectionString;
 
   @BeforeAll
@@ -77,27 +76,6 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
       public String getConnectionString() {
         return connectionString;
       }
-
-      @Override
-      public String getDatabaseName() {
-        return testDatabaseName;
-      }
     };
-  }
-
-  // Disabled tests
-  @Override
-  protected boolean supportsDelete() {
-    return false;
-  }
-
-  @Override
-  protected boolean supportsUpdate() {
-    return false;
-  }
-
-  @Override
-  protected boolean supportsConditionExpression() {
-    return false;
   }
 }
