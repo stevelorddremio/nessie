@@ -173,7 +173,7 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    */
   @Override
   public void update(UpdateExpression updates) {
-    updates.getClauses().forEach(clause -> updateWithClause(clause));
+    updates.getClauses().forEach(this::updateWithClause);
   }
 
   // TODO: we might be able to provide implementation here and just have

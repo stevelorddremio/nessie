@@ -19,12 +19,12 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.Objects;
 
 import org.immutables.value.Value.Immutable;
+import org.projectnessie.versioned.store.Entity;
 
 /**
  * An update that is peformed on an entity.
  */
-@Immutable
-abstract class UpdateFunction extends Function {
+interface UpdateFunction extends Function {
   /**
    * An enum encapsulating.
    */
@@ -36,39 +36,74 @@ abstract class UpdateFunction extends Function {
     SET
   }
 
-  /**
-   * Compares for equality with a provided UpdateFunction object.
-   * @param object  the object to compare
-   * @return true if this is equal to provided object
-   */
-  @Override
-  public boolean equals(Object object) {
-    if (object == this) {
-      return true;
-    }
-
-    if (!(object instanceof UpdateFunction)) {
-      return false;
-    }
-
-    final UpdateFunction function = (UpdateFunction) object;
-    return (getOperator().equals(function.getOperator())
-      && getPath().equals(function.getPath())
-      && getValue().equals(function.getValue()));
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getOperator(), getPath(), getValue());
-  }
-
   abstract Operator getOperator();
 
-  /**
-   * Builds an immutable representation of this class.
-   * @return the builder
-   */
-  public static ImmutableUpdateFunction.Builder builder() {
-    return ImmutableUpdateFunction.builder();
+  @Immutable
+  abstract class RemoveFunction implements UpdateFunction {
+
+    /**
+     * Compares for equality with a provided UpdateFunction object.
+     * @param object  the object to compare
+     * @return true if this is equal to provided object
+     */
+    @Override
+    public boolean equals(Object object) {
+      if (object == this) {
+        return true;
+      }
+
+      if (!(object instanceof UpdateFunction)) {
+        return false;
+      }
+
+      final UpdateFunction function = (UpdateFunction) object;
+      return (getOperator().equals(function.getOperator())
+        && getPath().equals(function.getPath()));
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(getOperator(), getPath());
+    }
+
+  }
+
+  @Immutable
+  abstract class SetFunction implements UpdateFunction {
+    enum SubOperator {
+      EQUALS,
+      APPEND_TO_LIST
+    }
+
+    abstract Entity getValue();
+
+    abstract SubOperator getSubOperator();
+
+    /**
+     * Compares for equality with a provided UpdateFunction object.
+     * @param object  the object to compare
+     * @return true if this is equal to provided object
+     */
+    @Override
+    public boolean equals(Object object) {
+      if (object == this) {
+        return true;
+      }
+
+      if (!(object instanceof SetFunction)) {
+        return false;
+      }
+
+      final SetFunction function = (SetFunction) object;
+      return (getOperator().equals(function.getOperator())
+        && getPath().equals(function.getPath())
+        && getValue().equals(function.getValue())
+        && getSubOperator().equals(function.getSubOperator()));
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(getOperator(), getPath(), getValue());
+    }
   }
 }
