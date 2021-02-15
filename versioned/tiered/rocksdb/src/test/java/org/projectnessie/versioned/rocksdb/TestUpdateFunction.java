@@ -52,23 +52,15 @@ public class TestUpdateFunction {
     @Test
     void setEquals() {
       final SetClause setClause = SetClause.equals(L1_ID_PATH, ID_ENTITY);
-      final UpdateFunction.SetFunction function =
-          (UpdateFunction.SetFunction) setClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
-      Assertions.assertEquals(UpdateFunction.Operator.SET, function.getOperator());
+      final UpdateFunction.SetFunction function = setTest(setClause);
       Assertions.assertEquals(UpdateFunction.SetFunction.SubOperator.EQUALS, function.getSubOperator());
-      Assertions.assertEquals(L1_ID_PATH, function.getPath());
-      Assertions.assertEquals(ID_ENTITY, function.getValue());
     }
 
     @Test
     void setAppendToList() {
       final SetClause setClause = SetClause.appendToList(L1_ID_PATH, ID_ENTITY);
-      final UpdateFunction.SetFunction function =
-          (UpdateFunction.SetFunction) setClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
-      Assertions.assertEquals(UpdateFunction.Operator.SET, function.getOperator());
+      final UpdateFunction.SetFunction function = setTest(setClause);
       Assertions.assertEquals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST, function.getSubOperator());
-      Assertions.assertEquals(L1_ID_PATH, function.getPath());
-      Assertions.assertEquals(ID_ENTITY, function.getValue());
     }
 
     @Test
@@ -79,45 +71,91 @@ public class TestUpdateFunction {
       Assertions.assertEquals(UpdateFunction.Operator.REMOVE, function.getOperator());
       Assertions.assertEquals(L1_ID_PATH, function.getPath());
     }
+
+    private UpdateFunction.SetFunction setTest(SetClause setClause) {
+      final UpdateFunction.SetFunction function =
+          (UpdateFunction.SetFunction) setClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+      Assertions.assertEquals(UpdateFunction.Operator.SET, function.getOperator());
+      Assertions.assertEquals(L1_ID_PATH, function.getPath());
+      Assertions.assertEquals(ID_ENTITY, function.getValue());
+      return function;
+    }
+  }
+
+  abstract class AbstractIdTests {
+    public void removeId(RocksBaseValue baseValue) {
+      final UpdateExpression updateExpression = UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(baseValue.ID).build()));
+      updateTestFails(baseValue, updateExpression);
+    }
+
+    public void setEqualsId(RocksBaseValue baseValue) {
+      final Id newId = SampleEntities.createId(RANDOM);
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(baseValue.ID).build(), newId.toEntity()));
+      baseValue.update(updateExpression);
+      Assertions.assertEquals(newId, baseValue.getId());
+    }
+
+    public void setAppendToListId(RocksBaseValue baseValue) {
+      final Id newId = SampleEntities.createId(RANDOM);
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(baseValue.ID).build(), newId.toEntity()));
+      updateTestFails(baseValue, updateExpression);
+    }
   }
 
   @Nested
   @DisplayName("RocksL1 update() tests")
-  class RocksL1Tests {
+  class RocksL1Tests extends AbstractIdTests {
     @Test
     void removeId() {
       final RocksL1 rocksL1 = createL1(RANDOM);
-      final UpdateExpression updateExpression = UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksL1.ID).build()));
-      try {
-        rocksL1.update(updateExpression);
-        Assertions.fail("UnsupportedOperationException should have been thrown");
-        //        Id id = rocksL1.getId();
-        //        Assertions.assertNull(id);
-      } catch (UnsupportedOperationException e) {
-        // Expected result
-      }
+      removeId(rocksL1);
     }
 
     @Test
     void setEqualsId() {
       final RocksL1 rocksL1 = createL1(RANDOM);
-      final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.ID).build(), ID_2.toEntity()));
-      rocksL1.update(updateExpression);
-      Assertions.assertEquals(ID_2, rocksL1.getId());
+      setEqualsId(rocksL1);
     }
 
     @Test
     void setAppendToListId() {
       final RocksL1 rocksL1 = createL1(RANDOM);
+      setAppendToListId(rocksL1);
+    }
+
+    @Test
+    void removeCommitMetadataId() {
+      final RocksL1 rocksL1 = createL1(RANDOM);
+      final UpdateExpression updateExpression = UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksL1.ID).build()));
+      updateTestFails(rocksL1, updateExpression);
+    }
+
+    @Test
+    void setEqualsCommitMetadataId() {
+      final RocksL1 rocksL1 = createL1(RANDOM);
       final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.ID).build(), ID_2.toEntity()));
-      try {
-        rocksL1.update(updateExpression);
-        Assertions.fail("UnsupportedOperationException should have been thrown");
-      } catch (UnsupportedOperationException e) {
-        // Expected result
-      }
+          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.COMMIT_METADATA).build(), ID_2.toEntity()));
+      rocksL1.update(updateExpression);
+      Assertions.assertEquals(ID_2, rocksL1.getMetadataId());
+    }
+
+    @Test
+    void setAppendToListCommitMetadataId() {
+      final RocksL1 rocksL1 = createL1(RANDOM);
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.COMMIT_METADATA).build(), ID_2.toEntity()));
+      updateTestFails(rocksL1, updateExpression);
+    }
+  }
+
+  static void updateTestFails(RocksBaseValue rocksBaseValue, UpdateExpression updateExpression) {
+    try {
+      rocksBaseValue.update(updateExpression);
+      Assertions.fail("UnsupportedOperationException should have been thrown");
+    } catch (UnsupportedOperationException e) {
+      // Expected result
     }
   }
 
