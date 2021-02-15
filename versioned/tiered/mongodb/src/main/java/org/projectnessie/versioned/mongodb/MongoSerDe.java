@@ -32,6 +32,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.projectnessie.versioned.Key;
+import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.SaveOp;
 import org.projectnessie.versioned.store.ValueType;
@@ -110,6 +111,40 @@ final class MongoSerDe {
         return writer.getDocument();
       }
     };
+  }
+
+  static void serializeWithName(BsonWriter writer, String name, Entity entity) {
+    writer.writeName(name);
+    serialize(writer, entity);
+  }
+
+  private static void serialize(BsonWriter writer, Entity entity) {
+    switch (entity.getType()) {
+      case MAP:
+        writer.writeStartDocument();
+        entity.getMap().forEach((k, v) -> serializeWithName(writer, k, v));
+        writer.writeEndDocument();
+        break;
+      case LIST:
+        writer.writeStartArray();
+        entity.getList().forEach(v -> serialize(writer, v));
+        writer.writeEndArray();
+        break;
+      case STRING:
+        writer.writeString(entity.getString());
+        break;
+      case BOOLEAN:
+        writer.writeBoolean(entity.getBoolean());
+        break;
+      case NUMBER:
+        writer.writeInt64(entity.getNumber());
+        break;
+      case BINARY:
+        writer.writeBinaryData(new BsonBinary(entity.getBinary().toByteArray()));
+        break;
+      default:
+        throw new UnsupportedOperationException(entity.getType().toString());
+    }
   }
 
   static <C extends BaseValue<C>> void serializeEntity(BsonWriter writer, SaveOp<C> saveOp) {

@@ -28,18 +28,12 @@ public class MongoStoreFixture extends AbstractTieredStoreFixture<MongoDBStore, 
    * Create the MongoDB store-fixture.
    *
    * @param connectionString MongoDB connection string
-   * @param testDatabaseName MongoDB database name
    */
-  public MongoStoreFixture(String connectionString, String testDatabaseName) {
+  public MongoStoreFixture(String connectionString) {
     super(new MongoStoreConfig() {
       @Override
       public String getConnectionString() {
         return connectionString;
-      }
-
-      @Override
-      public String getDatabaseName() {
-        return testDatabaseName;
       }
     });
   }

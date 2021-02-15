@@ -742,7 +742,7 @@ public abstract class AbstractTestStore<S extends Store> {
           ValueType.KEY_FRAGMENT,
           fragment.getId(),
           UpdateExpression.of(SetClause.appendToList(
-              ExpressionPath.builder("keys").build(), Entity.ofList(Entity.ofString(key)))),
+              ExpressionPath.builder("keys").build(), Entity.ofList(Entity.ofList(Entity.ofString(key))))),
           Optional.empty(),
           Optional.of(builder));
       Assertions.assertTrue(result);

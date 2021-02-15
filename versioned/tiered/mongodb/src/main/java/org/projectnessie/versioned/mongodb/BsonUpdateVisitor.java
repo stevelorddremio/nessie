@@ -15,7 +15,6 @@
  */
 package org.projectnessie.versioned.mongodb;
 
-import org.bson.BsonBinary;
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -42,7 +41,7 @@ class BsonUpdateVisitor implements UpdateClauseVisitor<Bson> {
    * Intentionally don't use Updates.*() as that will result in issues encoding the value entity,
    * due to codec lookups the MongoDB driver will actually encode the fields of the basic object, not the entity.
    */
-  private static class UpdateBson implements Bson {
+  static class UpdateBson implements Bson {
     private final String operation;
     private final String path;
     private final Entity value;
@@ -59,51 +58,17 @@ class BsonUpdateVisitor implements UpdateClauseVisitor<Bson> {
       writer.writeStartDocument();
       writer.writeName(operation);
       writer.writeStartDocument();
-      writer.writeName(path);
       if (PUSH_OP.equals(operation) && value.getType().equals(Entity.EntityType.LIST)) {
+        writer.writeName(path);
         writer.writeStartDocument();
-        serializeWithName(writer, EACH_OP, value);
+        MongoSerDe.serializeWithName(writer, EACH_OP, value);
         writer.writeEndDocument();
       } else {
-        serialize(writer, value);
+        MongoSerDe.serializeWithName(writer, path, value);
       }
       writer.writeEndDocument();
       writer.writeEndDocument();
       return writer.getDocument();
-    }
-
-    private void serializeWithName(BsonDocumentWriter writer, String name, Entity entity) {
-      writer.writeName(name);
-      serialize(writer, entity);
-    }
-
-    private void serialize(BsonDocumentWriter writer, Entity entity) {
-      switch (entity.getType()) {
-        case MAP:
-          writer.writeStartDocument();
-          entity.getMap().forEach((k, v) -> serializeWithName(writer, k, v));
-          writer.writeEndDocument();
-          break;
-        case LIST:
-          writer.writeStartArray();
-          entity.getList().forEach(v -> serialize(writer, v));
-          writer.writeEndArray();
-          break;
-        case STRING:
-          writer.writeString(entity.getString());
-          break;
-        case BOOLEAN:
-          writer.writeBoolean(entity.getBoolean());
-          break;
-        case NUMBER:
-          writer.writeInt64(entity.getNumber());
-          break;
-        case BINARY:
-          writer.writeBinaryData(new BsonBinary(entity.getBinary().toByteArray()));
-          break;
-        default:
-          throw new UnsupportedOperationException(entity.getType().toString());
-      }
     }
   }
 

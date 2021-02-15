@@ -25,7 +25,6 @@ import org.projectnessie.versioned.impl.AbstractITTieredVersionStore;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Disabled("MongoDBStore not fully implemented")
 class TestMongoDBTieredVersionStore extends AbstractITTieredVersionStore {
-  private static final String testDatabaseName = "mydb";
   private String connectionString;
 
   @BeforeAll
@@ -35,6 +34,6 @@ class TestMongoDBTieredVersionStore extends AbstractITTieredVersionStore {
 
   @Override
   protected MongoStoreFixture createNewFixture() {
-    return new MongoStoreFixture(connectionString, testDatabaseName);
+    return new MongoStoreFixture(connectionString);
   }
 }

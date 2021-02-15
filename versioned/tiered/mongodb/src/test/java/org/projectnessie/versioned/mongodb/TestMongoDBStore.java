@@ -78,4 +78,11 @@ class TestMongoDBStore extends AbstractTestStore<MongoDBStore> {
       }
     };
   }
+
+  // Update tests that remove from an array require MongoDB 4.2 or later (flapdoodle only supports up to 4.0).
+  // These can be run against a local MongoDB to verify.
+  @Override
+  protected boolean supportsUpdate() {
+    return false;
+  }
 }

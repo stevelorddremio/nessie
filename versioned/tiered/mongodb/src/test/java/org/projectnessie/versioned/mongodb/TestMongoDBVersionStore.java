@@ -34,7 +34,6 @@ import org.projectnessie.versioned.tests.AbstractITVersionStore;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Disabled("MongoDBStore not fully implemented")
 public class TestMongoDBVersionStore extends AbstractITVersionStore {
-  private static final String testDatabaseName = "mydb";
   private String connectionString;
 
   private MongoStoreFixture fixture;
@@ -46,7 +45,7 @@ public class TestMongoDBVersionStore extends AbstractITVersionStore {
 
   @BeforeEach
   void setup() {
-    fixture = new MongoStoreFixture(connectionString, testDatabaseName);
+    fixture = new MongoStoreFixture(connectionString);
   }
 
   @AfterEach
