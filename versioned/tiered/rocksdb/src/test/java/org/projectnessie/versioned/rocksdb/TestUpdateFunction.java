@@ -107,34 +107,31 @@ public class TestUpdateFunction {
   @Nested
   @DisplayName("RocksL1 update() tests")
   class RocksL1Tests extends AbstractIdTests {
+    final RocksL1 rocksL1 = createL1(RANDOM);
+
     @Test
     void removeId() {
-      final RocksL1 rocksL1 = createL1(RANDOM);
       removeId(rocksL1);
     }
 
     @Test
     void setEqualsId() {
-      final RocksL1 rocksL1 = createL1(RANDOM);
       setEqualsId(rocksL1);
     }
 
     @Test
     void setAppendToListId() {
-      final RocksL1 rocksL1 = createL1(RANDOM);
       setAppendToListId(rocksL1);
     }
 
     @Test
     void removeCommitMetadataId() {
-      final RocksL1 rocksL1 = createL1(RANDOM);
       final UpdateExpression updateExpression = UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksL1.ID).build()));
       updateTestFails(rocksL1, updateExpression);
     }
 
     @Test
     void setEqualsCommitMetadataId() {
-      final RocksL1 rocksL1 = createL1(RANDOM);
       final UpdateExpression updateExpression =
           UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.COMMIT_METADATA).build(), ID_2.toEntity()));
       rocksL1.update(updateExpression);
@@ -143,7 +140,6 @@ public class TestUpdateFunction {
 
     @Test
     void setAppendToListCommitMetadataId() {
-      final RocksL1 rocksL1 = createL1(RANDOM);
       final UpdateExpression updateExpression =
           UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.COMMIT_METADATA).build(), ID_2.toEntity()));
       updateTestFails(rocksL1, updateExpression);
