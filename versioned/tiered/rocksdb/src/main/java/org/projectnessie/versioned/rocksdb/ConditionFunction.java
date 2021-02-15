@@ -19,12 +19,13 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.Objects;
 
 import org.immutables.value.Value.Immutable;
+import org.projectnessie.versioned.store.Entity;
 
 /**
  * A condition that is asserted against an entity.
  */
 @Immutable
-abstract class ConditionFunction extends Function {
+abstract class ConditionFunction implements Function {
   /**
    * An enum encapsulating.
    */
@@ -63,6 +64,8 @@ abstract class ConditionFunction extends Function {
   }
 
   abstract Operator getOperator();
+
+  abstract Entity getValue();
 
   /**
    * A utility to aid evaluation of the ConditionFunction in checking for equality on

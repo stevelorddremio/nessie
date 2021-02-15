@@ -256,7 +256,7 @@ class TestConditionExpressions {
     final Entity strEntity = SampleEntities.createStringEntity(RANDOM, 7);
     final ConditionExpression ex = ConditionExpression.of(ExpressionFunction.equals(ofPath(path), strEntity));
 
-    final Function expectedFunction = ImmutableConditionFunction.builder()
+    final ConditionFunction expectedFunction = ImmutableConditionFunction.builder()
         .operator(ConditionFunction.Operator.EQUALS)
         .path(ofPath(path))
         .value(strEntity)

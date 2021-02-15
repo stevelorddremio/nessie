@@ -143,7 +143,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
     switch (function.getOperator()) {
       case SET:
-        return updateSetClause(function);
+        return updateSetClause((UpdateFunction.SetFunction) function);
       case REMOVE:
         throw new UnsupportedOperationException();
       default:
@@ -151,12 +151,16 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
     }
   }
 
-  private boolean updateSetClause(UpdateFunction function) {
+  private boolean updateSetClause(UpdateFunction.SetFunction function) {
     final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
     final String segment = nameSegment.getName();
     switch (segment) {
       case ID:
-        id(Id.of(function.getValue().getBinary()));
+        if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+          throw new UnsupportedOperationException();
+        } else if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+          id(Id.of(function.getValue().getBinary()));
+        }
         break;
       default:
     }

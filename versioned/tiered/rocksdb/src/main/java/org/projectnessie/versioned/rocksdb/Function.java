@@ -16,17 +16,14 @@
 package org.projectnessie.versioned.rocksdb;
 
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
-import org.projectnessie.versioned.store.Entity;
 
 /**
  * An operation that is performed against an Entity.
  */
-abstract class Function {
-  abstract ExpressionPath getPath();
+interface Function {
+  ExpressionPath getPath();
 
-  abstract Entity getValue();
-
-  ExpressionPath.NameSegment getRootPathAsNameSegment() {
+  default ExpressionPath.NameSegment getRootPathAsNameSegment() {
     return getPath().getRoot().asName();
   }
 }

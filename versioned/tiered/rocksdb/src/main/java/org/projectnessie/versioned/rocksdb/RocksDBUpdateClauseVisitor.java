@@ -30,21 +30,23 @@ class RocksDBUpdateClauseVisitor implements UpdateClauseVisitor<UpdateFunction> 
 
   @Override
   public UpdateFunction visit(RemoveClause clause) {
-    return ImmutableUpdateFunction.builder().operator(UpdateFunction.Operator.REMOVE).path(clause.getPath()).build();
+    return ImmutableRemoveFunction.builder().operator(UpdateFunction.Operator.REMOVE).path(clause.getPath()).build();
   }
 
   @Override
   public UpdateFunction visit(SetClause clause) {
     switch (clause.getValue().getType()) {
       case VALUE:
-        return ImmutableUpdateFunction.builder()
+        return ImmutableSetFunction.builder()
             .operator(UpdateFunction.Operator.SET)
+            .subOperator(UpdateFunction.SetFunction.SubOperator.EQUALS)
             .path(clause.getPath())
             .value(clause.getValue().getValue())
             .build();
       case FUNCTION:
-        return ImmutableUpdateFunction.builder()
+        return ImmutableSetFunction.builder()
             .operator(UpdateFunction.Operator.SET)
+            .subOperator(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)
             .path(clause.getPath())
             .value(handleFunction(clause.getValue().getFunction()))
             .build();
