@@ -162,7 +162,34 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
           id(Id.of(function.getValue().getBinary()));
         }
         break;
+      case COMMIT_METADATA:
+        if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+          throw new UnsupportedOperationException();
+        } else if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+          commitMetadataId(Id.of(function.getValue().getBinary()));
+        }
+        break;
+      case ANCESTORS:
+      case CHILDREN:
+      case KEY_LIST:
+        throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
+      case INCREMENTAL_KEY_LIST:
+        if (!nameSegment.getChild().isPresent() || !function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+          throw new UnsupportedOperationException();
+        }
+        final String childName = nameSegment.getChild().get().asName().getName();
+        if (childName.equals(CHECKPOINT_ID)) {
+          incrementalKeyList(Id.of(function.getValue().getBinary()), distanceFromCheckpoint);
+        } else if (childName.equals((DISTANCE_FROM_CHECKPOINT))) {
+          incrementalKeyList(checkpointId, (int)function.getValue().getNumber());
+        } else {
+          // Invalid Condition Function.
+          return false;
+        }
+        break;
+      case COMPLETE_KEY_LIST:
       default:
+        throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
     }
     return true;
   }
@@ -219,5 +246,9 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
     } catch (InvalidProtocolBufferException e) {
       throw new StoreException("Corrupt L1 value encountered when deserializing.", e);
     }
+  }
+
+  Id getMetadataId() {
+    return metadataId;
   }
 }
