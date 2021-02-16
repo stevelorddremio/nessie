@@ -170,6 +170,10 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         }
         break;
       case ANCESTORS:
+        Stream<Id> updatedStream = null;
+        boolean result = updateStream(parentList, updatedStream, function);
+        ancestors(updatedStream);
+        return result;
       case CHILDREN:
       case KEY_LIST:
         throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
@@ -192,6 +196,39 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
     }
     return true;
+  }
+
+  private boolean updateStream(Stream<Id> stream, Stream<Id> updatedStream, UpdateFunction.SetFunction function) {
+    if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+      throw new UnsupportedOperationException();
+    } else if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+      final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
+      if (pathSegment == null) {
+        updatedStream = stream;
+        return true;
+      } else if (pathSegment.isPosition()) { // compare individual element of list
+        final int position = pathSegment.asPosition().getPosition();
+        List<Id> toList = stream.collect(Collectors.toList());
+        toList.set(position, Id.fromEntity(function.getValue()));
+        updatedStream = toList.stream();
+        return true;
+      }
+    }
+
+
+    // EQUALS will either compare a specified position or the whole stream as a List.
+    if (function.getOperator().equals(ConditionFunction.Operator.EQUALS)) {
+      final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
+      if (pathSegment == null) {
+        return toEntity(stream).equals(function.getValue());
+      } else if (pathSegment.isPosition()) { // compare individual element of list
+        final int position = pathSegment.asPosition().getPosition();
+        return toEntity(stream, position).equals(function.getValue());
+      }
+    } else if (function.getOperator().equals(ConditionFunction.Operator.SIZE)) {
+      return (stream.count() == function.getValue().getNumber());
+    }
+    return false;
   }
 
   @Override
@@ -250,5 +287,13 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   Id getMetadataId() {
     return metadataId;
+  }
+
+  Id getCheckpointId() {
+    return checkpointId;
+  }
+
+  int getDistanceFromCheckpoint() {
+    return distanceFromCheckpoint;
   }
 }
