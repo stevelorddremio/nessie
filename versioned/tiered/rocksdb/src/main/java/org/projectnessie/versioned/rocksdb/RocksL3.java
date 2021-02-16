@@ -59,7 +59,7 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
   }
 
   @Override
-  public void evaluate(ConditionFunction function) throws ConditionFailedException {
+  public void evaluate(Function function) throws ConditionFailedException {
     final String segment = function.getRootPathAsNameSegment().getName();
     if (segment.equals(ID)) {
       evaluatesId(function);

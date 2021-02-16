@@ -49,7 +49,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   }
 
   @Override
-  public void evaluate(ConditionFunction function) throws ConditionFailedException {
+  public void evaluate(Function function) throws ConditionFailedException {
     final String segment = function.getRootPathAsNameSegment().getName();
     switch (segment) {
       case ID:

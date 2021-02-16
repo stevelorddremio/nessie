@@ -243,7 +243,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
 
     // EQUALS will either compare a specified position or the whole stream as a List.
-    if (function.getOperator().equals(ConditionFunction.Operator.EQUALS)) {
+    if (function.getOperator().equals(Function.Operator.EQUALS)) {
       final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
       if (pathSegment == null) {
         return toEntity(stream).equals(function.getValue());
@@ -251,7 +251,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         final int position = pathSegment.asPosition().getPosition();
         return toEntity(stream, position).equals(function.getValue());
       }
-    } else if (function.getOperator().equals(ConditionFunction.Operator.SIZE)) {
+    } else if (function.getOperator().equals(Function.Operator.SIZE)) {
       return (stream.count() == function.getValue().getNumber());
     }
     return false;
