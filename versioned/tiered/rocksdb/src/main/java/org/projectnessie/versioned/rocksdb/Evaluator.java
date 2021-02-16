@@ -30,5 +30,5 @@ interface Evaluator {
    * @throws ConditionFailedException thrown if the ConditionExpression is invalid or the condition is not met.
    *     It is then up to the calling method how to handle the exception.
    */
-  void evaluate(List<ConditionFunction> functions) throws ConditionFailedException;
+  void evaluate(List<Function> functions) throws ConditionFailedException;
 }
