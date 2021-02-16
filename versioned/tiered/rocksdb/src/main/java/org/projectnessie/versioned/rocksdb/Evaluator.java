@@ -27,5 +27,5 @@ interface Evaluator {
    * @param functions the functions to check
    * @return true if the functions are met
    */
-  boolean evaluate(List<ConditionFunction> functions);
+  boolean evaluate(List<Function> functions);
 }

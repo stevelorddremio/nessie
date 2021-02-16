@@ -19,12 +19,13 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.Objects;
 
 import org.immutables.value.Value.Immutable;
+import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.store.Entity;
 
 /**
  * An update that is peformed on an entity.
  */
-interface UpdateFunction extends Function {
+interface UpdateFunction {
   /**
    * An enum encapsulating.
    */
@@ -37,6 +38,13 @@ interface UpdateFunction extends Function {
   }
 
   abstract Operator getOperator();
+
+  abstract ExpressionPath getPath();
+
+  default ExpressionPath.NameSegment getRootPathAsNameSegment() {
+    return getPath().getRoot().asName();
+  }
+
 
   @Immutable
   abstract class RemoveFunction implements UpdateFunction {

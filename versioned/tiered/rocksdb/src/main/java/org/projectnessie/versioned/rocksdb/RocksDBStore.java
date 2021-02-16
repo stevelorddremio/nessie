@@ -310,7 +310,7 @@ public class RocksDBStore implements Store {
   }
 
   @VisibleForTesting
-  static List<ConditionFunction> translate(ConditionExpression conditionExpression) {
+  static List<Function> translate(ConditionExpression conditionExpression) {
     return conditionExpression.getFunctions().stream()
       .map(f -> f.accept(VALUE_VISITOR))
       .collect(Collectors.toList());
