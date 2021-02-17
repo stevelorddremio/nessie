@@ -197,7 +197,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         break;
       case ANCESTORS:
         Stream<Id> updatedStream = null;
-        boolean result = updateStream(parentList, updatedStream, function);
+        boolean result = updateStream(parentList.stream(), updatedStream, function);
         ancestors(updatedStream);
         return result;
       case CHILDREN:
@@ -241,19 +241,6 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       }
     }
 
-
-    // EQUALS will either compare a specified position or the whole stream as a List.
-    if (function.getOperator().equals(Function.Operator.EQUALS)) {
-      final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
-      if (pathSegment == null) {
-        return toEntity(stream).equals(function.getValue());
-      } else if (pathSegment.isPosition()) { // compare individual element of list
-        final int position = pathSegment.asPosition().getPosition();
-        return toEntity(stream, position).equals(function.getValue());
-      }
-    } else if (function.getOperator().equals(Function.Operator.SIZE)) {
-      return (stream.count() == function.getValue().getNumber());
-    }
     return false;
   }
 
