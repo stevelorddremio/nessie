@@ -170,11 +170,11 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         }
         break;
       case ANCESTORS:
-        Stream<Id> updatedStream = null;
-        boolean result = updateStream(parentList.stream(), updatedStream, function);
-        ancestors(updatedStream);
-        return result;
+        ancestors(updateStream(parentList.stream(), function));
+        break;
       case CHILDREN:
+        children(updateStream(tree.stream(), function));
+        break;
       case KEY_LIST:
         throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
       case INCREMENTAL_KEY_LIST:
@@ -198,24 +198,30 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
     return true;
   }
 
-  private boolean updateStream(Stream<Id> stream, Stream<Id> updatedStream, UpdateFunction.SetFunction function) {
+  private Stream<Id> updateStream(Stream<Id> inStream, UpdateFunction.SetFunction function) {
     if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
-      throw new UnsupportedOperationException();
+      // The function value is appended to the end of the stream.
+      // Convert the function value to a stream.
+      if (function.getValue().getType().equals(Entity.EntityType.BINARY)) {
+        return Stream.concat(inStream, Stream.of(Id.fromEntity(function.getValue())));
+      } else if (function.getValue().getType().equals(Entity.EntityType.LIST)) {
+        Stream<Id> appendStream = function.getValue().getList().stream().map(Id::fromEntity).collect(Collectors.toList()).stream();
+        return Stream.concat(inStream, appendStream);
+      }
     } else if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
       final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
       if (pathSegment == null) {
-        updatedStream = stream;
-        return true;
-      } else if (pathSegment.isPosition()) { // compare individual element of list
+        // The path indicates not updating elements of the stream, so the function value becomes the new stream.
+        // function value is a list of Entities. This is converted to a list of Id's.
+        return function.getValue().getList().stream().map(Id::fromEntity).collect(Collectors.toList()).stream();
+      } else if (pathSegment.isPosition()) {
         final int position = pathSegment.asPosition().getPosition();
-        List<Id> toList = stream.collect(Collectors.toList());
+        final List<Id> toList = inStream.collect(Collectors.toList());
         toList.set(position, Id.fromEntity(function.getValue()));
-        updatedStream = toList.stream();
-        return true;
+        return toList.stream();
       }
     }
-
-    return false;
+    return null;
   }
 
   @Override
@@ -282,5 +288,17 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   int getDistanceFromCheckpoint() {
     return distanceFromCheckpoint;
+  }
+
+  Stream<Id> getChildren() {
+    return tree.stream();
+  }
+
+  Stream<Id> getAncestors() {
+    return parentList.stream();
+  }
+
+  Stream<Id> getCompleteKeyList() {
+    return fragmentIds.stream();
   }
 }
