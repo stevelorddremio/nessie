@@ -61,6 +61,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
         // Invalid Condition Function.
         throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
+
   }
 
   @Override

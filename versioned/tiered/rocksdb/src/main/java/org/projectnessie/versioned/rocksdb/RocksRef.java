@@ -122,6 +122,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     } else {
       throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
+
   }
 
   /**
