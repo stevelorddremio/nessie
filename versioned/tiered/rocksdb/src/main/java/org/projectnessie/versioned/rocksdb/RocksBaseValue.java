@@ -28,6 +28,7 @@ import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.tiered.BaseValue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 /**
@@ -147,7 +148,8 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     }
   }
 
-  private Id getId() {
+  @VisibleForTesting
+  Id getId() {
     return Id.of(buildBase().getId());
   }
 

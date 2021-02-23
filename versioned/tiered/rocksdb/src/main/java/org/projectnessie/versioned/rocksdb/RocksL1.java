@@ -15,6 +15,7 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -196,10 +197,10 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         }
         break;
       case ANCESTORS:
-        ancestors(updateStream(parentList.stream(), function));
+        ancestors(updateStream(l1Builder.getAncestorsList().stream().map(Id::of), function));
         break;
       case CHILDREN:
-        children(updateStream(tree.stream(), function));
+        children(updateStream(l1Builder.getTreeList().stream().map(Id::of), function));
         break;
       case KEY_LIST:
         throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
@@ -209,9 +210,9 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         }
         final String childName = nameSegment.getChild().get().asName().getName();
         if (childName.equals(CHECKPOINT_ID)) {
-          incrementalKeyList(Id.of(function.getValue().getBinary()), distanceFromCheckpoint);
+          incrementalKeyList(Id.of(function.getValue().getBinary()), l1Builder.getIncrementalList().getDistanceFromCheckpointId());
         } else if (childName.equals((DISTANCE_FROM_CHECKPOINT))) {
-          incrementalKeyList(checkpointId, (int)function.getValue().getNumber());
+          incrementalKeyList(Id.of(l1Builder.getIncrementalList().getCheckpointId()), (int)function.getValue().getNumber());
         } else {
           // Invalid Condition Function.
           return false;
@@ -293,26 +294,26 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   Id getMetadataId() {
-    return metadataId;
+    return Id.of(l1Builder.getMetadataId());
   }
 
   Id getCheckpointId() {
-    return checkpointId;
+    return Id.of(l1Builder.getIncrementalList().getCheckpointId());
   }
 
   int getDistanceFromCheckpoint() {
-    return distanceFromCheckpoint;
+    return l1Builder.getIncrementalList().getDistanceFromCheckpointId();
   }
 
   Stream<Id> getChildren() {
-    return tree.stream();
+    return l1Builder.getTreeList().stream().map(Id::of);
   }
 
   Stream<Id> getAncestors() {
-    return parentList.stream();
+    return l1Builder.getAncestorsList().stream().map(Id::of);
   }
 
   Stream<Id> getCompleteKeyList() {
-    return fragmentIds.stream();
+    return l1Builder.getCompleteList().getFragmentIdsList().stream().map(Id::of);
   }
 }
