@@ -15,8 +15,12 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.projectnessie.versioned.Key;
@@ -186,6 +190,64 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    * @return true if the update was successful
    */
   abstract boolean updateWithClause(UpdateClause updateClause);
+
+  protected void updateByteStringList(UpdateFunction function,
+                                      Supplier<List<ByteString>> getter,
+                                      Consumer<ByteString> append,
+                                      Consumer<List<ByteString>> appendAll,
+                                      Runnable clear,
+                                      BiConsumer<Integer, ByteString> replace) {
+    if (function.getOperator() == UpdateFunction.Operator.SET) {
+      final UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+      if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+        appendToByteStringList(setFunction, append, appendAll);
+      } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+        replaceForByteStringList(setFunction, appendAll, clear, replace);
+      }
+    } else if (function.getOperator() == UpdateFunction.Operator.REMOVE) {
+      final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
+      if (pathSegment == null) {
+        throw new UnsupportedOperationException();
+      } else if (pathSegment.isPosition()) {
+        final int position = pathSegment.asPosition().getPosition();
+        final List<ByteString> updatedList = new ArrayList<>(getter.get());
+        updatedList.remove(position);
+
+        clear.run();
+        appendAll.accept(updatedList);
+      }
+    }
+  }
+
+  private void appendToByteStringList(UpdateFunction.SetFunction function,
+                                      Consumer<ByteString> append,
+                                      Consumer<List<ByteString>> appendAll) {
+    if (function.getValue().getType().equals(Entity.EntityType.BINARY)) {
+      append.accept(function.getValue().getBinary());
+    } else if (function.getValue().getType().equals(Entity.EntityType.LIST)) {
+      appendAll.accept(function.getValue().getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+    }
+  }
+
+  private void replaceForByteStringList(UpdateFunction.SetFunction function,
+                                        Consumer<List<ByteString>> appendAll,
+                                        Runnable clear,
+                                        BiConsumer<Integer, ByteString> replace) {
+    final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
+    if (pathSegment == null) {
+      if (function.getValue().getType() != Entity.EntityType.LIST) {
+        throw new UnsupportedOperationException();
+      }
+
+      // The path indicates not updating elements of the stream, so the function value becomes the new stream.
+      // function value is a list of Entities. This is converted to a list of Id's.
+      clear.run();
+      appendAll.accept(function.getValue().getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+    } else if (pathSegment.isPosition()) {
+      final int position = pathSegment.asPosition().getPosition();
+      replace.accept(position, function.getValue().getBinary());
+    }
+  }
 
   /**
    * Serialize the value to protobuf format.

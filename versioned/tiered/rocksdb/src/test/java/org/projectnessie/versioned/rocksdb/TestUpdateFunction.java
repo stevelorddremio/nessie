@@ -16,7 +16,9 @@
 
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -35,6 +37,8 @@ import org.projectnessie.versioned.impl.condition.SetClause;
 import org.projectnessie.versioned.impl.condition.UpdateExpression;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
+
+import com.google.common.collect.Lists;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestUpdateFunction {
@@ -184,6 +188,104 @@ public class TestUpdateFunction {
           .name(RocksL1.CHECKPOINT_ID).build(), ID_2.toEntity()));
       rocksL1.update(updateExpression);
       Assertions.assertEquals(ID_2, rocksL1.getCheckpointId());
+    }
+
+    @Test
+    void incrementKeyListDistanceFromCheckpointSetEqualsExistingCompleteList() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final Long distanceFromCheckpoint = 32L;
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST)
+          .name(RocksL1.DISTANCE_FROM_CHECKPOINT).build(), Entity.ofNumber(distanceFromCheckpoint)));
+      rocksL1.update(updateExpression);
+      Assertions.assertEquals(distanceFromCheckpoint, rocksL1.getDistanceFromCheckpoint());
+    }
+
+    @Test
+    void incrementKeyListCheckpointIdSetEqualsExistingCompleteList() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST)
+          .name(RocksL1.CHECKPOINT_ID).build(), ID_2.toEntity()));
+      rocksL1.update(updateExpression);
+      Assertions.assertEquals(ID_2, rocksL1.getCheckpointId());
+    }
+
+    @Test
+    void completeKeyListRemoveFirst() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksL1.COMPLETE_KEY_LIST)
+          .position(0).build()));
+      rocksL1.update(updateExpression);
+      Assertions.assertEquals(Collections.singletonList(Id.build("id2")), rocksL1.getCompleteKeyList().collect(Collectors.toList()));
+    }
+
+    @Test
+    void completeKeyListRemoveLast() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksL1.COMPLETE_KEY_LIST)
+          .position(1).build()));
+      rocksL1.update(updateExpression);
+      Assertions.assertEquals(Collections.singletonList(Id.build("id1")), rocksL1.getCompleteKeyList().collect(Collectors.toList()));
+    }
+
+    @Test
+    void completeKeyListSetEqualsFirst() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.COMPLETE_KEY_LIST).position(0).build(),
+          Id.build("id3").toEntity()));
+      rocksL1.update(updateExpression);
+
+      final List<Id> expectedList = Lists.newArrayList(Id.build("id3"), Id.build("id2"));
+      Assertions.assertEquals(expectedList, rocksL1.getCompleteKeyList().collect(Collectors.toList()));
+    }
+
+    @Test
+    void completeKeyListSetEqualsAllWithList() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.COMPLETE_KEY_LIST).build(),
+          Entity.ofList(Id.build("id3").toEntity(), Id.build("id4").toEntity())));
+      rocksL1.update(updateExpression);
+
+      final List<Id> expectedList = Lists.newArrayList(Id.build("id3"), Id.build("id4"));
+      Assertions.assertEquals(expectedList, rocksL1.getCompleteKeyList().collect(Collectors.toList()));
+    }
+
+    @Test
+    void completeKeyListSetEqualsAllWithId() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.COMPLETE_KEY_LIST).build(),
+          Id.build("id3").toEntity()));
+      updateTestFails(rocksL1, updateExpression);
+    }
+
+    @Test
+    void completeKeyListSetAppendToWithId() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.COMPLETE_KEY_LIST).build(),
+          Id.build("id3").toEntity()));
+      rocksL1.update(updateExpression);
+
+      final List<Id> expectedList = Lists.newArrayList(Id.build("id1"), Id.build("id2"), Id.build("id3"));
+      Assertions.assertEquals(expectedList, rocksL1.getCompleteKeyList().collect(Collectors.toList()));
+    }
+
+    @Test
+    void completeKeyListSetAppendToWithList() {
+      rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
+      final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.COMPLETE_KEY_LIST).build(),
+          Entity.ofList(Id.build("id3").toEntity(), Id.build("id4").toEntity())));
+      rocksL1.update(updateExpression);
+
+      final List<Id> expectedList = Lists.newArrayList(Id.build("id1"), Id.build("id2"), Id.build("id3"), Id.build("id4"));
+      Assertions.assertEquals(expectedList, rocksL1.getCompleteKeyList().collect(Collectors.toList()));
     }
 
     @Test

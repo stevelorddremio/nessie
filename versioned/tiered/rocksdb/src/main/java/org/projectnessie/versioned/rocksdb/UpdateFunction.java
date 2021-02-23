@@ -65,8 +65,8 @@ interface UpdateFunction {
       }
 
       final UpdateFunction function = (UpdateFunction) object;
-      return (getOperator().equals(function.getOperator())
-        && getPath().equals(function.getPath()));
+      return Objects.equals(getOperator(), function.getOperator())
+        && Objects.equals(getPath(), function.getPath());
     }
 
     @Override

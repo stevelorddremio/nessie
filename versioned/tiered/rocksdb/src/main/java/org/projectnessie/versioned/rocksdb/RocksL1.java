@@ -15,6 +15,7 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,6 +29,7 @@ import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.L1;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
@@ -167,88 +169,119 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   @Override
   public boolean updateWithClause(UpdateClause updateClause) {
     final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
-
-    switch (function.getOperator()) {
-      case SET:
-        return updateSetClause((UpdateFunction.SetFunction) function);
-      case REMOVE:
-        throw new UnsupportedOperationException();
-      default:
-        throw new UnsupportedOperationException();
-    }
-  }
-
-  private boolean updateSetClause(UpdateFunction.SetFunction function) {
     final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
     final String segment = nameSegment.getName();
+
     switch (segment) {
       case ID:
-        if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+        if (function.getOperator() == UpdateFunction.Operator.SET) {
+          UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+          if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+            throw new UnsupportedOperationException();
+          } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+            id(Id.of(setFunction.getValue().getBinary()));
+          }
+        } else {
           throw new UnsupportedOperationException();
-        } else if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
-          id(Id.of(function.getValue().getBinary()));
         }
         break;
       case COMMIT_METADATA:
-        if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+        if (function.getOperator() == UpdateFunction.Operator.SET) {
+          UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+          if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+            throw new UnsupportedOperationException();
+          } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+            commitMetadataId(Id.of(setFunction.getValue().getBinary()));
+          }
+        } else {
           throw new UnsupportedOperationException();
-        } else if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
-          commitMetadataId(Id.of(function.getValue().getBinary()));
         }
         break;
       case ANCESTORS:
-        ancestors(updateStream(l1Builder.getAncestorsList().stream().map(Id::of), function));
+        updateByteStringList(
+            function,
+            l1Builder::getAncestorsList,
+            l1Builder::addAncestors,
+            l1Builder::addAllAncestors,
+            l1Builder::clearAncestors,
+            l1Builder::setAncestors
+        );
         break;
       case CHILDREN:
-        children(updateStream(l1Builder.getTreeList().stream().map(Id::of), function));
+        updateByteStringList(
+            function,
+            l1Builder::getTreeList,
+            l1Builder::addTree,
+            l1Builder::addAllTree,
+            l1Builder::clearTree,
+            l1Builder::setTree
+        );
         break;
       case KEY_LIST:
         throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
       case INCREMENTAL_KEY_LIST:
-        if (!nameSegment.getChild().isPresent() || !function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
-          throw new UnsupportedOperationException();
-        }
-        final String childName = nameSegment.getChild().get().asName().getName();
-        if (childName.equals(CHECKPOINT_ID)) {
-          incrementalKeyList(Id.of(function.getValue().getBinary()), l1Builder.getIncrementalList().getDistanceFromCheckpointId());
-        } else if (childName.equals((DISTANCE_FROM_CHECKPOINT))) {
-          incrementalKeyList(Id.of(l1Builder.getIncrementalList().getCheckpointId()), (int)function.getValue().getNumber());
-        } else {
-          // Invalid Condition Function.
-          return false;
-        }
+        updateIncrementalList(function);
         break;
       case COMPLETE_KEY_LIST:
+        updateCompleteList(function);
+        break;
       default:
         throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
     }
     return true;
   }
 
-  private Stream<Id> updateStream(Stream<Id> inStream, UpdateFunction.SetFunction function) {
-    if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
-      // The function value is appended to the end of the stream.
-      // Convert the function value to a stream.
-      if (function.getValue().getType().equals(Entity.EntityType.BINARY)) {
-        return Stream.concat(inStream, Stream.of(Id.fromEntity(function.getValue())));
-      } else if (function.getValue().getType().equals(Entity.EntityType.LIST)) {
-        Stream<Id> appendStream = function.getValue().getList().stream().map(Id::fromEntity).collect(Collectors.toList()).stream();
-        return Stream.concat(inStream, appendStream);
+  private void updateIncrementalList(UpdateFunction function) {
+    if (function.getOperator() == UpdateFunction.Operator.SET) {
+      final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
+
+      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+
+      if (!nameSegment.getChild().isPresent() || setFunction.getSubOperator() != UpdateFunction.SetFunction.SubOperator.EQUALS) {
+        throw new UnsupportedOperationException();
       }
-    } else if (function.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
-      final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
-      if (pathSegment == null) {
-        // The path indicates not updating elements of the stream, so the function value becomes the new stream.
-        // function value is a list of Entities. This is converted to a list of Id's.
-        return function.getValue().getList().stream().map(Id::fromEntity).collect(Collectors.toList()).stream();
-      } else if (pathSegment.isPosition()) {
-        final int position = pathSegment.asPosition().getPosition();
-        final List<Id> toList = inStream.collect(Collectors.toList());
-        toList.set(position, Id.fromEntity(function.getValue()));
-        return toList.stream();
+
+      final ValueProtos.IncrementalList.Builder incrementalListBuilder;
+      if (l1Builder.getListCase() == ValueProtos.L1.ListCase.INCREMENTAL_LIST) {
+        incrementalListBuilder = ValueProtos.IncrementalList.newBuilder(l1Builder.getIncrementalList());
+      } else {
+        incrementalListBuilder = ValueProtos.IncrementalList.newBuilder();
       }
+
+      final String childName = nameSegment.getChild().get().asName().getName();
+      if (childName.equals(CHECKPOINT_ID)) {
+        incrementalListBuilder.setCheckpointId(setFunction.getValue().getBinary());
+      } else if (childName.equals(DISTANCE_FROM_CHECKPOINT)) {
+        incrementalListBuilder.setDistanceFromCheckpointId((int)setFunction.getValue().getNumber());
+      } else {
+        // Invalid Condition Function
+        throw new UnsupportedOperationException();
+      }
+
+      l1Builder.setIncrementalList(incrementalListBuilder);
+    } else {
+      throw new UnsupportedOperationException();
     }
-    return null;
+  }
+
+  private void updateCompleteList(UpdateFunction function) {
+    final List<ByteString> listToUpdate;
+    if (l1Builder.hasCompleteList()) {
+      listToUpdate = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
+    } else {
+      listToUpdate = new ArrayList<>();
+    }
+
+    updateByteStringList(
+        function,
+        () -> listToUpdate,
+        listToUpdate::add,
+        listToUpdate::addAll,
+        listToUpdate::clear,
+        listToUpdate::set
+    );
+
+    l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(listToUpdate));
   }
 
   @Override
