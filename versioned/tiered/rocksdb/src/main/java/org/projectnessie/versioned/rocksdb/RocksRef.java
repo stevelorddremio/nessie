@@ -126,7 +126,6 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     } else {
       throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
-
   }
 
   /**
@@ -304,7 +303,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     public Branch children(Stream<Id> children) {
       final List<ByteString> childList = children.map(Id::getValue).collect(Collectors.toList());
 
-      if (refBuilder.getRefValueCase() != ValueProtos.Ref.RefValueCase.BRANCH) {
+      if (!refBuilder.hasBranch()) {
         refBuilder.setBranch(
             ValueProtos.Branch
                 .newBuilder()
@@ -446,6 +445,34 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       } else {
         consumer.saved().parent(Id.of(commit.getParent())).done();
       }
+    }
+  }
+
+  String getName() {
+    return refBuilder.getName();
+  }
+
+  Stream<Id> getChildren() {
+    if (refBuilder.hasBranch()) {
+      return refBuilder.getBranch().getChildrenList().stream().map(Id::of);
+    } else {
+      return Stream.empty();
+    }
+  }
+
+  Id getMetadata() {
+    if (refBuilder.hasBranch()) {
+      return Id.of(refBuilder.getBranch().getMetadataId());
+    } else {
+      return null;
+    }
+  }
+
+  Id getCommit() {
+    if (refBuilder.hasTag()) {
+      return Id.of(refBuilder.getTag().getId());
+    } else {
+      return null;
     }
   }
 }
