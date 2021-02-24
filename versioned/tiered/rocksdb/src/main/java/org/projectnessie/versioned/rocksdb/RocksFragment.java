@@ -139,16 +139,7 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
     switch (segment) {
       case ID:
-        if (function.getOperator() == UpdateFunction.Operator.SET) {
-          UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-          if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
-            throw new UnsupportedOperationException();
-          } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
-            id(Id.of(setFunction.getValue().getBinary()));
-          }
-        } else {
-          throw new UnsupportedOperationException();
-        }
+        updatesId(function);
         break;
       default:
         throw new UnsupportedOperationException();

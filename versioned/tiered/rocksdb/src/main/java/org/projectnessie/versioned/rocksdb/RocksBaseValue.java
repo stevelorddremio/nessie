@@ -191,6 +191,19 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    */
   abstract boolean updateWithClause(UpdateClause updateClause);
 
+  protected void updatesId(UpdateFunction function) {
+    if (function.getOperator() == UpdateFunction.Operator.SET) {
+      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+      if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+        throw new UnsupportedOperationException();
+      } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+        id(Id.of(setFunction.getValue().getBinary()));
+      }
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   protected void updateByteStringList(UpdateFunction function,
                                       Supplier<List<ByteString>> getter,
                                       Consumer<ByteString> append,

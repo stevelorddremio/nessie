@@ -15,12 +15,14 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
+import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Id;
@@ -83,14 +85,14 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         }
         break;
       case CHILDREN:
-        if (builder.getRefValueCase() != ValueProtos.Ref.RefValueCase.BRANCH) {
+        if (!builder.hasBranch()) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
         evaluate(function, builder.getBranch().getChildrenList().stream().map(Id::of).collect(Collectors.toList()));
         break;
       case METADATA:
         if (!function.isRootNameSegmentChildlessAndEquals()
-            || builder.getRefValueCase() != ValueProtos.Ref.RefValueCase.BRANCH
+            || !builder.hasBranch()
             || !Id.of(builder.getBranch().getMetadataId()).toEntity().equals(function.getValue())) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
@@ -116,7 +118,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     // TODO: refactor once jdbc-store Store changes are available.
     if (function.getOperator().equals(Function.Operator.SIZE)) {
       if (function.getRootPathAsNameSegment().getChild().isPresent()
-          || builder.getRefValueCase() != ValueProtos.Ref.RefValueCase.BRANCH
+          || !builder.hasBranch()
           || builder.getBranch().getCommitsCount() != function.getValue().getNumber()) {
         throw new ConditionFailedException(conditionNotMatchedMessage(function));
       }
@@ -133,7 +135,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
    */
   private void evaluateTagCommit(Function function) {
     if (!function.getOperator().equals(Function.Operator.EQUALS)
-        || builder.getRefValueCase() != ValueProtos.Ref.RefValueCase.TAG
+        || !builder.hasTag()
         || !Id.of(builder.getTag().getId()).toEntity().equals(function.getValue())) {
       throw new ConditionFailedException(conditionNotMatchedMessage(function));
     }
@@ -141,7 +143,102 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
   @Override
   public boolean updateWithClause(UpdateClause updateClause) {
-    throw new UnsupportedOperationException();
+    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
+    final String segment = nameSegment.getName();
+
+    switch (segment) {
+      case ID:
+        updatesId(function);
+        break;
+      case NAME:
+        updatesName(function);
+        break;
+      case CHILDREN:
+        updatesChildren(function);
+        break;
+      case METADATA:
+        updatesBranchMetadata(function);
+        break;
+      case COMMIT:
+        updatesTagCommit(function);
+        break;
+      default:
+        throw new UnsupportedOperationException();
+    }
+
+    return true;
+  }
+
+  private void updatesName(UpdateFunction function) {
+    if (function.getOperator() == UpdateFunction.Operator.SET) {
+      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+      if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+        throw new UnsupportedOperationException();
+      } else if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+        name(setFunction.getValue().getString());
+      }
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private void updatesChildren(UpdateFunction function) {
+    if (!builder.hasBranch()) {
+      throw new UnsupportedOperationException();
+    }
+
+    final List<ByteString> listToUpdate = new ArrayList<>(builder.getBranch().getChildrenList());
+    updateByteStringList(
+        function,
+        () -> listToUpdate,
+        listToUpdate::add,
+        listToUpdate::addAll,
+        listToUpdate::clear,
+        listToUpdate::set
+    );
+
+    builder.setBranch(ValueProtos.Branch.newBuilder().addAllChildren(listToUpdate));
+  }
+
+  private void updatesBranchMetadata(UpdateFunction function) {
+    if (!builder.hasBranch()) {
+      throw new UnsupportedOperationException();
+    }
+
+    if (function.getOperator() == UpdateFunction.Operator.SET) {
+      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+      if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+        throw new UnsupportedOperationException();
+      } else if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+        builder.setBranch(ValueProtos.Branch
+            .newBuilder(builder.getBranch())
+            .setMetadataId(setFunction.getValue().getBinary())
+        );
+      }
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private void updatesTagCommit(UpdateFunction function) {
+    if (!builder.hasTag()) {
+      throw new UnsupportedOperationException();
+    }
+
+    if (function.getOperator() == UpdateFunction.Operator.SET) {
+      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+      if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+        throw new UnsupportedOperationException();
+      } else if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+        builder.setTag(ValueProtos.Tag
+            .newBuilder(builder.getTag())
+            .setId(setFunction.getValue().getBinary())
+        );
+      }
+    } else {
+      throw new UnsupportedOperationException();
+    }
   }
 
   @Override
@@ -202,12 +299,11 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     public Branch children(Stream<Id> children) {
       final List<ByteString> childList = children.map(Id::getValue).collect(Collectors.toList());
 
-      if (builder.getRefValueCase() != ValueProtos.Ref.RefValueCase.BRANCH) {
+      if (!builder.hasBranch()) {
         builder.setBranch(
             ValueProtos.Branch
                 .newBuilder()
                 .addAllChildren(childList)
-                .build()
         );
       } else {
         builder.setBranch(
@@ -215,7 +311,6 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
                 .newBuilder(builder.getBranch())
                 .clearChildren()
                 .addAllChildren(childList)
-                .build()
         );
       }
 
@@ -280,8 +375,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       builder.addDelta(ValueProtos.Delta.newBuilder()
           .setPosition(position)
           .setOldId(oldId.getValue())
-          .setNewId(newId.getValue())
-          .build());
+          .setNewId(newId.getValue()));
       return this;
     }
 
@@ -354,6 +448,34 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       } else {
         consumer.saved().parent(Id.of(commit.getParent())).done();
       }
+    }
+  }
+
+  String getName() {
+    return builder.getName();
+  }
+
+  Stream<Id> getChildren() {
+    if (builder.hasBranch()) {
+      return builder.getBranch().getChildrenList().stream().map(Id::of);
+    } else {
+      return Stream.empty();
+    }
+  }
+
+  Id getMetadata() {
+    if (builder.hasBranch()) {
+      return Id.of(builder.getBranch().getMetadataId());
+    } else {
+      return null;
+    }
+  }
+
+  Id getCommit() {
+    if (builder.hasTag()) {
+      return Id.of(builder.getTag().getId());
+    } else {
+      return null;
     }
   }
 }
