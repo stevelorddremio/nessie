@@ -37,9 +37,9 @@ public class TestUpdateFunctionRocksL2 extends TestUpdateFunctionBase {
   final RocksL2 rocksL2 = createL2(RANDOM);
 
   /**
-   * Create a Sample L1 entity.
+   * Create a Sample L2 entity.
    * @param random object to use for randomization of entity creation.
-   * @return sample L1 entity.
+   * @return sample L2 entity.
    */
   static RocksL2 createL2(Random random) {
     return (RocksL2) new RocksL2()
