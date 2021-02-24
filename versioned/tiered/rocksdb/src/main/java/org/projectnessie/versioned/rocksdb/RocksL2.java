@@ -19,6 +19,7 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Id;
@@ -67,7 +68,36 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   public boolean updateWithClause(UpdateClause updateClause) {
-    throw new UnsupportedOperationException();
+    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
+    final String segment = nameSegment.getName();
+
+    switch (segment) {
+      case ID:
+        if (function.getOperator() == UpdateFunction.Operator.SET) {
+          UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+          if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+            throw new UnsupportedOperationException();
+          } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+            id(Id.of(setFunction.getValue().getBinary()));
+          }
+        } else {
+          throw new UnsupportedOperationException();
+        }
+        break;
+      case CHILDREN:
+        updateByteStringList(
+            function,
+            l2Builder::getTreeList,
+            l2Builder::addTree,
+            l2Builder::addAllTree,
+            l2Builder::clearTree,
+            l2Builder::setTree
+        );
+        break;
+    }
+
+    return true;
   }
 
   @Override
@@ -91,5 +121,9 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
     } catch (InvalidProtocolBufferException e) {
       throw new StoreException("Corrupt L2 value encountered when deserializing.", e);
     }
+  }
+
+  Stream<Id> getChildren() {
+    return l2Builder.getTreeList().stream().map(Id::of);
   }
 }
