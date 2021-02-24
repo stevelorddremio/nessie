@@ -22,9 +22,11 @@ import java.util.stream.Stream;
 
 import org.projectnessie.versioned.ImmutableKey;
 import org.projectnessie.versioned.Key;
+import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Entity;
+import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.Fragment;
 
@@ -131,6 +133,27 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   public boolean updateWithClause(UpdateClause updateClause) {
-    throw new UnsupportedOperationException();
+    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
+    final String segment = nameSegment.getName();
+
+    switch (segment) {
+      case ID:
+        if (function.getOperator() == UpdateFunction.Operator.SET) {
+          UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+          if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+            throw new UnsupportedOperationException();
+          } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
+            id(Id.of(setFunction.getValue().getBinary()));
+          }
+        } else {
+          throw new UnsupportedOperationException();
+        }
+        break;
+      default:
+        throw new UnsupportedOperationException();
+    }
+
+    return true;
   }
 }
