@@ -26,9 +26,4 @@ class RocksValue extends RocksWrappedValue<Value> implements Value {
   RocksValue() {
     super();
   }
-
-  @Override
-  public boolean updateWithClause(UpdateClause updateClause) {
-    throw new UnsupportedOperationException();
-  }
 }

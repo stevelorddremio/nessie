@@ -15,6 +15,7 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.StoreException;
@@ -57,7 +58,35 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
 
   @Override
   public boolean updateWithClause(UpdateClause updateClause) {
-    throw new UnsupportedOperationException();
+    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
+    final String segment = nameSegment.getName();
+
+    switch (segment) {
+      case ID:
+        updatesId(function);
+        break;
+      case VALUE:
+        updatesValue(function);
+        break;
+      default:
+        throw new UnsupportedOperationException();
+    }
+
+    return true;
+  }
+
+  private void updatesValue(UpdateFunction function) {
+    if (function.getOperator() == UpdateFunction.Operator.SET) {
+      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
+      if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+        throw new UnsupportedOperationException();
+      } else if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+        value(setFunction.getValue().getBinary());
+      }
+    } else {
+      throw new UnsupportedOperationException();
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -88,5 +117,9 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
     } catch (InvalidProtocolBufferException e) {
       throw new StoreException("Corrupt WrappedValue value encountered when deserializing.", e);
     }
+  }
+
+  ByteString getValue() {
+    return wrappedValueBuilder.getValue();
   }
 }
