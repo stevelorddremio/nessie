@@ -15,7 +15,6 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
-import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.tiered.Value;
 
 /**
