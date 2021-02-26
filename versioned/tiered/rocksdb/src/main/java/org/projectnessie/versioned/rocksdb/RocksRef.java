@@ -156,7 +156,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
             .clearChildren()
             .addAllChildren(updatedChildren));
         break;
-      case COMMITS:
+      default:
         throw new UnsupportedOperationException();
     }
   }
@@ -187,7 +187,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
             .clearChildren()
             .addAllChildren(updatedChildren));
         break;
-      case COMMITS:
+      default:
         throw new UnsupportedOperationException();
     }
   }
@@ -235,7 +235,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
         builder.setTag(ValueProtos.Tag.newBuilder(builder.getTag()).setId(newValue.getBinary()));
         break;
-      case COMMITS:
+      default:
         throw new UnsupportedOperationException();
     }
   }

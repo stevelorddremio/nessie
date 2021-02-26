@@ -16,7 +16,6 @@
 
 package org.projectnessie.versioned.rocksdb;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -65,14 +64,14 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           .commit(ID_2)
           .saved()
           .parent(ID_3)
-          .done();
+            .done();
         bc.id(ID_4)
           .commit(ID)
           .unsaved()
           .delta(1, ID_2, ID_3)
           .mutations()
           .keyMutation(Key.of(createString(random, 8), createString(random, 8)).asAddition())
-          .done();
+            .done();
       })
       .backToRef();
   }
