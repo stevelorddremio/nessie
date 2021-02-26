@@ -15,6 +15,7 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -216,7 +217,9 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
         }).collect(Collectors.toList());
 
     for (ExpressionPath.PathSegment removedPath : removedPaths) {
-      remove(removedPath.asName().getName(), removedPath.getChild().get().asPosition().getPosition());
+      if (removedPath.getChild().isPresent()) {
+        remove(removedPath.asName().getName(), removedPath.getChild().get());
+      }
     }
   }
 
@@ -232,10 +235,11 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     final UpdateFunction updateFunction = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
     final ExpressionPath.NameSegment nameSegment = updateFunction.getRootPathAsNameSegment();
     final String segment = nameSegment.getName();
+    final ExpressionPath.PathSegment childPath = nameSegment.getChild().orElse(null);
 
     switch (updateFunction.getOperator()) {
       case REMOVE:
-        if (!nameSegment.getChild().isPresent() || !fieldIsList(segment)) {
+        if (childPath == null || !fieldIsList(segment, childPath)) {
           throw new UnsupportedOperationException();
         }
 
@@ -244,25 +248,25 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
         UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) updateFunction;
         switch (setFunction.getSubOperator()) {
           case APPEND_TO_LIST:
-            if (fieldIsList(segment)) {
+            if (fieldIsList(segment, childPath)) {
               if (setFunction.getValue().getType() == Entity.EntityType.LIST) {
-                appendToList(segment, setFunction.getValue().getList());
+                appendToList(segment, childPath, setFunction.getValue().getList());
               } else {
-                appendToList(segment, setFunction.getValue());
+                appendToList(segment, childPath, Collections.singletonList(setFunction.getValue()));
               }
             } else {
               throw new UnsupportedOperationException();
             }
             break;
           case EQUALS:
-            if (fieldIsList(segment) && nameSegment.getChild().isPresent() && nameSegment.getChild().get().isPosition()) {
-              set(segment, nameSegment.getChild().get().asPosition().getPosition(), setFunction.getValue());
-            } else if (fieldIsList(segment) != (setFunction.getValue().getType() == Entity.EntityType.LIST)) {
+            if (fieldIsList(segment, childPath) && childPath != null && childPath.isPosition()) {
+              set(segment, childPath, setFunction.getValue());
+            } else if (fieldIsList(segment, childPath) != (setFunction.getValue().getType() == Entity.EntityType.LIST)) {
               throw new UnsupportedOperationException();
             } else if (ID.equals(segment)) {
               id(Id.of(setFunction.getValue().getBinary()));
             } else {
-              set(segment, setFunction.getValue(), nameSegment.getChild());
+              set(segment, childPath, setFunction.getValue());
             }
             break;
           default:
@@ -276,17 +280,21 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     return null;
   }
 
-  protected abstract void remove(String fieldName, int position);
+  protected int getPosition(ExpressionPath.PathSegment path) {
+    if (path != null && path.isPosition()) {
+      return path.asPosition().getPosition();
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
 
-  protected abstract boolean fieldIsList(String fieldName);
+  protected abstract void remove(String fieldName, ExpressionPath.PathSegment path);
 
-  protected abstract void appendToList(String fieldName, List<Entity> valuesToAdd);
+  protected abstract boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath);
 
-  protected abstract void appendToList(String fieldName, Entity valueToAdd);
+  protected abstract void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd);
 
-  protected abstract void set(String fieldName, int position, Entity newValue);
-
-  protected abstract void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath);
+  protected abstract void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue);
 
   /**
    * Serialize the value to protobuf format.

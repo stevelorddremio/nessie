@@ -168,23 +168,23 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   @Override
-  protected void remove(String fieldName, int position) {
+  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
     switch (fieldName) {
       case ANCESTORS:
         List<ByteString> updatedAncestors = new ArrayList<>(l1Builder.getAncestorsList());
-        updatedAncestors.remove(position);
+        updatedAncestors.remove(getPosition(path));
         l1Builder.clearAncestors().addAllAncestors(updatedAncestors);
         break;
       case CHILDREN:
         List<ByteString> updatedChildren = new ArrayList<>(l1Builder.getTreeList());
-        updatedChildren.remove(position);
+        updatedChildren.remove(getPosition(path));
         l1Builder.clearTree().addAllTree(updatedChildren);
         break;
       case KEY_LIST:
         throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
       case COMPLETE_KEY_LIST:
         List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
-        updatedKeyList.remove(position);
+        updatedKeyList.remove(getPosition(path));
         l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
         break;
       default:
@@ -193,12 +193,13 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName) {
+  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
     switch (fieldName) {
       case ANCESTORS:
       case CHILDREN:
-      case KEY_LIST:
       case COMPLETE_KEY_LIST:
+        return childPath == null || childPath.isPosition();
+      case KEY_LIST:
         return true;
       default:
         return false;
@@ -206,17 +207,26 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   @Override
-  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     switch (fieldName) {
       case ANCESTORS:
+        if (childPath != null) {
+          throw new UnsupportedOperationException();
+        }
         l1Builder.addAllAncestors(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
         break;
       case CHILDREN:
+        if (childPath != null) {
+          throw new UnsupportedOperationException();
+        }
         l1Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
         break;
       case KEY_LIST:
         throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
       case COMPLETE_KEY_LIST:
+        if (childPath != null) {
+          throw new UnsupportedOperationException();
+        }
         List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
         updatedKeyList.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
         l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
@@ -227,74 +237,45 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   @Override
-  protected void appendToList(String fieldName, Entity valueToAdd) {
+  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
     switch (fieldName) {
       case ANCESTORS:
-        l1Builder.addAncestors(valueToAdd.getBinary());
+        if (childPath != null) {
+          l1Builder.setAncestors(getPosition(childPath), newValue.getBinary());
+        } else {
+          l1Builder.clearAncestors().addAllAncestors(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+        }
         break;
       case CHILDREN:
-        l1Builder.addTree(valueToAdd.getBinary());
+        if (childPath != null) {
+          l1Builder.setTree(getPosition(childPath), newValue.getBinary());
+        } else {
+          l1Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+        }
         break;
       case KEY_LIST:
         throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
       case COMPLETE_KEY_LIST:
-        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
-        updatedKeyList.add(valueToAdd.getBinary());
+        final List<ByteString> updatedKeyList;
+        if (childPath != null) {
+          updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
+          updatedKeyList.set(getPosition(childPath), newValue.getBinary());
+        } else {
+          updatedKeyList = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
+        }
         l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
-        break;
-      default:
-        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
-    }
-  }
-
-  @Override
-  protected void set(String fieldName, int position, Entity newValue) {
-    switch (fieldName) {
-      case ANCESTORS:
-        l1Builder.setAncestors(position, newValue.getBinary());
-        break;
-      case CHILDREN:
-        l1Builder.setTree(position, newValue.getBinary());
-        break;
-      case KEY_LIST:
-        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
-      case COMPLETE_KEY_LIST:
-        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
-        updatedKeyList.set(position, newValue.getBinary());
-        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
-        break;
-      default:
-        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
-    }
-  }
-
-  @Override
-  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
-    switch (fieldName) {
-      case ANCESTORS:
-        l1Builder.clearAncestors().addAllAncestors(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
-        break;
-      case CHILDREN:
-        l1Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
-        break;
-      case KEY_LIST:
-        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
-      case COMPLETE_KEY_LIST:
-        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder()
-            .addAllFragmentIds(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()))
-        );
         break;
       case INCREMENTAL_KEY_LIST:
-        if (!childPath.isPresent() || !childPath.get().isName()) {
+        if (childPath == null || !childPath.isName()) {
           throw new UnsupportedOperationException();
         }
 
-        if (CHECKPOINT_ID.equals(childPath.get().asName().getName())) {
+        if (CHECKPOINT_ID.equals(childPath.asName().getName())) {
           l1Builder.setIncrementalList(ValueProtos.IncrementalList
               .newBuilder(l1Builder.getIncrementalList())
               .setCheckpointId(newValue.getBinary())
           );
-        } else if (DISTANCE_FROM_CHECKPOINT.equals(childPath.get().asName().getName())) {
+        } else if (DISTANCE_FROM_CHECKPOINT.equals(childPath.asName().getName())) {
           l1Builder.setIncrementalList(ValueProtos.IncrementalList
               .newBuilder(l1Builder.getIncrementalList())
               .setDistanceFromCheckpointId((int)newValue.getNumber())
@@ -302,12 +283,17 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         } else {
           throw new UnsupportedOperationException();
         }
+
         break;
       case COMMIT_METADATA:
+        if (childPath != null) {
+          throw new UnsupportedOperationException();
+        }
+
         commitMetadataId(Id.of(newValue.getBinary()));
         break;
       default:
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
     }
   }
 

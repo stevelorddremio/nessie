@@ -133,32 +133,22 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   }
 
   @Override
-  protected void remove(String fieldName, int position) {
+  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName) {
+  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
     return KEY_LIST.equals(fieldName);
   }
 
   @Override
-  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  protected void appendToList(String fieldName, Entity valueToAdd) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  protected void set(String fieldName, int position, Entity newValue) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
+  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
     throw new UnsupportedOperationException();
   }
 }

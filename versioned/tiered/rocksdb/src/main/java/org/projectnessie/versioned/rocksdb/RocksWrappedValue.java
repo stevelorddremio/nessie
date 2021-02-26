@@ -61,43 +61,24 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
   }
 
   @Override
-  protected void remove(String fieldName, int position) {
+  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName) {
+  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
     return false;
   }
 
   @Override
-  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  protected void appendToList(String fieldName, Entity valueToAdd) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  protected void set(String fieldName, int position, Entity newValue) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
-    wrappedValueBuilder.setValue(newValue.getBinary());
-  }
-
-  private void updatesValue(UpdateFunction function) {
-    if (function.getOperator() == UpdateFunction.Operator.SET) {
-      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-      if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
-        throw new UnsupportedOperationException();
-      } else if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.EQUALS) {
-        value(setFunction.getValue().getBinary());
-      }
+  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
+    if (VALUE.equals(fieldName) && childPath == null) {
+      wrappedValueBuilder.setValue(newValue.getBinary());
     } else {
       throw new UnsupportedOperationException();
     }

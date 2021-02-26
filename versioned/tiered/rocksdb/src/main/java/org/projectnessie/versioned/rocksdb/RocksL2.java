@@ -71,44 +71,34 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   }
 
   @Override
-  protected void remove(String fieldName, int position) {
+  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
     if (CHILDREN.equals(fieldName)) {
       List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
-      updatedChildren.remove(position);
+      updatedChildren.remove(getPosition(path));
       l2Builder.clearTree().addAllTree(updatedChildren);
     }
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName) {
-    return CHILDREN.equals(fieldName);
+  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
+    return CHILDREN.equals(fieldName) && childPath == null;
   }
 
   @Override
-  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     if (CHILDREN.equals(fieldName)) {
       l2Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
     }
   }
 
   @Override
-  protected void appendToList(String fieldName, Entity valueToAdd) {
+  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
     if (CHILDREN.equals(fieldName)) {
-      l2Builder.addTree(valueToAdd.getBinary());
-    }
-  }
-
-  @Override
-  protected void set(String fieldName, int position, Entity newValue) {
-    if (CHILDREN.equals(fieldName)) {
-      l2Builder.setTree(position, newValue.getBinary());
-    }
-  }
-
-  @Override
-  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
-    if (CHILDREN.equals(fieldName)) {
-      l2Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+      if (childPath != null) {
+        l2Builder.setTree(getPosition(childPath), newValue.getBinary());
+      } else {
+        l2Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+      }
     }
   }
 
