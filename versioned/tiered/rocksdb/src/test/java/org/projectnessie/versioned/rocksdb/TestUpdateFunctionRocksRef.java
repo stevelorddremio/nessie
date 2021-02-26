@@ -64,7 +64,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           .commit(ID_2)
           .saved()
           .parent(ID_3)
-            .done();
+          .done();
         bc.id(ID_4)
           .commit(ID)
           .unsaved()

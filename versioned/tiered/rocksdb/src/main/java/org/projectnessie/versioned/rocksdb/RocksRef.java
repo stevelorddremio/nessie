@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
-import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
@@ -157,7 +156,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
             .clearChildren()
             .addAllChildren(updatedChildren));
         break;
-      case COMMITS:
+      default:
         throw new UnsupportedOperationException();
     }
   }
@@ -188,7 +187,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
             .clearChildren()
             .addAllChildren(updatedChildren));
         break;
-      case COMMITS:
+      default:
         throw new UnsupportedOperationException();
     }
   }
@@ -236,7 +235,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
         refBuilder.setTag(ValueProtos.Tag.newBuilder(refBuilder.getTag()).setId(newValue.getBinary()));
         break;
-      case COMMITS:
+      default:
         throw new UnsupportedOperationException();
     }
   }
