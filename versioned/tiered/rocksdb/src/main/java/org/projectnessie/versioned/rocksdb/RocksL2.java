@@ -16,16 +16,20 @@
 
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
-import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
+import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.L2;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
@@ -67,28 +71,45 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   }
 
   @Override
-  public boolean updateWithClause(UpdateClause updateClause) {
-    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
-    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
-    final String segment = nameSegment.getName();
-
-    switch (segment) {
-      case ID:
-        updatesId(function);
-        break;
-      case CHILDREN:
-        updateByteStringList(
-            function,
-            l2Builder::getTreeList,
-            l2Builder::addTree,
-            l2Builder::addAllTree,
-            l2Builder::clearTree,
-            l2Builder::setTree
-        );
-        break;
+  protected void remove(String fieldName, int position) {
+    if (CHILDREN.equals(fieldName)) {
+      List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
+      updatedChildren.remove(position);
+      l2Builder.clearTree().addAllTree(updatedChildren);
     }
+  }
 
-    return true;
+  @Override
+  protected boolean fieldIsList(String fieldName) {
+    return CHILDREN.equals(fieldName);
+  }
+
+  @Override
+  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+    if (CHILDREN.equals(fieldName)) {
+      l2Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+    }
+  }
+
+  @Override
+  protected void appendToList(String fieldName, Entity valueToAdd) {
+    if (CHILDREN.equals(fieldName)) {
+      l2Builder.addTree(valueToAdd.getBinary());
+    }
+  }
+
+  @Override
+  protected void set(String fieldName, int position, Entity newValue) {
+    if (CHILDREN.equals(fieldName)) {
+      l2Builder.setTree(position, newValue.getBinary());
+    }
+  }
+
+  @Override
+  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
+    if (CHILDREN.equals(fieldName)) {
+      l2Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+    }
   }
 
   @Override

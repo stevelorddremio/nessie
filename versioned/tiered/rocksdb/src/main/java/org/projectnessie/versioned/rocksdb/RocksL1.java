@@ -17,12 +17,13 @@ package org.projectnessie.versioned.rocksdb;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
-import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
@@ -167,110 +168,147 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   @Override
-  public boolean updateWithClause(UpdateClause updateClause) {
-    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
-    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
-    final String segment = nameSegment.getName();
-
-    switch (segment) {
-      case ID:
-        updatesId(function);
+  protected void remove(String fieldName, int position) {
+    switch (fieldName) {
+      case ANCESTORS:
+        List<ByteString> updatedAncestors = new ArrayList<>(l1Builder.getAncestorsList());
+        updatedAncestors.remove(position);
+        l1Builder.clearAncestors().addAllAncestors(updatedAncestors);
         break;
-      case COMMIT_METADATA:
-        if (function.getOperator() == UpdateFunction.Operator.SET) {
-          UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-          if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
-            throw new UnsupportedOperationException();
-          } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
-            commitMetadataId(Id.of(setFunction.getValue().getBinary()));
-          }
+      case CHILDREN:
+        List<ByteString> updatedChildren = new ArrayList<>(l1Builder.getTreeList());
+        updatedChildren.remove(position);
+        l1Builder.clearTree().addAllTree(updatedChildren);
+        break;
+      case KEY_LIST:
+        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+      case COMPLETE_KEY_LIST:
+        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
+        updatedKeyList.remove(position);
+        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
+        break;
+      default:
+        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
+    }
+  }
+
+  @Override
+  protected boolean fieldIsList(String fieldName) {
+    switch (fieldName) {
+      case ANCESTORS:
+      case CHILDREN:
+      case KEY_LIST:
+      case COMPLETE_KEY_LIST:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  @Override
+  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+    switch (fieldName) {
+      case ANCESTORS:
+        l1Builder.addAllAncestors(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+        break;
+      case CHILDREN:
+        l1Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+        break;
+      case KEY_LIST:
+        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+      case COMPLETE_KEY_LIST:
+        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
+        updatedKeyList.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
+        break;
+      default:
+        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
+    }
+  }
+
+  @Override
+  protected void appendToList(String fieldName, Entity valueToAdd) {
+    switch (fieldName) {
+      case ANCESTORS:
+        l1Builder.addAncestors(valueToAdd.getBinary());
+        break;
+      case CHILDREN:
+        l1Builder.addTree(valueToAdd.getBinary());
+        break;
+      case KEY_LIST:
+        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+      case COMPLETE_KEY_LIST:
+        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
+        updatedKeyList.add(valueToAdd.getBinary());
+        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
+        break;
+      default:
+        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
+    }
+  }
+
+  @Override
+  protected void set(String fieldName, int position, Entity newValue) {
+    switch (fieldName) {
+      case ANCESTORS:
+        l1Builder.setAncestors(position, newValue.getBinary());
+        break;
+      case CHILDREN:
+        l1Builder.setTree(position, newValue.getBinary());
+        break;
+      case KEY_LIST:
+        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+      case COMPLETE_KEY_LIST:
+        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
+        updatedKeyList.set(position, newValue.getBinary());
+        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
+        break;
+      default:
+        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
+    }
+  }
+
+  @Override
+  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
+    switch (fieldName) {
+      case ANCESTORS:
+        l1Builder.clearAncestors().addAllAncestors(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+        break;
+      case CHILDREN:
+        l1Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+        break;
+      case KEY_LIST:
+        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+      case COMPLETE_KEY_LIST:
+        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder()
+            .addAllFragmentIds(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()))
+        );
+        break;
+      case INCREMENTAL_KEY_LIST:
+        if (!childPath.isPresent() || !childPath.get().isName()) {
+          throw new UnsupportedOperationException();
+        }
+
+        if (CHECKPOINT_ID.equals(childPath.get().asName().getName())) {
+          l1Builder.setIncrementalList(ValueProtos.IncrementalList
+              .newBuilder(l1Builder.getIncrementalList())
+              .setCheckpointId(newValue.getBinary())
+          );
+        } else if (DISTANCE_FROM_CHECKPOINT.equals(childPath.get().asName().getName())) {
+          l1Builder.setIncrementalList(ValueProtos.IncrementalList
+              .newBuilder(l1Builder.getIncrementalList())
+              .setDistanceFromCheckpointId((int)newValue.getNumber())
+          );
         } else {
           throw new UnsupportedOperationException();
         }
         break;
-      case ANCESTORS:
-        updateByteStringList(
-            function,
-            l1Builder::getAncestorsList,
-            l1Builder::addAncestors,
-            l1Builder::addAllAncestors,
-            l1Builder::clearAncestors,
-            l1Builder::setAncestors
-        );
-        break;
-      case CHILDREN:
-        updateByteStringList(
-            function,
-            l1Builder::getTreeList,
-            l1Builder::addTree,
-            l1Builder::addAllTree,
-            l1Builder::clearTree,
-            l1Builder::setTree
-        );
-        break;
-      case KEY_LIST:
-        throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
-      case INCREMENTAL_KEY_LIST:
-        updateIncrementalList(function);
-        break;
-      case COMPLETE_KEY_LIST:
-        updateCompleteList(function);
+      case COMMIT_METADATA:
+        commitMetadataId(Id.of(newValue.getBinary()));
         break;
       default:
-        throw new UnsupportedOperationException(String.format("Update not supported for %s", segment));
-    }
-    return true;
-  }
-
-  private void updateIncrementalList(UpdateFunction function) {
-    if (function.getOperator() == UpdateFunction.Operator.SET) {
-      final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
-
-      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-
-      if (!nameSegment.getChild().isPresent() || setFunction.getSubOperator() != UpdateFunction.SetFunction.SubOperator.EQUALS) {
         throw new UnsupportedOperationException();
-      }
-
-      final ValueProtos.IncrementalList.Builder incrementalListBuilder;
-      if (l1Builder.getListCase() == ValueProtos.L1.ListCase.INCREMENTAL_LIST) {
-        incrementalListBuilder = ValueProtos.IncrementalList.newBuilder(l1Builder.getIncrementalList());
-      } else {
-        incrementalListBuilder = ValueProtos.IncrementalList.newBuilder();
-      }
-
-      final String childName = nameSegment.getChild().get().asName().getName();
-      if (childName.equals(CHECKPOINT_ID)) {
-        incrementalListBuilder.setCheckpointId(setFunction.getValue().getBinary());
-      } else if (childName.equals(DISTANCE_FROM_CHECKPOINT)) {
-        incrementalListBuilder.setDistanceFromCheckpointId((int)setFunction.getValue().getNumber());
-      } else {
-        // Invalid Condition Function
-        throw new UnsupportedOperationException();
-      }
-
-      l1Builder.setIncrementalList(incrementalListBuilder);
-    } else {
-      throw new UnsupportedOperationException();
     }
-  }
-
-  private void updateCompleteList(UpdateFunction function) {
-    if (!l1Builder.hasCompleteList()) {
-      throw new UnsupportedOperationException();
-    }
-
-    final List<ByteString> listToUpdate = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
-    updateByteStringList(
-        function,
-        () -> listToUpdate,
-        listToUpdate::add,
-        listToUpdate::addAll,
-        listToUpdate::clear,
-        listToUpdate::set
-    );
-
-    l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(listToUpdate));
   }
 
   @Override

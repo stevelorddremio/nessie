@@ -15,12 +15,11 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.projectnessie.versioned.Key;
@@ -178,7 +177,47 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    */
   @Override
   public void update(UpdateExpression updates) {
-    updates.getClauses().forEach(this::updateWithClause);
+    List<ExpressionPath.PathSegment> removedPaths = updates.getClauses()
+        .stream()
+        .map(this::updateWithClause)
+        .filter(Objects::nonNull)
+        .sorted(new Comparator<ExpressionPath.PathSegment>() {
+          /* Sort the PathSegments as follows
+           * names before positions
+           * names by string order
+           * higher positions before lower positions
+           * path with child before path without child
+           * when equal, recurse in with the child segments
+           */
+          @Override
+          public int compare(ExpressionPath.PathSegment ps1, ExpressionPath.PathSegment ps2) {
+            if (ps1.isName() && ps2.isName()) {
+              if (ps1.asName().getName().equals(ps2.asName().getName())) {
+                if (!ps1.getChild().isPresent() && ps2.getChild().isPresent()) {
+                  return 1;
+                } else if (ps1.getChild().isPresent() && !ps2.getChild().isPresent()) {
+                  return -1;
+                } else if (!ps1.getChild().isPresent() && !ps2.getChild().isPresent()) {
+                  return 0;
+                } else {
+                  return compare(ps1.getChild().get(), ps2.getChild().get());
+                }
+              } else {
+                return ps1.asName().getName().compareTo(ps2.asName().getName());
+              }
+            } else if (ps1.isName()) {
+              return -1;
+            } else if (ps1.isPosition() && ps2.isPosition()) {
+              return ps2.asPosition().getPosition() - ps1.asPosition().getPosition();
+            } else {
+              return 1;
+            }
+          }
+        }).collect(Collectors.toList());
+
+    for (ExpressionPath.PathSegment removedPath : removedPaths) {
+      remove(removedPath.asName().getName(), removedPath.getChild().get().asPosition().getPosition());
+    }
   }
 
   // TODO: we might be able to provide implementation here and just have
@@ -187,80 +226,67 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
   /**
    * Applies an update to the implementing class.
    * @param updateClause the update to apply to the implementing class.
-   * @return true if the update was successful
+   * @return The PathSegment that should be removed, or null
    */
-  abstract boolean updateWithClause(UpdateClause updateClause);
+  private ExpressionPath.PathSegment updateWithClause(UpdateClause updateClause) {
+    final UpdateFunction updateFunction = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+    final ExpressionPath.NameSegment nameSegment = updateFunction.getRootPathAsNameSegment();
+    final String segment = nameSegment.getName();
 
-  protected void updatesId(UpdateFunction function) {
-    if (function.getOperator() == UpdateFunction.Operator.SET) {
-      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-      if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
+    switch (updateFunction.getOperator()) {
+      case REMOVE:
+        if (!nameSegment.getChild().isPresent() || !fieldIsList(segment)) {
+          throw new UnsupportedOperationException();
+        }
+
+        return nameSegment;
+      case SET:
+        UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) updateFunction;
+        switch (setFunction.getSubOperator()) {
+          case APPEND_TO_LIST:
+            if (fieldIsList(segment)) {
+              if (setFunction.getValue().getType() == Entity.EntityType.LIST) {
+                appendToList(segment, setFunction.getValue().getList());
+              } else {
+                appendToList(segment, setFunction.getValue());
+              }
+            } else {
+              throw new UnsupportedOperationException();
+            }
+            break;
+          case EQUALS:
+            if (fieldIsList(segment) && nameSegment.getChild().isPresent() && nameSegment.getChild().get().isPosition()) {
+              set(segment, nameSegment.getChild().get().asPosition().getPosition(), setFunction.getValue());
+            } else if (fieldIsList(segment) != (setFunction.getValue().getType() == Entity.EntityType.LIST)) {
+              throw new UnsupportedOperationException();
+            } else if (ID.equals(segment)) {
+              id(Id.of(setFunction.getValue().getBinary()));
+            } else {
+              set(segment, setFunction.getValue(), nameSegment.getChild());
+            }
+            break;
+          default:
+            throw new UnsupportedOperationException();
+        }
+        break;
+      default:
         throw new UnsupportedOperationException();
-      } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
-        id(Id.of(setFunction.getValue().getBinary()));
-      }
-    } else {
-      throw new UnsupportedOperationException();
     }
+
+    return null;
   }
 
-  protected void updateByteStringList(UpdateFunction function,
-                                      Supplier<List<ByteString>> getter,
-                                      Consumer<ByteString> append,
-                                      Consumer<List<ByteString>> appendAll,
-                                      Runnable clear,
-                                      BiConsumer<Integer, ByteString> replace) {
-    if (function.getOperator() == UpdateFunction.Operator.SET) {
-      final UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-      if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST)) {
-        appendToByteStringList(setFunction, append, appendAll);
-      } else if (setFunction.getSubOperator().equals(UpdateFunction.SetFunction.SubOperator.EQUALS)) {
-        replaceForByteStringList(setFunction, appendAll, clear, replace);
-      }
-    } else if (function.getOperator() == UpdateFunction.Operator.REMOVE) {
-      final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
-      if (pathSegment == null) {
-        throw new UnsupportedOperationException();
-      } else if (pathSegment.isPosition()) {
-        final int position = pathSegment.asPosition().getPosition();
-        final List<ByteString> updatedList = new ArrayList<>(getter.get());
-        updatedList.remove(position);
+  protected abstract void remove(String fieldName, int position);
 
-        clear.run();
-        appendAll.accept(updatedList);
-      }
-    }
-  }
+  protected abstract boolean fieldIsList(String fieldName);
 
-  private void appendToByteStringList(UpdateFunction.SetFunction function,
-                                      Consumer<ByteString> append,
-                                      Consumer<List<ByteString>> appendAll) {
-    if (function.getValue().getType().equals(Entity.EntityType.BINARY)) {
-      append.accept(function.getValue().getBinary());
-    } else if (function.getValue().getType().equals(Entity.EntityType.LIST)) {
-      appendAll.accept(function.getValue().getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
-    }
-  }
+  protected abstract void appendToList(String fieldName, List<Entity> valuesToAdd);
 
-  private void replaceForByteStringList(UpdateFunction.SetFunction function,
-                                        Consumer<List<ByteString>> appendAll,
-                                        Runnable clear,
-                                        BiConsumer<Integer, ByteString> replace) {
-    final ExpressionPath.PathSegment pathSegment = function.getPath().getRoot().getChild().orElse(null);
-    if (pathSegment == null) {
-      if (function.getValue().getType() != Entity.EntityType.LIST) {
-        throw new UnsupportedOperationException();
-      }
+  protected abstract void appendToList(String fieldName, Entity valueToAdd);
 
-      // The path indicates not updating elements of the stream, so the function value becomes the new stream.
-      // function value is a list of Entities. This is converted to a list of Id's.
-      clear.run();
-      appendAll.accept(function.getValue().getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
-    } else if (pathSegment.isPosition()) {
-      final int position = pathSegment.asPosition().getPosition();
-      replace.accept(position, function.getValue().getBinary());
-    }
-  }
+  protected abstract void set(String fieldName, int position, Entity newValue);
+
+  protected abstract void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath);
 
   /**
    * Serialize the value to protobuf format.

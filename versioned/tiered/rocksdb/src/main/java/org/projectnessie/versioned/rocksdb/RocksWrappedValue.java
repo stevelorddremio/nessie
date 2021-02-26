@@ -15,9 +15,13 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
+import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.BaseWrappedValue;
 
@@ -57,23 +61,33 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
   }
 
   @Override
-  public boolean updateWithClause(UpdateClause updateClause) {
-    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
-    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
-    final String segment = nameSegment.getName();
+  protected void remove(String fieldName, int position) {
+    throw new UnsupportedOperationException();
+  }
 
-    switch (segment) {
-      case ID:
-        updatesId(function);
-        break;
-      case VALUE:
-        updatesValue(function);
-        break;
-      default:
-        throw new UnsupportedOperationException();
-    }
+  @Override
+  protected boolean fieldIsList(String fieldName) {
+    return false;
+  }
 
-    return true;
+  @Override
+  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected void appendToList(String fieldName, Entity valueToAdd) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected void set(String fieldName, int position, Entity newValue) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
+    wrappedValueBuilder.setValue(newValue.getBinary());
   }
 
   private void updatesValue(UpdateFunction function) {

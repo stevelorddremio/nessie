@@ -17,6 +17,7 @@ package org.projectnessie.versioned.rocksdb;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,6 +26,7 @@ import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
+import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.Ref;
@@ -142,102 +144,127 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   @Override
-  public boolean updateWithClause(UpdateClause updateClause) {
-    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
-    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
-    final String segment = nameSegment.getName();
-
-    switch (segment) {
-      case ID:
-        updatesId(function);
-        break;
-      case NAME:
-        updatesName(function);
-        break;
+  protected void remove(String fieldName, int position) {
+    switch (fieldName) {
       case CHILDREN:
-        updatesChildren(function);
-        break;
-      case METADATA:
-        updatesBranchMetadata(function);
-        break;
-      case COMMIT:
-        updatesTagCommit(function);
-        break;
-      default:
-        throw new UnsupportedOperationException();
-    }
+        if (!builder.hasBranch()) {
+          throw new UnsupportedOperationException();
+        }
 
-    return true;
-  }
-
-  private void updatesName(UpdateFunction function) {
-    if (function.getOperator() == UpdateFunction.Operator.SET) {
-      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-      if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
-        throw new UnsupportedOperationException();
-      } else if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.EQUALS) {
-        name(setFunction.getValue().getString());
-      }
-    } else {
-      throw new UnsupportedOperationException();
-    }
-  }
-
-  private void updatesChildren(UpdateFunction function) {
-    if (!builder.hasBranch()) {
-      throw new UnsupportedOperationException();
-    }
-
-    final List<ByteString> listToUpdate = new ArrayList<>(builder.getBranch().getChildrenList());
-    updateByteStringList(
-        function,
-        () -> listToUpdate,
-        listToUpdate::add,
-        listToUpdate::addAll,
-        listToUpdate::clear,
-        listToUpdate::set
-    );
-
-    builder.setBranch(ValueProtos.Branch.newBuilder().addAllChildren(listToUpdate));
-  }
-
-  private void updatesBranchMetadata(UpdateFunction function) {
-    if (!builder.hasBranch()) {
-      throw new UnsupportedOperationException();
-    }
-
-    if (function.getOperator() == UpdateFunction.Operator.SET) {
-      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-      if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
-        throw new UnsupportedOperationException();
-      } else if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+        List<ByteString> updatedChildren = new ArrayList<>(builder.getBranch().getChildrenList());
+        updatedChildren.remove(position);
         builder.setBranch(ValueProtos.Branch
             .newBuilder(builder.getBranch())
-            .setMetadataId(setFunction.getValue().getBinary())
-        );
-      }
-    } else {
-      throw new UnsupportedOperationException();
+            .clearChildren()
+            .addAllChildren(updatedChildren));
+        break;
+      case COMMITS:
+        throw new UnsupportedOperationException();
     }
   }
 
-  private void updatesTagCommit(UpdateFunction function) {
-    if (!builder.hasTag()) {
-      throw new UnsupportedOperationException();
+  @Override
+  protected boolean fieldIsList(String fieldName) {
+    switch (fieldName) {
+      case CHILDREN:
+      case COMMITS:
+        return true;
+      default:
+        return false;
     }
+  }
 
-    if (function.getOperator() == UpdateFunction.Operator.SET) {
-      UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) function;
-      if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+  @Override
+  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+    switch (fieldName) {
+      case CHILDREN:
+        if (!builder.hasBranch()) {
+          throw new UnsupportedOperationException();
+        }
+
+        List<ByteString> updatedChildren = new ArrayList<>(builder.getBranch().getChildrenList());
+        updatedChildren.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+        builder.setBranch(ValueProtos.Branch
+            .newBuilder(builder.getBranch())
+            .clearChildren()
+            .addAllChildren(updatedChildren));
+        break;
+      case COMMITS:
         throw new UnsupportedOperationException();
-      } else if (setFunction.getSubOperator() == UpdateFunction.SetFunction.SubOperator.EQUALS) {
-        builder.setTag(ValueProtos.Tag
-            .newBuilder(builder.getTag())
-            .setId(setFunction.getValue().getBinary())
+    }
+  }
+
+  @Override
+  protected void appendToList(String fieldName, Entity valueToAdd) {
+    switch (fieldName) {
+      case CHILDREN:
+        if (!builder.hasBranch()) {
+          throw new UnsupportedOperationException();
+        }
+
+        List<ByteString> updatedChildren = new ArrayList<>(builder.getBranch().getChildrenList());
+        updatedChildren.add(valueToAdd.getBinary());
+        builder.setBranch(ValueProtos.Branch
+            .newBuilder(builder.getBranch())
+            .clearChildren()
+            .addAllChildren(updatedChildren)
         );
-      }
-    } else {
-      throw new UnsupportedOperationException();
+        break;
+      case COMMITS:
+        throw new UnsupportedOperationException();
+    }
+  }
+
+  @Override
+  protected void set(String fieldName, int position, Entity newValue) {
+    switch (fieldName) {
+      case CHILDREN:
+        if (!builder.hasBranch()) {
+          throw new UnsupportedOperationException();
+        }
+
+        List<ByteString> updatedChildren = new ArrayList<>(builder.getBranch().getChildrenList());
+        updatedChildren.set(position, newValue.getBinary());
+        builder.setBranch(ValueProtos.Branch
+            .newBuilder(builder.getBranch())
+            .clearChildren()
+            .addAllChildren(updatedChildren)
+        );
+        break;
+      case COMMITS:
+        throw new UnsupportedOperationException();
+    }
+  }
+
+  @Override
+  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
+    switch (fieldName) {
+      case NAME:
+        builder.setName(newValue.getString());
+        break;
+      case CHILDREN:
+        if (!builder.hasBranch()) {
+          throw new UnsupportedOperationException();
+        }
+
+        builder.setBranch(ValueProtos.Branch.newBuilder(builder.getBranch()).clearChildren().addAllChildren(
+            newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
+        ));
+        break;
+      case METADATA:
+        if (!builder.hasBranch()) {
+          throw new UnsupportedOperationException();
+        }
+
+        builder.setBranch(ValueProtos.Branch.newBuilder(builder.getBranch()).setMetadataId(newValue.getBinary()));
+        break;
+      case COMMIT:
+        if (!builder.hasTag()) {
+          throw new UnsupportedOperationException();
+        }
+
+        builder.setTag(ValueProtos.Tag.newBuilder(builder.getTag()).setId(newValue.getBinary()));
+        break;
     }
   }
 

@@ -16,12 +16,14 @@
 
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
-import org.projectnessie.versioned.impl.condition.UpdateClause;
 import org.projectnessie.versioned.store.ConditionFailedException;
+import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.KeyDelta;
 import org.projectnessie.versioned.store.StoreException;
@@ -70,20 +72,33 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
   }
 
   @Override
-  public boolean updateWithClause(UpdateClause updateClause) {
-    final UpdateFunction function = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
-    final ExpressionPath.NameSegment nameSegment = function.getRootPathAsNameSegment();
-    final String segment = nameSegment.getName();
+  protected void remove(String fieldName, int position) {
+    throw new UnsupportedOperationException();
+  }
 
-    switch (segment) {
-      case ID:
-        updatesId(function);
-        break;
-      default:
-        throw new UnsupportedOperationException();
-    }
+  @Override
+  protected boolean fieldIsList(String fieldName) {
+    return TREE.equals(fieldName);
+  }
 
-    return true;
+  @Override
+  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected void appendToList(String fieldName, Entity valueToAdd) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected void set(String fieldName, int position, Entity newValue) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> pathSegment) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
