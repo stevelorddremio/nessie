@@ -143,7 +143,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   @Override
-  protected void remove(String fieldName, int position) {
+  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
     switch (fieldName) {
       case CHILDREN:
         if (!refBuilder.hasBranch()) {
@@ -151,7 +151,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         }
 
         List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
-        updatedChildren.remove(position);
+        updatedChildren.remove(getPosition(path));
         refBuilder.setBranch(ValueProtos.Branch
             .newBuilder(refBuilder.getBranch())
             .clearChildren()
@@ -163,7 +163,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName) {
+  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
     switch (fieldName) {
       case CHILDREN:
       case COMMITS:
@@ -174,10 +174,10 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   @Override
-  protected void appendToList(String fieldName, List<Entity> valuesToAdd) {
+  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     switch (fieldName) {
       case CHILDREN:
-        if (!refBuilder.hasBranch()) {
+        if (!refBuilder.hasBranch() || childPath != null) {
           throw new UnsupportedOperationException();
         }
 
@@ -194,51 +194,13 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   @Override
-  protected void appendToList(String fieldName, Entity valueToAdd) {
-    switch (fieldName) {
-      case CHILDREN:
-        if (!refBuilder.hasBranch()) {
-          throw new UnsupportedOperationException();
-        }
-
-        List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
-        updatedChildren.add(valueToAdd.getBinary());
-        refBuilder.setBranch(ValueProtos.Branch
-            .newBuilder(refBuilder.getBranch())
-            .clearChildren()
-            .addAllChildren(updatedChildren)
-        );
-        break;
-      case COMMITS:
-        throw new UnsupportedOperationException();
-    }
-  }
-
-  @Override
-  protected void set(String fieldName, int position, Entity newValue) {
-    switch (fieldName) {
-      case CHILDREN:
-        if (!refBuilder.hasBranch()) {
-          throw new UnsupportedOperationException();
-        }
-
-        List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
-        updatedChildren.set(position, newValue.getBinary());
-        refBuilder.setBranch(ValueProtos.Branch
-            .newBuilder(refBuilder.getBranch())
-            .clearChildren()
-            .addAllChildren(updatedChildren)
-        );
-        break;
-      case COMMITS:
-        throw new UnsupportedOperationException();
-    }
-  }
-
-  @Override
-  protected void set(String fieldName, Entity newValue, Optional<ExpressionPath.PathSegment> childPath) {
+  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
     switch (fieldName) {
       case NAME:
+        if (childPath != null) {
+          throw new UnsupportedOperationException();
+        }
+
         refBuilder.setName(newValue.getString());
         break;
       case CHILDREN:
@@ -246,24 +208,36 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
           throw new UnsupportedOperationException();
         }
 
-        refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).clearChildren().addAllChildren(
-            newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
-        ));
+        final List<ByteString> updatedChildren;
+        if (childPath != null) {
+          updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
+          updatedChildren.set(getPosition(childPath), newValue.getBinary());
+        } else {
+          updatedChildren = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
+        }
+
+        refBuilder.setBranch(ValueProtos.Branch
+            .newBuilder(refBuilder.getBranch())
+            .clearChildren()
+            .addAllChildren(updatedChildren)
+        );
         break;
       case METADATA:
-        if (!refBuilder.hasBranch()) {
+        if (!refBuilder.hasBranch() || childPath != null) {
           throw new UnsupportedOperationException();
         }
 
         refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(newValue.getBinary()));
         break;
       case COMMIT:
-        if (!refBuilder.hasTag()) {
+        if (!refBuilder.hasTag() || childPath != null) {
           throw new UnsupportedOperationException();
         }
 
         refBuilder.setTag(ValueProtos.Tag.newBuilder(refBuilder.getTag()).setId(newValue.getBinary()));
         break;
+      case COMMITS:
+        throw new UnsupportedOperationException();
     }
   }
 
