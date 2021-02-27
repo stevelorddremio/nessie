@@ -16,6 +16,7 @@
 
 package org.projectnessie.versioned.rocksdb;
 
+import org.projectnessie.versioned.impl.condition.AddClause;
 import org.projectnessie.versioned.impl.condition.ExpressionFunction;
 import org.projectnessie.versioned.impl.condition.RemoveClause;
 import org.projectnessie.versioned.impl.condition.SetClause;
@@ -27,6 +28,11 @@ import org.projectnessie.versioned.store.Entity;
  */
 class RocksDBUpdateClauseVisitor implements UpdateClauseVisitor<UpdateFunction> {
   static final RocksDBUpdateClauseVisitor ROCKS_DB_UPDATE_CLAUSE_VISITOR = new RocksDBUpdateClauseVisitor();
+
+  @Override
+  public UpdateFunction visit(final AddClause clause) {
+    throw new UnsupportedOperationException();
+  }
 
   @Override
   public UpdateFunction visit(RemoveClause clause) {
