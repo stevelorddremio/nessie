@@ -41,7 +41,9 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   static final String COMMIT_METADATA = "metadataId";
   static final String ANCESTORS = "ancestors";
   static final String CHILDREN = "children";
-  static final String KEY_LIST = "keylist";
+  static final String KEY_MUTATIONS = "keyMutations";
+  static final String KEY_MUTATIONS_MUTATION_TYPE = "mutationType";
+  static final String KEY_MUTATIONS_KEY = "key";
   static final String INCREMENTAL_KEY_LIST = "incrementalKeyList";
   static final String COMPLETE_KEY_LIST = "completeKeyList";
   static final String CHECKPOINT_ID = "checkpointId";
@@ -136,7 +138,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       case CHILDREN:
         evaluate(function, builder.getTreeList().stream().map(Id::of).collect(Collectors.toList()));
         break;
-      case KEY_LIST:
+      case KEY_MUTATIONS:
         throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
       case INCREMENTAL_KEY_LIST:
         if (!nameSegment.getChild().isPresent() || !function.getOperator().equals(Function.Operator.EQUALS)) {
@@ -178,8 +180,9 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         updatedChildren.remove(getPosition(path));
         l1Builder.clearTree().addAllTree(updatedChildren);
         break;
-      case KEY_LIST:
-        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+      case KEY_MUTATIONS:
+        removesKeyMutations(path);
+        break;
       case COMPLETE_KEY_LIST:
         List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
         updatedKeyList.remove(getPosition(path));
@@ -190,6 +193,30 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
     }
   }
 
+  private void removesKeyMutations(ExpressionPath.PathSegment path) {
+    if (path.isPosition() && !path.getChild().isPresent()) {
+      l1Builder.removeKeyMutations(getPosition(path));
+    } else if (path.isPosition()) {
+      if (!path.getChild().get().isName() || !KEY_MUTATIONS_KEY.equals(path.getChild().get().asName().getName())) {
+        throw new UnsupportedOperationException();
+      }
+
+      final ExpressionPath.PathSegment keyPath = path.getChild().get();
+      if (!keyPath.getChild().isPresent() || !keyPath.getChild().get().isPosition()) {
+        throw new UnsupportedOperationException();
+      }
+
+      final List<String> updatedKeysList = new ArrayList<>(l1Builder.getKeyMutations(getPosition(path)).getKey().getElementsList());
+      updatedKeysList.remove(getPosition(keyPath.getChild().get()));
+      l1Builder.setKeyMutations(getPosition(path), ValueProtos.KeyMutation
+          .newBuilder(l1Builder.getKeyMutations(getPosition(path)))
+          .setKey(ValueProtos.Key.newBuilder().addAllElements(updatedKeysList))
+      );
+    } else {
+      throw new UnsupportedOperationException(String.format("Remove not supported for %s", KEY_MUTATIONS));
+    }
+  }
+
   @Override
   protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
     switch (fieldName) {
@@ -197,8 +224,13 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       case CHILDREN:
       case COMPLETE_KEY_LIST:
         return childPath == null || childPath.isPosition();
-      case KEY_LIST:
-        return true;
+      case KEY_MUTATIONS:
+        if (childPath == null || childPath.isPosition()) {
+          return true;
+        } else if (KEY_MUTATIONS_KEY.equals(childPath.asName().getName())) {
+          return !childPath.getChild().isPresent() || childPath.getChild().get().isPosition();
+        }
+        return false;
       default:
         return false;
     }
@@ -219,8 +251,21 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         }
         l1Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
         break;
-      case KEY_LIST:
-        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+      case KEY_MUTATIONS:
+        if (!childPath.isPosition() || !childPath.getChild().isPresent() || !childPath.getChild().get().isName()
+            || !KEY_MUTATIONS_KEY.equals(childPath.getChild().get().asName().getName())) {
+          throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+        }
+
+        int keyMutationPosition = childPath.asPosition().getPosition();
+        List<String> keyElements = new ArrayList<>(l1Builder.getKeyMutations(keyMutationPosition).getKey().getElementsList());
+        keyElements.addAll(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()));
+
+        l1Builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
+            .newBuilder(l1Builder.getKeyMutations(keyMutationPosition))
+            .setKey(ValueProtos.Key.newBuilder().addAllElements(keyElements))
+        );
+        break;
       case COMPLETE_KEY_LIST:
         if (childPath != null) {
           throw new UnsupportedOperationException();
@@ -251,8 +296,9 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
           l1Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
         }
         break;
-      case KEY_LIST:
-        throw new UnsupportedOperationException(String.format("Update not supported for %s", fieldName));
+      case KEY_MUTATIONS:
+        setsKeyMutations(childPath, newValue);
+        break;
       case COMPLETE_KEY_LIST:
         final List<ByteString> updatedKeyList;
         if (childPath != null) {
@@ -292,6 +338,45 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         break;
       default:
         throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
+    }
+  }
+
+  private void setsKeyMutations(ExpressionPath.PathSegment childPath, Entity newValue) {
+    if (childPath == null || !childPath.isPosition() || !childPath.getChild().isPresent() || !childPath.getChild().get().isName()) {
+      throw new UnsupportedOperationException(String.format("Update not supported for %s", KEY_MUTATIONS));
+    }
+
+    int keyMutationPosition = childPath.asPosition().getPosition();
+
+    switch (childPath.getChild().get().asName().getName()) {
+      case KEY_MUTATIONS_MUTATION_TYPE:
+        l1Builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
+            .newBuilder(l1Builder.getKeyMutations(keyMutationPosition))
+            .setTypeValue((int)newValue.getNumber())
+        );
+        break;
+      case KEY_MUTATIONS_KEY:
+        if (!childPath.getChild().get().getChild().isPresent()) {
+          l1Builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
+              .newBuilder(l1Builder.getKeyMutations(keyMutationPosition))
+              .setKey(ValueProtos.Key.newBuilder().addAllElements(
+              newValue.getList().stream().map(Entity::getString).collect(Collectors.toList())
+            ))
+          );
+        } else if (childPath.getChild().get().getChild().isPresent() && childPath.getChild().get().getChild().get().isPosition()) {
+          List<String> keyElements = new ArrayList<>(l1Builder.getKeyMutations(keyMutationPosition).getKey().getElementsList());
+          keyElements.set(childPath.getChild().get().getChild().get().asPosition().getPosition(), newValue.getString());
+
+          l1Builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
+              .newBuilder(l1Builder.getKeyMutations(keyMutationPosition))
+              .setKey(ValueProtos.Key.newBuilder().addAllElements(keyElements))
+          );
+        } else {
+          throw new UnsupportedOperationException();
+        }
+        break;
+      default:
+        throw new UnsupportedOperationException();
     }
   }
 
@@ -359,5 +444,17 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   Stream<Id> getCompleteKeyList() {
     return l1Builder.getCompleteList().getFragmentIdsList().stream().map(Id::of);
+  }
+
+  int getKeyMutationsCount() {
+    return l1Builder.getKeyMutationsCount();
+  }
+
+  int getKeyMutationType(int index) {
+    return l1Builder.getKeyMutations(index).getTypeValue();
+  }
+
+  List<String> getKeyMutationKeys(int index) {
+    return l1Builder.getKeyMutations(index).getKey().getElementsList();
   }
 }
