@@ -42,6 +42,9 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   static final String NAME = "name";
   static final String METADATA = "metadata";
   static final String COMMITS = "commits";
+  static final String COMMITS_ID = "id";
+  static final String COMMITS_COMMIT = "commit";
+  static final String COMMITS_PARENT = "parent";
   static final String COMMIT = "commit";
   static final String CHILDREN = "children";
 
@@ -230,6 +233,9 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
         refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(newValue.getBinary()));
         break;
+      case COMMITS:
+        setCommits(childPath, newValue);
+        break;
       case COMMIT:
         if (!refBuilder.hasTag()) {
           throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for branches", fieldName));
@@ -241,6 +247,38 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         break;
       default:
         throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
+    }
+  }
+
+  private void setCommits(ExpressionPath.PathSegment childPath, Entity newValue) {
+    if (!refBuilder.hasBranch() || childPath == null || !childPath.isPosition() || !childPath.getChild().isPresent()
+        || !childPath.getChild().get().isName()) {
+      throw new UnsupportedOperationException(String.format("Update not supported for %s", COMMITS));
+    }
+
+    final int commitsPosition = childPath.asPosition().getPosition();
+
+    switch (childPath.getChild().get().asName().getName()) {
+      case COMMITS_ID:
+        refBuilder.setBranch(
+            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+              .setCommits(commitsPosition,
+                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setId(newValue.getBinary())));
+        break;
+      case COMMITS_COMMIT:
+        refBuilder.setBranch(
+            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+              .setCommits(commitsPosition,
+                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setCommit(newValue.getBinary())));
+        break;
+      case COMMITS_PARENT:
+        refBuilder.setBranch(
+          ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+            .setCommits(commitsPosition,
+              ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setParent(newValue.getBinary())));
+        break;
+      default:
+        throw new UnsupportedOperationException();
     }
   }
 
@@ -468,6 +506,30 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   Id getCommit() {
     if (refBuilder.hasTag()) {
       return Id.of(refBuilder.getTag().getId());
+    } else {
+      return null;
+    }
+  }
+
+  Id getCommitsId(int index) {
+    if (refBuilder.hasBranch()) {
+      return Id.of(refBuilder.getBranch().getCommits(index).getId());
+    } else {
+      return null;
+    }
+  }
+
+  Id getCommitsCommit(int index) {
+    if (refBuilder.hasBranch()) {
+      return Id.of(refBuilder.getBranch().getCommits(index).getCommit());
+    } else {
+      return null;
+    }
+  }
+
+  Id getCommitsParent(int index) {
+    if (refBuilder.hasBranch()) {
+      return Id.of(refBuilder.getBranch().getCommits(index).getParent());
     } else {
       return null;
     }
