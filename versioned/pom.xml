@@ -36,5 +36,6 @@
     <module>spi</module>
     <module>tests</module>
     <module>tiered</module>
+    <module>gc</module>
   </modules>
 </project>
