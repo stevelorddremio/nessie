@@ -15,6 +15,8 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -177,9 +179,9 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    */
   @Override
   public void update(UpdateExpression updates) {
-    List<ExpressionPath.PathSegment> removedPaths = updates.getClauses()
+    List<ExpressionPath.PathSegment> removedPaths = removeUnecessaryFunctions(updates.getClauses())
         .stream()
-        .map(this::updateWithClause)
+        .map(this::updateWithFunction)
         .filter(Objects::nonNull)
         .sorted(new Comparator<ExpressionPath.PathSegment>() {
           /* Sort the PathSegments as follows
@@ -222,16 +224,101 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     }
   }
 
+  private List<UpdateFunction> removeUnecessaryFunctions(List<UpdateClause> updateClauses) {
+    final List<UpdateFunction> updateFunctions = updateClauses
+        .stream()
+        .map(uc -> uc.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR))
+        .collect(Collectors.toList());
+    final boolean keepUpdateFunction[] = new boolean[updateFunctions.size()];
+    Arrays.fill(keepUpdateFunction, true);
+
+    for (int i = 1; i < updateClauses.size(); i++) {
+      final UpdateFunction currentUpdateFunction = updateFunctions.get(i);
+      final String currentUpdatePath = currentUpdateFunction.getPath().asString();
+      final UpdateFunction.Operator currentOperator = currentUpdateFunction.getOperator();
+      final UpdateFunction.SetFunction.SubOperator currentSubOperator;
+      if (currentOperator == UpdateFunction.Operator.SET) {
+        currentSubOperator = ((UpdateFunction.SetFunction) currentUpdateFunction).getSubOperator();
+      } else {
+        currentSubOperator = null;
+      }
+
+      for (int j = 0; j < i; j++) {
+        if (!keepUpdateFunction[j]) {
+          continue;
+        }
+
+        final UpdateFunction earlierUpdateFunction = updateFunctions.get(j);
+        final String earlierUpdatePath = earlierUpdateFunction.getPath().asString();
+        final UpdateFunction.Operator earlierOperator = earlierUpdateFunction.getOperator();
+        final UpdateFunction.SetFunction.SubOperator earlierSubOperator;
+        if (earlierOperator == UpdateFunction.Operator.SET) {
+          earlierSubOperator = ((UpdateFunction.SetFunction) earlierUpdateFunction).getSubOperator();
+        } else {
+          earlierSubOperator = null;
+        }
+
+        if (currentOperator == UpdateFunction.Operator.REMOVE
+            && earlierOperator == UpdateFunction.Operator.REMOVE) {
+          if (currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.REMOVE
+            && currentOperator == UpdateFunction.Operator.SET
+            && currentSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+          if (currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          } else if (earlierUpdatePath.startsWith(currentUpdatePath)) {
+            keepUpdateFunction[j] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.REMOVE
+            && currentOperator == UpdateFunction.Operator.SET
+            && currentSubOperator == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+          if (currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.SET
+            && earlierSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS
+            && currentOperator == UpdateFunction.Operator.REMOVE) {
+          if (!currentUpdatePath.equals(earlierUpdatePath) && currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.SET
+            && earlierSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS
+            && currentOperator == UpdateFunction.Operator.SET
+            && currentSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+          if (!currentUpdatePath.equals(earlierUpdatePath) && currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.SET
+            && earlierSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS
+            && currentOperator == UpdateFunction.Operator.SET
+            && currentSubOperator == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+          if (currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        }
+      }
+    }
+
+    final List<UpdateFunction> functionsToApply = new ArrayList<>();
+    for (int i = 0; i < keepUpdateFunction.length; i++) {
+      if (keepUpdateFunction[i]) {
+        functionsToApply.add(updateFunctions.get(i));
+      }
+    }
+    return functionsToApply;
+  }
+
   // TODO: we might be able to provide implementation here and just have
   // abstract methods for SET and REMOVE, which will be implemented by the
   // specific classes L1, L2 etc.
   /**
    * Applies an update to the implementing class.
-   * @param updateClause the update to apply to the implementing class.
+   * @param updateFunction the update to apply to the implementing class.
    * @return The PathSegment that should be removed, or null
    */
-  private ExpressionPath.PathSegment updateWithClause(UpdateClause updateClause) {
-    final UpdateFunction updateFunction = updateClause.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR);
+  private ExpressionPath.PathSegment updateWithFunction(UpdateFunction updateFunction) {
     final ExpressionPath.NameSegment nameSegment = updateFunction.getRootPathAsNameSegment();
     final String segment = nameSegment.getName();
     final ExpressionPath.PathSegment childPath = nameSegment.getChild().orElse(null);
