@@ -290,27 +290,24 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   private void setDelta(ExpressionPath.PathSegment childPath, int commitsPosition, Entity newValue) {
-    if (!childPath.isPosition() || !childPath.getChild().isPresent()) {
+    if (!childPath.getChild().isPresent() || !childPath.getChild().get().isPosition()) {
       throw new UnsupportedOperationException();
     }
 
-    final int deltaPosition = childPath.asPosition().getPosition();
+    final int deltaPosition = childPath.getChild().get().asPosition().getPosition();
+
+    final ValueProtos.Delta.Builder deltaBuilder =
+        ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition));
 
     switch (childPath.getChild().get().asName().getName()) {
       case COMMITS_POSITION:
-        setDelta(commitsPosition, deltaPosition,
-            ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition))
-              .setPosition((int)newValue.getNumber()));
+        setDelta(commitsPosition, deltaPosition, deltaBuilder.setPosition((int)newValue.getNumber()));
         break;
       case COMMITS_OLD_ID:
-        setDelta(commitsPosition, deltaPosition,
-            ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition))
-              .setOldId(newValue.getBinary()));
+        setDelta(commitsPosition, deltaPosition, deltaBuilder.setOldId(newValue.getBinary()));
         break;
       case COMMITS_NEW_ID:
-        setDelta(commitsPosition, deltaPosition,
-            ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition))
-              .setNewId(newValue.getBinary()));
+        setDelta(commitsPosition, deltaPosition, deltaBuilder.setNewId(newValue.getBinary()));
         break;
       default:
         throw new UnsupportedOperationException();
