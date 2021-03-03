@@ -142,16 +142,16 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
                 .addAllElements(updatedKeys)
             );
           } else {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Invalid path for remove");
           }
         } else {
           builder.removeKeys(path.asPosition().getPosition());
         }
       } else {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Invalid path for remove");
       }
     } else {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
     }
   }
 
@@ -176,10 +176,10 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
             .addAllElements(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()))
         );
       } else {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Invalid path for appending to \"keys\"");
       }
     } else {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
     }
   }
 
@@ -202,13 +202,13 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
               .addAllElements(newValue.getList().stream().map(Entity::getString).collect(Collectors.toList()))
           );
         } else {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException("Invalid path for set equals");
         }
       } else {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Invalid path for set equals");
       }
     } else {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
     }
   }
 }

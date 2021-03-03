@@ -43,6 +43,8 @@ import com.google.common.base.Preconditions;
 abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, Evaluator, Updater {
 
   static final String ID = "id";
+  static final String DATETIME = "dt";
+
   private final ValueProtos.BaseValue.Builder builder = ValueProtos.BaseValue.newBuilder();
 
   RocksBaseValue() {
@@ -224,12 +226,27 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     }
   }
 
+  /**
+   * Filters through the list of UpdateClause objects to remove conflicting updates. The order of
+   * the updates is preserved. Conflicts are defined as follows:
+   * <ul>
+   *   <li>Remove -&gt; Remove conflicts if latter remove is same node or a child node of former remove</li>
+   *   <li>Remove -&gt; SetEquals conflicts if SetEquals is for the same node or a child node of Remove</li>
+   *   <li>Remove -&gt; SetEquals conflicts if Remove is for a child node of SetEquals</li>
+   *   <li>Remove -&gt; Append conflicts if Append is for the same node or a child node of Remove</li>
+   *   <li>SetEquals -&gt; Remove conflicts if Remove is for Remove is for a child node of SetEquals</li>
+   *   <li>SetEquals -&gt; SetEquals conflicts if latter SetEquals is for child node of the former SetEquals</li>
+   *   <li>SetEquals -&gt; Append conflicts if Append is for the same node or a child node of SetEquals</li>
+   * </ul>
+   * @param updateClauses The list of UpdateClause objects to filter
+   * @return A safe list of UpdateFunction objects to apply
+   */
   private List<UpdateFunction> removeUnecessaryFunctions(List<UpdateClause> updateClauses) {
     final List<UpdateFunction> updateFunctions = updateClauses
         .stream()
         .map(uc -> uc.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR))
         .collect(Collectors.toList());
-    final boolean keepUpdateFunction[] = new boolean[updateFunctions.size()];
+    final boolean[] keepUpdateFunction = new boolean[updateFunctions.size()];
     Arrays.fill(keepUpdateFunction, true);
 
     for (int i = 1; i < updateClauses.size(); i++) {
@@ -326,7 +343,9 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     switch (updateFunction.getOperator()) {
       case REMOVE:
         if (childPath == null || !fieldIsList(segment, childPath)) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException(
+            String.format("Expression path \"%s\" is not valid", updateFunction.getPath().asString())
+          );
         }
 
         return nameSegment;
@@ -341,26 +360,30 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
                 appendToList(segment, childPath, Collections.singletonList(setFunction.getValue()));
               }
             } else {
-              throw new UnsupportedOperationException();
+              throw new UnsupportedOperationException(String.format("The append to list operation is not valid for \"%s\"", segment));
             }
             break;
           case EQUALS:
             if (fieldIsList(segment, childPath) && childPath != null && childPath.isPosition()) {
               set(segment, childPath, setFunction.getValue());
             } else if (fieldIsList(segment, childPath) != (setFunction.getValue().getType() == Entity.EntityType.LIST)) {
-              throw new UnsupportedOperationException();
+              throw new UnsupportedOperationException(
+                String.format("The value for \"%s\" must be a list", updateFunction.getPath().asString())
+              );
             } else if (ID.equals(segment)) {
               id(Id.of(setFunction.getValue().getBinary()));
+            } else if (DATETIME.equals(segment)) {
+              dt(setFunction.getValue().getNumber());
             } else {
               set(segment, childPath, setFunction.getValue());
             }
             break;
           default:
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException(String.format("Unknown sub operation \"%s\"", setFunction.getSubOperator().name()));
         }
         break;
       default:
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(String.format("Unknown operation \"%s\"", updateFunction.getOperator()));
     }
 
     return null;
@@ -370,16 +393,39 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     if (path != null && path.isPosition()) {
       return path.asPosition().getPosition();
     } else {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("Invalid expression path");
     }
   }
 
+  /**
+   * Removes a value from a field or subvalue of the field.
+   * @param fieldName name of the top-level field
+   * @param path the path of the node to remove, starts immediately below the field
+   */
   protected abstract void remove(String fieldName, ExpressionPath.PathSegment path);
 
+  /**
+   * Checks if a node is a list that supports remove and append.
+   * @param fieldName the name of the top-level field
+   * @param childPath the path of the node to check, starts immediately below the field
+   * @return if the node is a list
+   */
   protected abstract boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath);
 
+  /**
+   * Adds a list of values to a node that is a list.
+   * @param fieldName the name of the top-level field
+   * @param childPath the path of the node to append to, starts immediately below the field
+   * @param valuesToAdd list of values to add to the node
+   */
   protected abstract void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd);
 
+  /**
+   * Updates the value of a node.
+   * @param fieldName the name of the top-level field
+   * @param childPath the path of the node to update, starts immediately below the field
+   * @param newValue the new value for the node
+   */
   protected abstract void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue);
 
   /**

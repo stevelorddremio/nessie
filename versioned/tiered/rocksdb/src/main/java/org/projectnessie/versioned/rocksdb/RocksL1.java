@@ -198,12 +198,12 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       l1Builder.removeKeyMutations(getPosition(path));
     } else if (path.isPosition()) {
       if (!path.getChild().get().isName() || !KEY_MUTATIONS_KEY.equals(path.getChild().get().asName().getName())) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Invalid path for remove");
       }
 
       final ExpressionPath.PathSegment keyPath = path.getChild().get();
       if (!keyPath.getChild().isPresent() || !keyPath.getChild().get().isPosition()) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Invalid path for remove");
       }
 
       final List<String> updatedKeysList = new ArrayList<>(l1Builder.getKeyMutations(getPosition(path)).getKey().getElementsList());
@@ -241,13 +241,13 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
     switch (fieldName) {
       case ANCESTORS:
         if (childPath != null) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException("Invalid path for append");
         }
         l1Builder.addAllAncestors(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
         break;
       case CHILDREN:
         if (childPath != null) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException("Invalid path for append");
         }
         l1Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
         break;
@@ -268,7 +268,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         break;
       case COMPLETE_KEY_LIST:
         if (childPath != null) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException("Invalid path for append");
         }
         List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
         updatedKeyList.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
@@ -311,7 +311,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         break;
       case INCREMENTAL_KEY_LIST:
         if (childPath == null || !childPath.isName()) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
 
         if (CHECKPOINT_ID.equals(childPath.asName().getName())) {
@@ -325,13 +325,15 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
               .setDistanceFromCheckpointId((int)newValue.getNumber())
           );
         } else {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException(
+            String.format("\"%s\" does not have field \"%s\"", fieldName, childPath.asName().getName())
+          );
         }
 
         break;
       case COMMIT_METADATA:
         if (childPath != null) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
 
         commitMetadataId(Id.of(newValue.getBinary()));
@@ -372,11 +374,13 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
               .setKey(ValueProtos.Key.newBuilder().addAllElements(keyElements))
           );
         } else {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
         break;
       default:
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(
+            String.format("\"%s\" does not contain field \"%s\"", KEY_MUTATIONS, childPath.getChild().get().asName().getName())
+        );
     }
   }
 

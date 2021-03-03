@@ -60,7 +60,7 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
 
   @Override
   protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(String.format("Remove is not supported for \"%s\"", fieldName));
   }
 
   @Override
@@ -70,7 +70,7 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
 
   @Override
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(String.format("Append to list is not supported for \"%s\"", fieldName));
   }
 
   @Override
@@ -78,7 +78,7 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
     if (VALUE.equals(fieldName) && childPath == null) {
       wrappedValueBuilder.setValue(newValue.getBinary());
     } else {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
     }
   }
 

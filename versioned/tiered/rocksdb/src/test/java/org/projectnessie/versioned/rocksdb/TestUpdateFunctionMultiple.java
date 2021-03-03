@@ -302,7 +302,10 @@ public class TestUpdateFunctionMultiple {
   void removeThenAppendHigherLevel() {
     final UpdateExpression updateExpression =
         UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(NESTED_VALUE).position(0).position(0).build()))
-        .and(SetClause.appendToList(ExpressionPath.builder(NESTED_VALUE).build(), Entity.ofList(Entity.ofList(Id.build("foo").toEntity()))));
+        .and(SetClause.appendToList(
+          ExpressionPath.builder(NESTED_VALUE).build(),
+          Entity.ofList(Entity.ofList(Id.build("foo").toEntity())))
+        );
 
     final List<List<ByteString>> expectedList = new ArrayList<>(testValue.getNestedValue());
     final List<ByteString> innerList = new ArrayList<>(testValue.getNestedValue().get(0));
@@ -339,8 +342,10 @@ public class TestUpdateFunctionMultiple {
   @Test
   void setEqualsThenRemoveHigherLevel() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(NESTED_VALUE).position(0).position(0).build(), Id.build("foo").toEntity()))
-        .and(RemoveClause.of(ExpressionPath.builder(NESTED_VALUE).position(0).build()));
+        UpdateExpression.of(SetClause.equals(
+          ExpressionPath.builder(NESTED_VALUE).position(0).position(0).build(),
+          Id.build("foo").toEntity())
+        ).and(RemoveClause.of(ExpressionPath.builder(NESTED_VALUE).position(0).build()));
 
     final List<List<ByteString>> expectedList = testValue.getNestedValue().stream().skip(1).collect(Collectors.toList());
 
@@ -364,8 +369,10 @@ public class TestUpdateFunctionMultiple {
   @Test
   void setEqualsThenSetEqualsLowerLevel() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(NESTED_VALUE).position(0).build(), Entity.ofList(Id.build("foo").toEntity())))
-        .and(SetClause.equals(ExpressionPath.builder(NESTED_VALUE).position(0).position(0).build(), Id.build("bar").toEntity()));
+        UpdateExpression.of(SetClause.equals(
+          ExpressionPath.builder(NESTED_VALUE).position(0).build(),
+          Entity.ofList(Id.build("foo").toEntity()))
+        ).and(SetClause.equals(ExpressionPath.builder(NESTED_VALUE).position(0).position(0).build(), Id.build("bar").toEntity()));
 
     final List<List<ByteString>> expectedList = new ArrayList<>(testValue.getNestedValue());
     expectedList.set(0, Collections.singletonList(Id.build("foo").getValue()));
@@ -377,8 +384,10 @@ public class TestUpdateFunctionMultiple {
   @Test
   void setEqualsThenSetEqualsHigherLevel() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(NESTED_VALUE).position(0).position(0).build(), Id.build("foo").toEntity()))
-        .and(SetClause.equals(ExpressionPath.builder(NESTED_VALUE).position(0).build(), Entity.ofList(Id.build("bar").toEntity())));
+        UpdateExpression.of(SetClause.equals(
+          ExpressionPath.builder(NESTED_VALUE).position(0).position(0).build(),
+          Id.build("foo").toEntity())
+        ).and(SetClause.equals(ExpressionPath.builder(NESTED_VALUE).position(0).build(), Entity.ofList(Id.build("bar").toEntity())));
 
     final List<List<ByteString>> expectedList = new ArrayList<>(testValue.getNestedValue());
     expectedList.set(0, Collections.singletonList(Id.build("bar").getValue()));

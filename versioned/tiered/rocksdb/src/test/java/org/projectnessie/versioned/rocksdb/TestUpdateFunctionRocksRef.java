@@ -40,9 +40,9 @@ import com.google.common.collect.Lists;
 @DisplayName("RocksRef update() tests")
 public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
   protected static final Random random = new Random(getRandomSeed());
-  private static final String sampleName = createString(random, 10);
-  static final Id ID_3 = createId(new Random(getRandomSeed()));
-  static final Id ID_4 = createId(new Random(getRandomSeed()));
+  private static final String sampleName = SampleEntities.createString(random, 10);
+  static final Id ID_3 = SampleEntities.createId(new Random(getRandomSeed()));
+  static final Id ID_4 = SampleEntities.createId(new Random(getRandomSeed()));
 
   final RocksRef rocksRefBranch = createRefBranch(RANDOM);
   final RocksRef rocksRefTag = createRefTag(RANDOM);
@@ -70,7 +70,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           .unsaved()
           .delta(1, ID_2, ID_3)
           .mutations()
-          .keyMutation(Key.of(createString(random, 8), createString(random, 8)).asAddition())
+          .keyMutation(Key.of(SampleEntities.createString(random, 8), SampleEntities.createString(random, 8)).asAddition())
             .done();
       })
       .backToRef();
@@ -88,27 +88,6 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
       .tag()
       .commit(ID_2)
       .backToRef();
-  }
-
-  /**
-   * Create a Sample ID entity.
-   * @param random object to use for randomization of entity creation.
-   * @return sample ID entity.
-   */
-  static Id createId(Random random) {
-    return Id.of(createBinary(random, 20));
-  }
-
-  /**
-   * Create an array of random bytes.
-   * @param random random number generator to use.
-   * @param numBytes the size of the array.
-   * @return the array of random bytes.
-   */
-  static byte[] createBinary(Random random, int numBytes) {
-    final byte[] buffer = new byte[numBytes];
-    random.nextBytes(buffer);
-    return buffer;
   }
 
   @Test

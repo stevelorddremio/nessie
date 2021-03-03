@@ -36,7 +36,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
  * SerDe and Condition evaluation.
  */
 class RocksL2 extends RocksBaseValue<L2> implements L2 {
-  private static final String CHILDREN = "children";
+  static final String CHILDREN = "children";
 
   private final ValueProtos.L2.Builder builder = ValueProtos.L2.newBuilder();
 

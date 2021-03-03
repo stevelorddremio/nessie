@@ -19,7 +19,6 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.projectnessie.versioned.Key;
+import org.projectnessie.versioned.impl.SampleEntities;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.impl.condition.RemoveClause;
 import org.projectnessie.versioned.impl.condition.SetClause;
@@ -53,7 +53,7 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
       .commitMetadataId(ID)
       .children(Stream.generate(() -> ID).limit(RocksL1.SIZE))
       .ancestors(Stream.generate(() -> ID).limit(RocksL1.SIZE))
-      .keyMutations(Stream.of(Key.of(createString(RANDOM, 8), createString(RANDOM, 9)).asAddition()))
+      .keyMutations(Stream.of(Key.of(SampleEntities.createString(RANDOM, 8), SampleEntities.createString(RANDOM, 9)).asAddition()))
       .incrementalKeyList(ID, 1);
   }
 
@@ -366,70 +366,75 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
             .builder(RocksL1.KEY_MUTATIONS)
             .position(0)
             .name(RocksL1.KEY_MUTATIONS_MUTATION_TYPE)
-            .build(), Entity.ofNumber(1)));
+            .build(), Entity.ofNumber(ValueProtos.KeyMutation.MutationType.REMOVAL_VALUE)));
     rocksL1.update(updateExpression);
-    Assertions.assertEquals(1, rocksL1.getKeyMutationType(0));
+    Assertions.assertEquals(ValueProtos.KeyMutation.MutationType.REMOVAL_VALUE, rocksL1.getKeyMutationType(0));
   }
 
   @Test
   void keyMutationsSetEqualsKey() {
+    final int index = 0;
     final UpdateExpression updateExpression =
         UpdateExpression.of(SetClause.equals(ExpressionPath
             .builder(RocksL1.KEY_MUTATIONS)
-            .position(0)
+            .position(index)
             .name(RocksL1.KEY_MUTATIONS_KEY)
             .build(), Entity.ofList(Entity.ofString("foo"), Entity.ofString("bar"))));
     rocksL1.update(updateExpression);
-    Assertions.assertEquals(Lists.newArrayList("foo", "bar"), rocksL1.getKeyMutationKeys(0));
+    Assertions.assertEquals(Lists.newArrayList("foo", "bar"), rocksL1.getKeyMutationKeys(index));
   }
 
   @Test
   void keyMutationsSetEqualsKeySingle() {
+    final int keyMutationsIndex = 0;
+    final int keyMutationsKeyIndex = 0;
     final UpdateExpression updateExpression =
         UpdateExpression.of(SetClause.equals(ExpressionPath
             .builder(RocksL1.KEY_MUTATIONS)
-            .position(0)
+            .position(keyMutationsIndex)
             .name(RocksL1.KEY_MUTATIONS_KEY)
-            .position(0)
+            .position(keyMutationsKeyIndex)
             .build(), Entity.ofString("foo")));
 
-    final List<String> expectedList = new ArrayList<>(rocksL1.getKeyMutationKeys(0));
-    expectedList.set(0, "foo");
+    final List<String> expectedList = new ArrayList<>(rocksL1.getKeyMutationKeys(keyMutationsIndex));
+    expectedList.set(keyMutationsKeyIndex, "foo");
 
     rocksL1.update(updateExpression);
-    Assertions.assertEquals(expectedList, rocksL1.getKeyMutationKeys(0));
+    Assertions.assertEquals(expectedList, rocksL1.getKeyMutationKeys(keyMutationsIndex));
   }
 
   @Test
   void keyMutationsSetAppendToListSingle() {
+    final int index = 0;
     final UpdateExpression updateExpression =
         UpdateExpression.of(SetClause.appendToList(ExpressionPath
             .builder(RocksL1.KEY_MUTATIONS)
-            .position(0)
+            .position(index)
             .name(RocksL1.KEY_MUTATIONS_KEY)
             .build(), Entity.ofString("foo")));
 
-    final List<String> expectedList = new ArrayList<>(rocksL1.getKeyMutationKeys(0));
+    final List<String> expectedList = new ArrayList<>(rocksL1.getKeyMutationKeys(index));
     expectedList.add("foo");
 
     rocksL1.update(updateExpression);
-    Assertions.assertEquals(expectedList, rocksL1.getKeyMutationKeys(0));
+    Assertions.assertEquals(expectedList, rocksL1.getKeyMutationKeys(index));
   }
 
   @Test
   void keyMutationsSetAppendToListWithList() {
+    final int index = 0;
     final UpdateExpression updateExpression =
         UpdateExpression.of(SetClause.appendToList(ExpressionPath
             .builder(RocksL1.KEY_MUTATIONS)
-            .position(0)
+            .position(index)
             .name(RocksL1.KEY_MUTATIONS_KEY)
             .build(), Entity.ofList(Entity.ofString("foo"), Entity.ofString("bar"))));
 
-    final List<String> expectedList = new ArrayList<>(rocksL1.getKeyMutationKeys(0));
+    final List<String> expectedList = new ArrayList<>(rocksL1.getKeyMutationKeys(index));
     expectedList.add("foo");
     expectedList.add("bar");
 
     rocksL1.update(updateExpression);
-    Assertions.assertEquals(expectedList, rocksL1.getKeyMutationKeys(0));
+    Assertions.assertEquals(expectedList, rocksL1.getKeyMutationKeys(index));
   }
 }
