@@ -45,6 +45,10 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   static final String COMMITS_ID = "id";
   static final String COMMITS_COMMIT = "commit";
   static final String COMMITS_PARENT = "parent";
+  static final String COMMITS_DELTA = "delta";
+  static final String COMMITS_POSITION = "position";
+  static final String COMMITS_OLD_ID = "old_id";
+  static final String COMMITS_NEW_ID = "new_id";
   static final String COMMIT = "commit";
   static final String CHILDREN = "children";
 
@@ -273,13 +277,52 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         break;
       case COMMITS_PARENT:
         refBuilder.setBranch(
-          ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-            .setCommits(commitsPosition,
-              ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setParent(newValue.getBinary())));
+            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+              .setCommits(commitsPosition,
+                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setParent(newValue.getBinary())));
+        break;
+      case COMMITS_DELTA:
+        setDelta(childPath.getChild().get(), commitsPosition, newValue);
         break;
       default:
         throw new UnsupportedOperationException();
     }
+  }
+
+  private void setDelta(ExpressionPath.PathSegment childPath, int commitsPosition, Entity newValue) {
+    if (!childPath.isPosition() || !childPath.getChild().isPresent()) {
+      throw new UnsupportedOperationException();
+    }
+
+    final int deltaPosition = childPath.asPosition().getPosition();
+
+    switch (childPath.getChild().get().asName().getName()) {
+      case COMMITS_POSITION:
+        setDelta(commitsPosition, deltaPosition,
+            ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition))
+              .setPosition((int)newValue.getNumber()));
+        break;
+      case COMMITS_OLD_ID:
+        setDelta(commitsPosition, deltaPosition,
+            ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition))
+              .setOldId(newValue.getBinary()));
+        break;
+      case COMMITS_NEW_ID:
+        setDelta(commitsPosition, deltaPosition,
+            ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition))
+              .setNewId(newValue.getBinary()));
+        break;
+      default:
+        throw new UnsupportedOperationException();
+    }
+  }
+  
+  private void setDelta(int commitsPosition, int deltaPosition, ValueProtos.Delta.Builder deltaBuilder) {
+    refBuilder.setBranch(
+        ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+          .setCommits(commitsPosition,
+            ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
+              .setDelta(deltaPosition, deltaBuilder)));
   }
 
   @Override

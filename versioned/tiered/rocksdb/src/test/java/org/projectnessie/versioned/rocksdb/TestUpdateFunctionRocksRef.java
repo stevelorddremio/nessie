@@ -243,7 +243,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
     @Test
     void commitsIdSetEquals() {
-      final Id NEW_ID = createId(new Random(getRandomSeed()));
+      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
       final int position = 0;
 
       final UpdateExpression updateExpression =
@@ -267,7 +267,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
     @Test
     void commitsCommitSetEquals() {
-      final Id NEW_ID = createId(new Random(getRandomSeed()));
+      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
       final int position = 0;
 
       final UpdateExpression updateExpression =
@@ -280,13 +280,18 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
     }
 
     @Test
-    void commitsParentAppendToList() {
-      commitsAppendToListFail(RocksRef.COMMITS_PARENT);
+    void commitsCommitAppendToList() {
+      commitsAppendToListFail(RocksRef.COMMITS_COMMIT);
+    }
+
+    @Test
+    void commitsParentRemove() {
+      commitsRemoveFail(RocksRef.COMMITS_PARENT);
     }
 
     @Test
     void commitsParentSetEquals() {
-      final Id NEW_ID = createId(new Random(getRandomSeed()));
+      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
       final int position = 0;
 
       final UpdateExpression updateExpression =
@@ -299,8 +304,34 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
     }
 
     @Test
-    void commitsCommitAppendToList() {
+    void commitsParentAppendToList() {
       commitsAppendToListFail(RocksRef.COMMITS_COMMIT);
+    }
+
+    @Test
+    void commitsDeltaPositionRemove() {
+      commitsDeltaRemoveFail(RocksRef.COMMITS_POSITION);
+    }
+
+    @Test
+    void commitsDeltaPositionSetEquals() {
+      final int newValue = 5;
+      final int position = 0;
+
+      final UpdateExpression updateExpression =
+        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+          .position(position)
+          .name(RocksRef.COMMITS_DELTA)
+          .position(0)
+          .name(RocksRef.COMMITS_POSITION)
+          .build(), Entity.ofNumber(newValue)));
+      rocksRefBranch.update(updateExpression);
+      Assertions.assertEquals(newValue, rocksRefBranch.getCommitsParent(position));
+    }
+
+    @Test
+    void commitsDeltaPositionAppendToList() {
+      commitsDeltaAppendToListFail(RocksRef.COMMITS_POSITION, Entity.ofNumber(1));
     }
 
     private void commitsRemoveFail(String name) {
@@ -313,7 +344,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
     }
 
     private void commitsAppendToListFail(String name) {
-      final Id NEW_ID = createId(new Random(getRandomSeed()));
+      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
 
       final UpdateExpression updateExpression =
           UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
@@ -321,6 +352,34 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
             .name(name)
             .build(), NEW_ID.toEntity()));
       updateTestFails(rocksRefBranch, updateExpression);
+    }
+
+    private void commitsDeltaRemoveFail(String name) {
+      final UpdateExpression updateExpression =
+        UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
+          .position(0)
+          .name(RocksRef.COMMITS_DELTA)
+          .position(0)
+          .name(name)
+          .build()));
+      updateTestFails(rocksRefBranch, updateExpression);
+    }
+
+    private void commitsDeltaAppendToListFail(String name, Entity entityToAppend) {
+      final UpdateExpression updateExpression =
+        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
+          .position(1)
+          .name(RocksRef.COMMITS_DELTA)
+          .position(0)
+          .name(name)
+          .build(), entityToAppend));
+      updateTestFails(rocksRefBranch, updateExpression);
+    }
+
+    private void commitsDeltaAppendToListFail(String name) {
+      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
+
+      commitsDeltaAppendToListFail(name, NEW_ID.toEntity());
     }
   }
 
