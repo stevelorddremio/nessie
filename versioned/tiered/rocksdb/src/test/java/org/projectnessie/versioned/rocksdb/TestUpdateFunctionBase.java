@@ -72,4 +72,8 @@ public abstract class TestUpdateFunctionBase {
       // Expected result
     }
   }
+
+  static void listOperations() {
+    //
+  }
 }

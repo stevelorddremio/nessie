@@ -146,7 +146,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     switch (fieldName) {
       case CHILDREN:
         if (!refBuilder.hasBranch()) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", fieldName));
         }
 
         List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
@@ -157,7 +157,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
             .addAllChildren(updatedChildren));
         break;
       default:
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", fieldName));
     }
   }
 
@@ -177,7 +177,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     switch (fieldName) {
       case CHILDREN:
         if (!refBuilder.hasBranch() || childPath != null) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for tags", fieldName));
         }
 
         List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
@@ -188,7 +188,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
             .addAllChildren(updatedChildren));
         break;
       default:
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(String.format("\"%s\" is not a list", fieldName));
     }
   }
 
@@ -197,14 +197,14 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     switch (fieldName) {
       case NAME:
         if (childPath != null) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
 
         refBuilder.setName(newValue.getString());
         break;
       case CHILDREN:
         if (!refBuilder.hasBranch()) {
-          throw new UnsupportedOperationException();
+          throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", fieldName));
         }
 
         final List<ByteString> updatedChildren;
@@ -222,21 +222,25 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         );
         break;
       case METADATA:
-        if (!refBuilder.hasBranch() || childPath != null) {
-          throw new UnsupportedOperationException();
+        if (!refBuilder.hasBranch()) {
+          throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", fieldName));
+        } else if (childPath != null) {
+          throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
 
         refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(newValue.getBinary()));
         break;
       case COMMIT:
-        if (!refBuilder.hasTag() || childPath != null) {
-          throw new UnsupportedOperationException();
+        if (!refBuilder.hasTag()) {
+          throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for branches", fieldName));
+        } else if (childPath != null) {
+          throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
 
         refBuilder.setTag(ValueProtos.Tag.newBuilder(refBuilder.getTag()).setId(newValue.getBinary()));
         break;
       default:
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
     }
   }
 
