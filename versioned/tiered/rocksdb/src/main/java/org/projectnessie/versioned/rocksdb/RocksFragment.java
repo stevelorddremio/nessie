@@ -131,7 +131,28 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    throw new UnsupportedOperationException();
+    if (KEY_LIST.equals(fieldName)) {
+      if (path.isPosition()) {
+        if (path.getChild().isPresent()) {
+          if (path.getChild().get().isPosition()) {
+            final List<String> updatedKeys = new ArrayList<>(builder.getKeys(path.asPosition().getPosition()).getElementsList());
+            updatedKeys.remove(path.getChild().get().asPosition().getPosition());
+            builder.setKeys(path.asPosition().getPosition(), ValueProtos.Key
+                .newBuilder()
+                .addAllElements(updatedKeys)
+            );
+          } else {
+            throw new UnsupportedOperationException();
+          }
+        } else {
+          builder.removeKeys(path.asPosition().getPosition());
+        }
+      } else {
+        throw new UnsupportedOperationException();
+      }
+    } else {
+      throw new UnsupportedOperationException();
+    }
   }
 
   @Override
@@ -141,11 +162,53 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    throw new UnsupportedOperationException();
+    if (KEY_LIST.equals(fieldName)) {
+      if (childPath == null) {
+        builder.addAllKeys(valuesToAdd.stream().map(v -> ValueProtos.Key
+            .newBuilder()
+            .addAllElements(v.getList().stream().map(Entity::getString).collect(Collectors.toList()))
+            .build()
+        ).collect(Collectors.toList()));
+      } else if (childPath.isPosition()) {
+        builder.setKeys(childPath.asPosition().getPosition(), ValueProtos.Key
+            .newBuilder()
+            .addAllElements(builder.getKeys(childPath.asPosition().getPosition()).getElementsList())
+            .addAllElements(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()))
+        );
+      } else {
+        throw new UnsupportedOperationException();
+      }
+    } else {
+      throw new UnsupportedOperationException();
+    }
   }
 
   @Override
   protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    throw new UnsupportedOperationException();
+    if (KEY_LIST.equals(fieldName)) {
+      if (childPath.isPosition()) {
+        int index = childPath.asPosition().getPosition();
+
+        if (childPath.getChild().isPresent() && childPath.getChild().get().isPosition()) {
+          final List<String> updatedKeys = new ArrayList<>(builder.getKeys(index).getElementsList());
+          updatedKeys.set(childPath.getChild().get().asPosition().getPosition(), newValue.getString());
+          builder.setKeys(index, ValueProtos.Key
+              .newBuilder()
+              .addAllElements(updatedKeys)
+          );
+        } else if (!childPath.getChild().isPresent()) {
+          builder.setKeys(index, ValueProtos.Key
+              .newBuilder()
+              .addAllElements(newValue.getList().stream().map(Entity::getString).collect(Collectors.toList()))
+          );
+        } else {
+          throw new UnsupportedOperationException();
+        }
+      } else {
+        throw new UnsupportedOperationException();
+      }
+    } else {
+      throw new UnsupportedOperationException();
+    }
   }
 }

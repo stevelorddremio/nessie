@@ -246,7 +246,29 @@ public class RocksDBStore implements Store {
   public <C extends BaseValue<C>> boolean update(ValueType<C> type, Id id, UpdateExpression update,
                                           Optional<ConditionExpression> condition, Optional<BaseValue<C>> consumer)
       throws NotFoundException {
-    throw new UnsupportedOperationException();
+    final ColumnFamilyHandle columnFamilyHandle = getColumnFamilyHandle(type);
+
+    try (final Transaction transaction = rocksDB.beginTransaction(WRITE_OPTIONS)) {
+      try {
+        isConditionExpressionValid(transaction, columnFamilyHandle, id, type, condition, "update");
+      } catch (ConditionFailedException e) {
+        LOGGER.debug("Condition failed during update operation.");
+        return false;
+      }
+
+      final RocksBaseValue<C> valueToUpdate = RocksSerDe.getConsumer(type);
+      loadSingle(type, id, (C) valueToUpdate);
+      valueToUpdate.update(update);
+
+      transaction.put(columnFamilyHandle, id.toBytes(), valueToUpdate.build());
+      transaction.commit();
+
+      consumer.ifPresent(c -> RocksSerDe.deserializeToConsumer(type, valueToUpdate.build(), c));
+    } catch (RocksDBException e) {
+      throw new RuntimeException(String.format("update operation failed on %s for ID: %s", type.name(), id), e);
+    }
+
+    return true;
   }
 
   @Override

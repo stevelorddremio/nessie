@@ -91,7 +91,7 @@ class TestRocksDBStore extends AbstractTestStore<TestRocksDBStore.RocksDBStoreUU
 
   @Override
   protected boolean supportsUpdate() {
-    return false;
+    return true;
   }
 
   private static void cleanFiles() throws IOException {
