@@ -45,14 +45,14 @@ public abstract class TestUpdateFunctionBase {
   }
 
   protected void idRemove(RocksBaseValue baseValue) {
-    final UpdateExpression updateExpression = UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(baseValue.ID).build()));
+    final UpdateExpression updateExpression = UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksBaseValue.ID).build()));
     updateTestFails(baseValue, updateExpression);
   }
 
   protected void idSetEquals(RocksBaseValue baseValue) {
     final Id newId = SampleEntities.createId(RANDOM);
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(baseValue.ID).build(), newId.toEntity()));
+        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksBaseValue.ID).build(), newId.toEntity()));
     baseValue.update(updateExpression);
     Assertions.assertEquals(newId, baseValue.getId());
   }
@@ -60,7 +60,7 @@ public abstract class TestUpdateFunctionBase {
   protected void idSetAppendToList(RocksBaseValue baseValue) {
     final Id newId = SampleEntities.createId(RANDOM);
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(baseValue.ID).build(), newId.toEntity()));
+        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksBaseValue.ID).build(), newId.toEntity()));
     updateTestFails(baseValue, updateExpression);
   }
 
