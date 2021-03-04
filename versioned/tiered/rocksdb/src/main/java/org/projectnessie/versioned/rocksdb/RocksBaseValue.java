@@ -234,7 +234,7 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    *   <li>Remove -&gt; SetEquals conflicts if SetEquals is for the same node or a child node of Remove</li>
    *   <li>Remove -&gt; SetEquals conflicts if Remove is for a child node of SetEquals</li>
    *   <li>Remove -&gt; Append conflicts if Append is for the same node or a child node of Remove</li>
-   *   <li>SetEquals -&gt; Remove conflicts if Remove is for Remove is for a child node of SetEquals</li>
+   *   <li>SetEquals -&gt; Remove conflicts if Remove is for a child node of SetEquals</li>
    *   <li>SetEquals -&gt; SetEquals conflicts if latter SetEquals is for child node of the former SetEquals</li>
    *   <li>SetEquals -&gt; Append conflicts if Append is for the same node or a child node of SetEquals</li>
    * </ul>
