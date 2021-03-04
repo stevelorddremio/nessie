@@ -299,7 +299,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     final ValueProtos.Delta.Builder deltaBuilder =
         ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition));
 
-    switch (childPath.getChild().get().asName().getName()) {
+    switch (childPath.getChild().get().getChild().get().asName().getName()) {
       case COMMITS_POSITION:
         setDelta(commitsPosition, deltaPosition, deltaBuilder.setPosition((int)newValue.getNumber()));
         break;
@@ -570,6 +570,30 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   Id getCommitsParent(int index) {
     if (refBuilder.hasBranch()) {
       return Id.of(refBuilder.getBranch().getCommits(index).getParent());
+    } else {
+      return null;
+    }
+  }
+
+  Integer getCommitsDeltaPosition(int commitsPosition, int deltaPosition) {
+    if (refBuilder.hasBranch()) {
+      return refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition).getPosition();
+    } else {
+      return null;
+    }
+  }
+
+  Id getCommitsDeltaOldId(int commitsPosition, int deltaPosition) {
+    if (refBuilder.hasBranch()) {
+      return Id.of(refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition).getOldId());
+    } else {
+      return null;
+    }
+  }
+
+  Id getCommitsDeltaNewId(int commitsPosition, int deltaPosition) {
+    if (refBuilder.hasBranch()) {
+      return Id.of(refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition).getNewId());
     } else {
       return null;
     }

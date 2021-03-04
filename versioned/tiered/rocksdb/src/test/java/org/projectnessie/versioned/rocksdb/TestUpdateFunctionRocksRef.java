@@ -107,7 +107,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
   }
 
   @Nested
-  @DisplayName("update() branch tests")
+  @DisplayName("RocksRef update() branch tests")
   class BranchTests {
 
     @Test
@@ -236,150 +236,210 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
       updateTestFails(rocksRefBranch, updateExpression);
     }
 
-    @Test
-    void commitsIdRemove() {
-      commitsRemoveFail(RocksRef.ID);
-    }
 
-    @Test
-    void commitsIdSetEquals() {
-      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
-      final int position = 0;
+    @Nested
+    @DisplayName("RocksRef update() branch/commits tests")
+    class CommitsTests {
+      @Test
+      void commitsIdRemove() {
+        commitsRemoveFail(RocksRef.ID);
+      }
 
-      final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
-            .position(position)
-            .name(RocksRef.ID)
-            .build(), NEW_ID.toEntity()));
-      rocksRefBranch.update(updateExpression);
-      Assertions.assertEquals(NEW_ID, rocksRefBranch.getCommitsId(position));
-    }
+      @Test
+      void commitsIdSetEquals() {
+        final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
+        final int position = 0;
 
-    @Test
-    void commitsIdAppendToList() {
-      commitsAppendToListFail(RocksRef.ID);
-    }
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(position)
+              .name(RocksRef.ID)
+              .build(), NEW_ID.toEntity()));
+        rocksRefBranch.update(updateExpression);
+        Assertions.assertEquals(NEW_ID, rocksRefBranch.getCommitsId(position));
+      }
 
-    @Test
-    void commitsCommitRemove() {
-      commitsRemoveFail(RocksRef.COMMITS_COMMIT);
-    }
+      @Test
+      void commitsIdAppendToList() {
+        commitsAppendToListFail(RocksRef.ID);
+      }
 
-    @Test
-    void commitsCommitSetEquals() {
-      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
-      final int position = 0;
+      @Test
+      void commitsCommitRemove() {
+        commitsRemoveFail(RocksRef.COMMITS_COMMIT);
+      }
 
-      final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
-            .position(position)
-            .name(RocksRef.COMMITS_COMMIT)
-            .build(), NEW_ID.toEntity()));
-      rocksRefBranch.update(updateExpression);
-      Assertions.assertEquals(NEW_ID, rocksRefBranch.getCommitsId(position));
-    }
+      @Test
+      void commitsCommitSetEquals() {
+        final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
+        final int position = 0;
 
-    @Test
-    void commitsCommitAppendToList() {
-      commitsAppendToListFail(RocksRef.COMMITS_COMMIT);
-    }
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(position)
+              .name(RocksRef.COMMITS_COMMIT)
+              .build(), NEW_ID.toEntity()));
+        rocksRefBranch.update(updateExpression);
+        Assertions.assertEquals(NEW_ID, rocksRefBranch.getCommitsId(position));
+      }
 
-    @Test
-    void commitsParentRemove() {
-      commitsRemoveFail(RocksRef.COMMITS_PARENT);
-    }
+      @Test
+      void commitsCommitAppendToList() {
+        commitsAppendToListFail(RocksRef.COMMITS_COMMIT);
+      }
 
-    @Test
-    void commitsParentSetEquals() {
-      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
-      final int position = 0;
+      @Test
+      void commitsParentRemove() {
+        commitsRemoveFail(RocksRef.COMMITS_PARENT);
+      }
 
-      final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
-            .position(position)
-            .name(RocksRef.COMMITS_PARENT)
-            .build(), NEW_ID.toEntity()));
-      rocksRefBranch.update(updateExpression);
-      Assertions.assertEquals(NEW_ID, rocksRefBranch.getCommitsParent(position));
-    }
+      @Test
+      void commitsParentSetEquals() {
+        final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
+        final int position = 0;
 
-    @Test
-    void commitsParentAppendToList() {
-      commitsAppendToListFail(RocksRef.COMMITS_COMMIT);
-    }
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(position)
+              .name(RocksRef.COMMITS_PARENT)
+              .build(), NEW_ID.toEntity()));
+        rocksRefBranch.update(updateExpression);
+        Assertions.assertEquals(NEW_ID, rocksRefBranch.getCommitsParent(position));
+      }
 
-    @Test
-    void commitsDeltaPositionRemove() {
-      commitsDeltaRemoveFail(RocksRef.COMMITS_POSITION);
-    }
+      @Test
+      void commitsParentAppendToList() {
+        commitsAppendToListFail(RocksRef.COMMITS_COMMIT);
+      }
 
-    @Test
-    void commitsDeltaPositionSetEquals() {
-      final int newValue = 5;
-      final int position = 0;
+      @Test
+      void commitsDeltaPositionRemove() {
+        commitsDeltaRemoveFail(RocksRef.COMMITS_POSITION);
+      }
 
-      final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
-          .position(position)
-          .name(RocksRef.COMMITS_DELTA)
-          .position(0)
-          .name(RocksRef.COMMITS_POSITION)
-          .build(), Entity.ofNumber(newValue)));
-      rocksRefBranch.update(updateExpression);
-      Assertions.assertEquals(newValue, rocksRefBranch.getCommitsParent(position));
-    }
+      @Test
+      void commitsDeltaPositionSetEquals() {
+        final int newValue = 5;
+        final int commitsPosition = 1;
+        final int deltaPosition = 0;
 
-    @Test
-    void commitsDeltaPositionAppendToList() {
-      commitsDeltaAppendToListFail(RocksRef.COMMITS_POSITION, Entity.ofNumber(1));
-    }
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(commitsPosition)
+              .name(RocksRef.COMMITS_DELTA)
+              .position(deltaPosition)
+              .name(RocksRef.COMMITS_POSITION)
+              .build(), Entity.ofNumber(newValue)));
+        rocksRefBranch.update(updateExpression);
+        Assertions.assertEquals(newValue, rocksRefBranch.getCommitsDeltaPosition(commitsPosition, deltaPosition));
+      }
 
-    private void commitsRemoveFail(String name) {
-      final UpdateExpression updateExpression =
-          UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
-            .position(0)
-            .name(name)
-            .build()));
-      updateTestFails(rocksRefBranch, updateExpression);
-    }
+      @Test
+      void commitsDeltaPositionAppendToList() {
+        commitsDeltaAppendToListFail(RocksRef.COMMITS_POSITION, Entity.ofNumber(1));
+      }
 
-    private void commitsAppendToListFail(String name) {
-      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
+      @Test
+      void commitsDeltaOldIdRemove() {
+        commitsDeltaRemoveFail(RocksRef.COMMITS_OLD_ID);
+      }
 
-      final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
-            .position(1)
-            .name(name)
-            .build(), NEW_ID.toEntity()));
-      updateTestFails(rocksRefBranch, updateExpression);
-    }
+      @Test
+      void commitsDeltaOldIdSetEquals() {
+        final Id newValue = SampleEntities.createId(random);
+        final int commitsPosition = 1;
+        final int deltaPosition = 0;
 
-    private void commitsDeltaRemoveFail(String name) {
-      final UpdateExpression updateExpression =
-        UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
-          .position(0)
-          .name(RocksRef.COMMITS_DELTA)
-          .position(0)
-          .name(name)
-          .build()));
-      updateTestFails(rocksRefBranch, updateExpression);
-    }
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(commitsPosition)
+              .name(RocksRef.COMMITS_DELTA)
+              .position(deltaPosition)
+              .name(RocksRef.COMMITS_OLD_ID)
+              .build(), newValue.toEntity()));
+        rocksRefBranch.update(updateExpression);
+        Assertions.assertEquals(newValue, rocksRefBranch.getCommitsDeltaOldId(commitsPosition, deltaPosition));
+      }
 
-    private void commitsDeltaAppendToListFail(String name, Entity entityToAppend) {
-      final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
-          .position(1)
-          .name(RocksRef.COMMITS_DELTA)
-          .position(0)
-          .name(name)
-          .build(), entityToAppend));
-      updateTestFails(rocksRefBranch, updateExpression);
-    }
+      @Test
+      void commitsDeltaOldIdAppendToList() {
+        commitsDeltaAppendToListFail(RocksRef.COMMITS_OLD_ID);
+      }
 
-    private void commitsDeltaAppendToListFail(String name) {
-      final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
+      @Test
+      void commitsDeltaNewIdRemove() {
+        commitsDeltaRemoveFail(RocksRef.COMMITS_NEW_ID);
+      }
 
-      commitsDeltaAppendToListFail(name, NEW_ID.toEntity());
+      @Test
+      void commitsDeltaNewIdSetEquals() {
+        final Id newValue = SampleEntities.createId(random);
+        final int commitsPosition = 1;
+        final int deltaPosition = 0;
+
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(commitsPosition)
+              .name(RocksRef.COMMITS_DELTA)
+              .position(deltaPosition)
+              .name(RocksRef.COMMITS_NEW_ID)
+              .build(), newValue.toEntity()));
+        rocksRefBranch.update(updateExpression);
+        Assertions.assertEquals(newValue, rocksRefBranch.getCommitsDeltaNewId(commitsPosition, deltaPosition));
+      }
+
+      @Test
+      void commitsDeltaNewIdAppendToList() {
+        commitsDeltaAppendToListFail(RocksRef.COMMITS_NEW_ID);
+      }
+
+      private void commitsRemoveFail(String name) {
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(0)
+              .name(name)
+              .build()));
+        updateTestFails(rocksRefBranch, updateExpression);
+      }
+
+      private void commitsAppendToListFail(String name) {
+        final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
+
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(1)
+              .name(name)
+              .build(), NEW_ID.toEntity()));
+        updateTestFails(rocksRefBranch, updateExpression);
+      }
+
+      private void commitsDeltaRemoveFail(String name) {
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(0)
+              .name(RocksRef.COMMITS_DELTA)
+              .position(0)
+              .name(name)
+              .build()));
+        updateTestFails(rocksRefBranch, updateExpression);
+      }
+
+      private void commitsDeltaAppendToListFail(String name, Entity entityToAppend) {
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(1)
+              .name(RocksRef.COMMITS_DELTA)
+              .position(0)
+              .name(name)
+              .build(), entityToAppend));
+        updateTestFails(rocksRefBranch, updateExpression);
+      }
+
+      private void commitsDeltaAppendToListFail(String name) {
+        final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
+
+        commitsDeltaAppendToListFail(name, NEW_ID.toEntity());
+      }
     }
   }
 
