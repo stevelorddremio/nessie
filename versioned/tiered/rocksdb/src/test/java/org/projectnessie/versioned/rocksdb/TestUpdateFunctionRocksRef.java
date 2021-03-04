@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,12 +42,11 @@ import com.google.common.collect.Lists;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("RocksRef update() tests")
 public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
-  protected static final Random random = new Random(getRandomSeed());
-  private static final String sampleName = SampleEntities.createString(random, 10);
+  private static final String sampleName = SampleEntities.createString(RANDOM, 10);
   static final Id ID_3 = SampleEntities.createId(new Random(getRandomSeed()));
   static final Id ID_4 = SampleEntities.createId(new Random(getRandomSeed()));
 
-  final RocksRef rocksRefBranch = createRefBranch(RANDOM);
+  RocksRef rocksRefBranch;
   final RocksRef rocksRefTag = createRefTag(RANDOM);
 
   /**
@@ -91,6 +92,10 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
       .backToRef();
   }
 
+  @BeforeEach
+  void setup() {
+    rocksRefBranch = createRefBranch(RANDOM);
+  }
   @Test
   void idRemove() {
     idRemove(rocksRefBranch);
@@ -240,6 +245,38 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
     @Nested
     @DisplayName("RocksRef update() branch/commits tests")
     class CommitsTests {
+
+      @Test
+      void commitsRemoveAll() {
+        final UpdateExpression updateExpression = UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS).build()));
+        updateTestFails(rocksRefBranch, updateExpression);
+      }
+
+      @Test
+      void commitsRemoveFirst() {
+        final List<ValueProtos.Commit> expectedCommitsList = rocksRefBranch.getCommits().stream().skip(1).collect(Collectors.toList());
+        final UpdateExpression updateExpression =
+          UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS).position(0).build()));
+        rocksRefBranch.update(updateExpression);
+        Assertions.assertEquals(expectedCommitsList, rocksRefBranch.getCommits());
+      }
+
+      @Test
+      void commitsSetEquals() {
+        final Id newId = SampleEntities.createId(RANDOM);
+        final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS).build(), newId.toEntity()));
+        updateTestFails(rocksRefBranch, updateExpression);
+      }
+
+      @Test
+      void commitsAppendToList() {
+        final Id newId = SampleEntities.createId(RANDOM);
+        final UpdateExpression updateExpression =
+          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS).build(), newId.toEntity()));
+        updateTestFails(rocksRefBranch, updateExpression);
+      }
+
       @Test
       void commitsIdRemove() {
         commitsRemoveFail(RocksRef.ID);
@@ -346,7 +383,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
       @Test
       void commitsDeltaOldIdSetEquals() {
-        final Id newValue = SampleEntities.createId(random);
+        final Id newValue = SampleEntities.createId(RANDOM);
         final int commitsPosition = 1;
         final int deltaPosition = 0;
 
@@ -373,7 +410,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
       @Test
       void commitsDeltaNewIdSetEquals() {
-        final Id newValue = SampleEntities.createId(random);
+        final Id newValue = SampleEntities.createId(RANDOM);
         final int commitsPosition = 1;
         final int deltaPosition = 0;
 

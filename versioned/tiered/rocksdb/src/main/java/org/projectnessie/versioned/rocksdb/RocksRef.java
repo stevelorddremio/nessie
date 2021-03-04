@@ -163,6 +163,19 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
             .clearChildren()
             .addAllChildren(updatedChildren));
         break;
+      case COMMITS:
+        // TODO: implement removal of commits.delta and commits.key_mutations, but for now do not fail.
+        if (!refBuilder.hasBranch() || path.getChild().isPresent()) {
+          throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", fieldName));
+        }
+
+        List<ValueProtos.Commit> updatedCommits = new ArrayList<>(refBuilder.getBranch().getCommitsList());
+        updatedCommits.remove(getPosition(path));
+        refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .clearCommits()
+          .addAllCommits(updatedCommits));
+        break;
       default:
         throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", fieldName));
     }
@@ -549,6 +562,10 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     } else {
       return null;
     }
+  }
+
+  List<ValueProtos.Commit> getCommits() {
+    return refBuilder.getBranch().getCommitsList();
   }
 
   Id getCommitsId(int index) {
