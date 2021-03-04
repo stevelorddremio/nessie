@@ -36,7 +36,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
  * SerDe and Condition evaluation.
  */
 class RocksL2 extends RocksBaseValue<L2> implements L2 {
-  static final String CHILDREN = "children";
+  static final String TREE = "tree";
 
   private final ValueProtos.L2.Builder builder = ValueProtos.L2.newBuilder();
 
@@ -59,7 +59,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
       case ID:
         evaluatesId(function);
         break;
-      case CHILDREN:
+      case TREE:
         evaluate(function, builder.getTreeList().stream().map(Id::of).collect(Collectors.toList()));
         break;
       default:
@@ -71,39 +71,39 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    if (CHILDREN.equals(fieldName)) {
-      List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
+    if (TREE.equals(fieldName)) {
+      List<ByteString> updatedChildren = new ArrayList<>(builder.getTreeList());
       updatedChildren.remove(getPosition(path));
-      l2Builder.clearTree().addAllTree(updatedChildren);
+      builder.clearTree().addAllTree(updatedChildren);
     }
   }
 
   @Override
   protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
-    return CHILDREN.equals(fieldName) && childPath == null;
+    return TREE.equals(fieldName) && childPath == null;
   }
 
   @Override
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    if (CHILDREN.equals(fieldName)) {
-      l2Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+    if (TREE.equals(fieldName)) {
+      builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
     }
   }
 
   @Override
   protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    if (CHILDREN.equals(fieldName)) {
+    if (TREE.equals(fieldName)) {
       if (childPath != null) {
-        l2Builder.setTree(getPosition(childPath), newValue.getBinary());
+        builder.setTree(getPosition(childPath), newValue.getBinary());
       } else {
-        l2Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+        builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
       }
     }
   }
 
   @Override
   byte[] build() {
-    checkPresent(builder.getTreeList(), CHILDREN);
+    checkPresent(builder.getTreeList(), TREE);
 
     return builder.setBase(buildBase()).build().toByteArray();
   }
@@ -125,6 +125,6 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   }
 
   Stream<Id> getChildren() {
-    return l2Builder.getTreeList().stream().map(Id::of);
+    return builder.getTreeList().stream().map(Id::of);
   }
 }

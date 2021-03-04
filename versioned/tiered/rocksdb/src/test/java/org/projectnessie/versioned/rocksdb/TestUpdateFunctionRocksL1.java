@@ -97,7 +97,7 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   void incrementalKeyListCheckpointIdRemove() {
     final UpdateExpression updateExpression =
         UpdateExpression.of(
-        RemoveClause.of(ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST).name(RocksL1.CHECKPOINT_ID).build()));
+        RemoveClause.of(ExpressionPath.builder(RocksL1.CHECKPOINT_ID).build()));
     updateTestFails(rocksL1, updateExpression);
   }
 
@@ -105,7 +105,7 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   void incrementalKeyListRemove() {
     final UpdateExpression updateExpression =
         UpdateExpression.of(
-        RemoveClause.of(ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST).name(RocksL1.DISTANCE_FROM_CHECKPOINT).build()));
+        RemoveClause.of(ExpressionPath.builder(RocksL1.DISTANCE_FROM_CHECKPOINT).build()));
     updateTestFails(rocksL1, updateExpression);
   }
 
@@ -113,8 +113,8 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   void incrementalKeyListDistanceFromCheckpointSetEquals() {
     final Long distanceFromCheckpoint = 32L;
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST)
-        .name(RocksL1.DISTANCE_FROM_CHECKPOINT).build(), Entity.ofNumber(distanceFromCheckpoint)));
+        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.DISTANCE_FROM_CHECKPOINT)
+        .build(), Entity.ofNumber(distanceFromCheckpoint)));
     rocksL1.update(updateExpression);
     Assertions.assertEquals(distanceFromCheckpoint, rocksL1.getDistanceFromCheckpoint());
   }
@@ -122,8 +122,8 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   @Test
   void incrementalKeyListCheckpointIdSetEquals() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST)
-        .name(RocksL1.CHECKPOINT_ID).build(), ID_2.toEntity()));
+        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.CHECKPOINT_ID)
+        .build(), ID_2.toEntity()));
     rocksL1.update(updateExpression);
     Assertions.assertEquals(ID_2, rocksL1.getCheckpointId());
   }
@@ -133,8 +133,8 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
     rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
     final Long distanceFromCheckpoint = 32L;
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST)
-        .name(RocksL1.DISTANCE_FROM_CHECKPOINT).build(), Entity.ofNumber(distanceFromCheckpoint)));
+        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.DISTANCE_FROM_CHECKPOINT)
+        .build(), Entity.ofNumber(distanceFromCheckpoint)));
     rocksL1.update(updateExpression);
     Assertions.assertEquals(distanceFromCheckpoint, rocksL1.getDistanceFromCheckpoint());
   }
@@ -143,8 +143,7 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   void incrementKeyListCheckpointIdSetEqualsExistingCompleteList() {
     rocksL1.completeKeyList(Stream.of(Id.build("id1"), Id.build("id2")));
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST)
-        .name(RocksL1.CHECKPOINT_ID).build(), ID_2.toEntity()));
+        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.CHECKPOINT_ID).build(), ID_2.toEntity()));
     rocksL1.update(updateExpression);
     Assertions.assertEquals(ID_2, rocksL1.getCheckpointId());
   }
@@ -280,14 +279,14 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   void childrenRemove() {
     final UpdateExpression updateExpression =
         UpdateExpression.of(
-        RemoveClause.of(ExpressionPath.builder(RocksL1.CHILDREN).build()));
+        RemoveClause.of(ExpressionPath.builder(RocksL1.TREE).build()));
     updateTestFails(rocksL1, updateExpression);
   }
 
   @Test
   void childrenSetEquals() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.CHILDREN).build(), ID_ENTITY_LIST));
+        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL1.TREE).build(), ID_ENTITY_LIST));
     rocksL1.update(updateExpression);
     final List<Id> updatedList = rocksL1.getChildren().collect(Collectors.toList());
     Assertions.assertEquals(ID_LIST, updatedList);
@@ -296,7 +295,7 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   @Test
   void childrenSetAppendToListWithId() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.CHILDREN).build(), ID_2.toEntity()));
+        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.TREE).build(), ID_2.toEntity()));
     final List<Id> initialList = rocksL1.getChildren().collect(Collectors.toList());
     rocksL1.update(updateExpression);
     final List<Id> updatedList = rocksL1.getChildren().collect(Collectors.toList());
@@ -307,7 +306,7 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   @Test
   void childrenSetAppendToListWithList() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.CHILDREN).build(), ID_ENTITY_LIST));
+        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL1.TREE).build(), ID_ENTITY_LIST));
     final List<Id> initialList = rocksL1.getChildren().collect(Collectors.toList());
     rocksL1.update(updateExpression);
     final List<Id> updatedList = rocksL1.getChildren().collect(Collectors.toList());

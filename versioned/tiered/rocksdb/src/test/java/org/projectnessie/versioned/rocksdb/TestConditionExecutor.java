@@ -82,7 +82,7 @@ class TestConditionExecutor {
 
   @Test
   void executorL1IncrementalKeyListCheckpointId() {
-    final ExpressionPath expressionPath = ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST).name(RocksL1.CHECKPOINT_ID).build();
+    final ExpressionPath expressionPath = ExpressionPath.builder(RocksL1.CHECKPOINT_ID).build();
     final List<Function> expectedFunctions = ImmutableList.of(
         ImmutableFunction.builder()
           .operator(Function.Operator.EQUALS)
@@ -97,8 +97,7 @@ class TestConditionExecutor {
 
   @Test
   void executorL1IncrementalKeyListDistanceFromCheckpoint() {
-    final ExpressionPath expressionPath = ExpressionPath.builder(RocksL1.INCREMENTAL_KEY_LIST)
-        .name(RocksL1.DISTANCE_FROM_CHECKPOINT).build();
+    final ExpressionPath expressionPath = ExpressionPath.builder(RocksL1.DISTANCE_FROM_CHECKPOINT).build();
     final List<Function> expectedFunctions = ImmutableList.of(
         ImmutableFunction.builder()
           .operator(Function.Operator.EQUALS)
@@ -116,7 +115,7 @@ class TestConditionExecutor {
     final List<Function> expectedFunctions = ImmutableList.of(
         ImmutableFunction.builder()
           .operator(Function.Operator.SIZE)
-          .path(ofPath(RocksL1.CHILDREN))
+          .path(ofPath(RocksL1.TREE))
           .value(Entity.ofNumber(RocksL1.SIZE))
           .build());
     final RocksL1 l1 = createL1(random);
@@ -131,7 +130,7 @@ class TestConditionExecutor {
     for (int i = 0; i < RocksL1.SIZE; i++) {
       idsAsEntity.add(ID.toEntity());
     }
-    equalsL1(RocksL1.CHILDREN, Entity.ofList(idsAsEntity));
+    equalsL1(RocksL1.TREE, Entity.ofList(idsAsEntity));
   }
 
   @Test
@@ -139,7 +138,7 @@ class TestConditionExecutor {
     final List<Function> expectedFunctions = ImmutableList.of(
         ImmutableFunction.builder()
           .operator(Function.Operator.EQUALS)
-          .path(ExpressionPath.builder(RocksL1.CHILDREN).position(3).build())
+          .path(ExpressionPath.builder(RocksL1.TREE).position(3).build())
           .value(ID.toEntity())
           .build());
     final RocksL1 l1 = createL1(random);
@@ -256,7 +255,7 @@ class TestConditionExecutor {
     final List<Function> expectedFunctions = ImmutableList.of(
         ImmutableFunction.builder()
           .operator(Function.Operator.SIZE)
-          .path(ofPath(RocksL1.CHILDREN))
+          .path(ofPath(RocksL1.TREE))
           .value(Entity.ofNumber(RocksL1.SIZE))
           .build());
     final RocksL2 l2 = createL2();
@@ -271,7 +270,7 @@ class TestConditionExecutor {
     for (int i = 0; i < RocksL1.SIZE; i++) {
       idsAsEntity.add(ID.toEntity());
     }
-    equalsL2(RocksL1.CHILDREN, Entity.ofList(idsAsEntity));
+    equalsL2(RocksL1.TREE, Entity.ofList(idsAsEntity));
   }
 
   @Test
@@ -279,7 +278,7 @@ class TestConditionExecutor {
     final List<Function> expectedFunctions = ImmutableList.of(
         ImmutableFunction.builder()
           .operator(Function.Operator.EQUALS)
-          .path(ExpressionPath.builder(RocksL1.CHILDREN).position(3).build())
+          .path(ExpressionPath.builder(RocksL1.TREE).position(3).build())
           .value(ID.toEntity())
           .build());
     final RocksL2 l2 = createL2();

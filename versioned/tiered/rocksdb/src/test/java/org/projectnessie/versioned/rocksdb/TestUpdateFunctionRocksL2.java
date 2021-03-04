@@ -63,14 +63,14 @@ public class TestUpdateFunctionRocksL2 extends TestUpdateFunctionBase {
   @Test
   void childrenRemove() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksL2.CHILDREN).build()));
+        UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksL2.TREE).build()));
     updateTestFails(rocksL2, updateExpression);
   }
 
   @Test
   void childrenSetEquals() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL2.CHILDREN).build(), ID_ENTITY_LIST));
+        UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksL2.TREE).build(), ID_ENTITY_LIST));
     rocksL2.update(updateExpression);
     final List<Id> updatedList = rocksL2.getChildren().collect(Collectors.toList());
     Assertions.assertEquals(ID_LIST, updatedList);
@@ -79,7 +79,7 @@ public class TestUpdateFunctionRocksL2 extends TestUpdateFunctionBase {
   @Test
   void childrenSetAppendToListWithId() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL2.CHILDREN).build(), ID_2.toEntity()));
+        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL2.TREE).build(), ID_2.toEntity()));
     final List<Id> initialList = rocksL2.getChildren().collect(Collectors.toList());
     rocksL2.update(updateExpression);
     final List<Id> updatedList = rocksL2.getChildren().collect(Collectors.toList());
@@ -90,7 +90,7 @@ public class TestUpdateFunctionRocksL2 extends TestUpdateFunctionBase {
   @Test
   void childrenSetAppendToListWithList() {
     final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL2.CHILDREN).build(), ID_ENTITY_LIST));
+        UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksL2.TREE).build(), ID_ENTITY_LIST));
     final List<Id> initialList = rocksL2.getChildren().collect(Collectors.toList());
     rocksL2.update(updateExpression);
     final List<Id> updatedList = rocksL2.getChildren().collect(Collectors.toList());
