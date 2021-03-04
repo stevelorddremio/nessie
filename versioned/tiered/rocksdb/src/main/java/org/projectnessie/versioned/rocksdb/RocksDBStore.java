@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.projectnessie.versioned.impl.EntityStoreHelper;
 import org.projectnessie.versioned.impl.condition.ConditionExpression;
 import org.projectnessie.versioned.impl.condition.UpdateExpression;
 import org.projectnessie.versioned.store.ConditionFailedException;
@@ -106,6 +107,10 @@ public class RocksDBStore implements Store {
         }
       }
       valueTypeToColumnFamily = builder.build();
+
+      if (config.initializeDatabase()) {
+        EntityStoreHelper.storeMinimumEntities(this::putIfAbsent);
+      }
     } catch (RocksDBException e) {
       throw new RuntimeException("RocksDB failed to start", e);
     }
