@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -96,6 +95,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
   void setup() {
     rocksRefBranch = createRefBranch(RANDOM);
   }
+
   @Test
   void idRemove() {
     idRemove(rocksRefBranch);
@@ -256,7 +256,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
       void commitsRemoveFirst() {
         final List<ValueProtos.Commit> expectedCommitsList = rocksRefBranch.getCommits().stream().skip(1).collect(Collectors.toList());
         final UpdateExpression updateExpression =
-          UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS).position(0).build()));
+            UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS).position(0).build()));
         rocksRefBranch.update(updateExpression);
         Assertions.assertEquals(expectedCommitsList, rocksRefBranch.getCommits());
       }
@@ -265,7 +265,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
       void commitsSetEquals() {
         final Id newId = SampleEntities.createId(RANDOM);
         final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS).build(), newId.toEntity()));
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS).build(), newId.toEntity()));
         updateTestFails(rocksRefBranch, updateExpression);
       }
 
@@ -273,7 +273,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
       void commitsAppendToList() {
         final Id newId = SampleEntities.createId(RANDOM);
         final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS).build(), newId.toEntity()));
+            UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS).build(), newId.toEntity()));
         updateTestFails(rocksRefBranch, updateExpression);
       }
 
