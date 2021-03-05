@@ -37,7 +37,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 class RocksL3 extends RocksBaseValue<L3> implements L3 {
   private static final String TREE = "tree";
 
-  private final ValueProtos.L3.Builder builder = ValueProtos.L3.newBuilder();
+  private final ValueProtos.L3.Builder l3Builder = ValueProtos.L3.newBuilder();
 
   RocksL3() {
     super();
@@ -46,7 +46,7 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
 
   @Override
   public L3 keyDelta(Stream<KeyDelta> keyDelta) {
-    builder
+    l3Builder
         .clearKeyDelta()
         .addAllKeyDelta(
             keyDelta.map(kd -> ValueProtos.KeyDelta
@@ -92,9 +92,9 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
 
   @Override
   byte[] build() {
-    checkPresent(builder.getKeyDeltaList(), TREE);
+    checkPresent(l3Builder.getKeyDeltaList(), TREE);
 
-    return builder.setBase(buildBase()).build().toByteArray();
+    return l3Builder.setBase(buildBase()).build().toByteArray();
   }
 
   /**

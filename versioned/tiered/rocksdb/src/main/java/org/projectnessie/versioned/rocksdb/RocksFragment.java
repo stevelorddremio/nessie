@@ -37,7 +37,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   static final String KEY_LIST = "keys";
 
-  private final ValueProtos.Fragment.Builder builder = ValueProtos.Fragment.newBuilder();
+  private final ValueProtos.Fragment.Builder fragmentBuilder = ValueProtos.Fragment.newBuilder();
 
   RocksFragment() {
     super();
@@ -45,7 +45,7 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   public Fragment keys(Stream<Key> keys) {
-    builder
+    fragmentBuilder
         .clearKeys()
         .addAllKeys(keys.map(key -> ValueProtos.Key
             .newBuilder()
@@ -58,9 +58,9 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   byte[] build() {
-    checkPresent(builder.getKeysList(), KEY_LIST);
+    checkPresent(fragmentBuilder.getKeysList(), KEY_LIST);
 
-    return builder.setBase(buildBase()).build().toByteArray();
+    return fragmentBuilder.setBase(buildBase()).build().toByteArray();
   }
 
   /**
@@ -94,7 +94,7 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
             throw new ConditionFailedException(conditionNotMatchedMessage(function));
           }
         } else if (function.getOperator().equals(Function.Operator.SIZE)) {
-          if (builder.getKeysCount() != function.getValue().getNumber()) {
+          if (fragmentBuilder.getKeysCount() != function.getValue().getNumber()) {
             throw new ConditionFailedException(conditionNotMatchedMessage(function));
           }
         } else {
@@ -108,7 +108,7 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   }
 
   private List<Key> getKeys() {
-    return builder.getKeysList()
+    return fragmentBuilder.getKeysList()
       .stream()
       .map(key ->
         ImmutableKey
@@ -135,9 +135,9 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
       if (path.isPosition()) {
         if (path.getChild().isPresent()) {
           if (path.getChild().get().isPosition()) {
-            final List<String> updatedKeys = new ArrayList<>(builder.getKeys(path.asPosition().getPosition()).getElementsList());
+            final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(path.asPosition().getPosition()).getElementsList());
             updatedKeys.remove(path.getChild().get().asPosition().getPosition());
-            builder.setKeys(path.asPosition().getPosition(), ValueProtos.Key
+            fragmentBuilder.setKeys(path.asPosition().getPosition(), ValueProtos.Key
                 .newBuilder()
                 .addAllElements(updatedKeys)
             );
@@ -145,7 +145,7 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
             throw new UnsupportedOperationException("Invalid path for remove");
           }
         } else {
-          builder.removeKeys(path.asPosition().getPosition());
+          fragmentBuilder.removeKeys(path.asPosition().getPosition());
         }
       } else {
         throw new UnsupportedOperationException("Invalid path for remove");
@@ -164,15 +164,15 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     if (KEY_LIST.equals(fieldName)) {
       if (childPath == null) {
-        builder.addAllKeys(valuesToAdd.stream().map(v -> ValueProtos.Key
+        fragmentBuilder.addAllKeys(valuesToAdd.stream().map(v -> ValueProtos.Key
             .newBuilder()
             .addAllElements(v.getList().stream().map(Entity::getString).collect(Collectors.toList()))
             .build()
         ).collect(Collectors.toList()));
       } else if (childPath.isPosition()) {
-        builder.setKeys(childPath.asPosition().getPosition(), ValueProtos.Key
+        fragmentBuilder.setKeys(childPath.asPosition().getPosition(), ValueProtos.Key
             .newBuilder()
-            .addAllElements(builder.getKeys(childPath.asPosition().getPosition()).getElementsList())
+            .addAllElements(fragmentBuilder.getKeys(childPath.asPosition().getPosition()).getElementsList())
             .addAllElements(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()))
         );
       } else {
@@ -190,14 +190,14 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
         int index = childPath.asPosition().getPosition();
 
         if (childPath.getChild().isPresent() && childPath.getChild().get().isPosition()) {
-          final List<String> updatedKeys = new ArrayList<>(builder.getKeys(index).getElementsList());
+          final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(index).getElementsList());
           updatedKeys.set(childPath.getChild().get().asPosition().getPosition(), newValue.getString());
-          builder.setKeys(index, ValueProtos.Key
+          fragmentBuilder.setKeys(index, ValueProtos.Key
               .newBuilder()
               .addAllElements(updatedKeys)
           );
         } else if (!childPath.getChild().isPresent()) {
-          builder.setKeys(index, ValueProtos.Key
+          fragmentBuilder.setKeys(index, ValueProtos.Key
               .newBuilder()
               .addAllElements(newValue.getList().stream().map(Entity::getString).collect(Collectors.toList()))
           );

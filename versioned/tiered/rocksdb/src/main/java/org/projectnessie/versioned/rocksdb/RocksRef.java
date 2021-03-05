@@ -45,7 +45,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   static final String COMMIT = "commit";
   static final String CHILDREN = "children";
 
-  private final ValueProtos.Ref.Builder builder = ValueProtos.Ref.newBuilder();
+  private final ValueProtos.Ref.Builder refBuilder = ValueProtos.Ref.newBuilder();
 
   RocksRef() {
     super();
@@ -53,7 +53,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
   @Override
   public void evaluate(Function function) throws ConditionFailedException {
-    if (builder.getRefValueCase() == ValueProtos.Ref.RefValueCase.REFVALUE_NOT_SET) {
+    if (refBuilder.getRefValueCase() == ValueProtos.Ref.RefValueCase.REFVALUE_NOT_SET) {
       throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
 
@@ -74,26 +74,26 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         }
 
         if (!function.isRootNameSegmentChildlessAndEquals()
-            || builder.getRefValueCase() != typeFromFunction) {
+            || refBuilder.getRefValueCase() != typeFromFunction) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
         break;
       case NAME:
         if (!function.isRootNameSegmentChildlessAndEquals()
-            || !builder.getName().equals(function.getValue().getString())) {
+            || !refBuilder.getName().equals(function.getValue().getString())) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
         break;
       case CHILDREN:
-        if (!builder.hasBranch()) {
+        if (!refBuilder.hasBranch()) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
-        evaluate(function, builder.getBranch().getChildrenList().stream().map(Id::of).collect(Collectors.toList()));
+        evaluate(function, refBuilder.getBranch().getChildrenList().stream().map(Id::of).collect(Collectors.toList()));
         break;
       case METADATA:
         if (!function.isRootNameSegmentChildlessAndEquals()
-            || !builder.hasBranch()
-            || !Id.of(builder.getBranch().getMetadataId()).toEntity().equals(function.getValue())) {
+            || !refBuilder.hasBranch()
+            || !Id.of(refBuilder.getBranch().getMetadataId()).toEntity().equals(function.getValue())) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
         break;
@@ -118,8 +118,8 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     // TODO: refactor once jdbc-store Store changes are available.
     if (function.getOperator().equals(Function.Operator.SIZE)) {
       if (function.getRootPathAsNameSegment().getChild().isPresent()
-          || !builder.hasBranch()
-          || builder.getBranch().getCommitsCount() != function.getValue().getNumber()) {
+          || !refBuilder.hasBranch()
+          || refBuilder.getBranch().getCommitsCount() != function.getValue().getNumber()) {
         throw new ConditionFailedException(conditionNotMatchedMessage(function));
       }
     } else {
@@ -135,8 +135,8 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
    */
   private void evaluateTagCommit(Function function) {
     if (!function.getOperator().equals(Function.Operator.EQUALS)
-        || !builder.hasTag()
-        || !Id.of(builder.getTag().getId()).toEntity().equals(function.getValue())) {
+        || !refBuilder.hasTag()
+        || !Id.of(refBuilder.getTag().getId()).toEntity().equals(function.getValue())) {
       throw new ConditionFailedException(conditionNotMatchedMessage(function));
     }
   }
@@ -145,14 +145,14 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   protected void remove(String fieldName, ExpressionPath.PathSegment path) {
     switch (fieldName) {
       case CHILDREN:
-        if (!builder.hasBranch()) {
+        if (!refBuilder.hasBranch()) {
           throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", fieldName));
         }
 
-        List<ByteString> updatedChildren = new ArrayList<>(builder.getBranch().getChildrenList());
+        List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
         updatedChildren.remove(getPosition(path));
-        builder.setBranch(ValueProtos.Branch
-            .newBuilder(builder.getBranch())
+        refBuilder.setBranch(ValueProtos.Branch
+            .newBuilder(refBuilder.getBranch())
             .clearChildren()
             .addAllChildren(updatedChildren));
         break;
@@ -176,14 +176,14 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     switch (fieldName) {
       case CHILDREN:
-        if (!builder.hasBranch() || childPath != null) {
+        if (!refBuilder.hasBranch() || childPath != null) {
           throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for tags", fieldName));
         }
 
-        List<ByteString> updatedChildren = new ArrayList<>(builder.getBranch().getChildrenList());
+        List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
         updatedChildren.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
-        builder.setBranch(ValueProtos.Branch
-            .newBuilder(builder.getBranch())
+        refBuilder.setBranch(ValueProtos.Branch
+            .newBuilder(refBuilder.getBranch())
             .clearChildren()
             .addAllChildren(updatedChildren));
         break;
@@ -200,44 +200,44 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
           throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
 
-        builder.setName(newValue.getString());
+        refBuilder.setName(newValue.getString());
         break;
       case CHILDREN:
-        if (!builder.hasBranch()) {
+        if (!refBuilder.hasBranch()) {
           throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", fieldName));
         }
 
         final List<ByteString> updatedChildren;
         if (childPath != null) {
-          updatedChildren = new ArrayList<>(builder.getBranch().getChildrenList());
+          updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
           updatedChildren.set(getPosition(childPath), newValue.getBinary());
         } else {
           updatedChildren = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
         }
 
-        builder.setBranch(ValueProtos.Branch
-            .newBuilder(builder.getBranch())
+        refBuilder.setBranch(ValueProtos.Branch
+            .newBuilder(refBuilder.getBranch())
             .clearChildren()
             .addAllChildren(updatedChildren)
         );
         break;
       case METADATA:
-        if (!builder.hasBranch()) {
+        if (!refBuilder.hasBranch()) {
           throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", fieldName));
         } else if (childPath != null) {
           throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
 
-        builder.setBranch(ValueProtos.Branch.newBuilder(builder.getBranch()).setMetadataId(newValue.getBinary()));
+        refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(newValue.getBinary()));
         break;
       case COMMIT:
-        if (!builder.hasTag()) {
+        if (!refBuilder.hasTag()) {
           throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for branches", fieldName));
         } else if (childPath != null) {
           throw new UnsupportedOperationException("Invalid path for SetEquals");
         }
 
-        builder.setTag(ValueProtos.Tag.newBuilder(builder.getTag()).setId(newValue.getBinary()));
+        refBuilder.setTag(ValueProtos.Tag.newBuilder(refBuilder.getTag()).setId(newValue.getBinary()));
         break;
       default:
         throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
@@ -246,27 +246,27 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
   @Override
   public Ref name(String name) {
-    builder.setName(name);
+    refBuilder.setName(name);
     return this;
   }
 
   @Override
   public Tag tag() {
-    if (builder.getRefValueCase() != ValueProtos.Ref.RefValueCase.REFVALUE_NOT_SET) {
+    if (refBuilder.getRefValueCase() != ValueProtos.Ref.RefValueCase.REFVALUE_NOT_SET) {
       throw new IllegalStateException("branch()/tag() has already been called");
     }
 
-    builder.setTag(ValueProtos.Tag.newBuilder().build());
+    refBuilder.setTag(ValueProtos.Tag.newBuilder().build());
     return new RocksTag();
   }
 
   @Override
   public Branch branch() {
-    if (builder.getRefValueCase() != ValueProtos.Ref.RefValueCase.REFVALUE_NOT_SET) {
+    if (refBuilder.getRefValueCase() != ValueProtos.Ref.RefValueCase.REFVALUE_NOT_SET) {
       throw new IllegalStateException("branch()/tag() has already been called");
     }
 
-    builder.setBranch(ValueProtos.Branch.newBuilder().build());
+    refBuilder.setBranch(ValueProtos.Branch.newBuilder().build());
     return new RocksBranch();
   }
 
@@ -274,7 +274,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   class RocksTag implements Tag {
     @Override
     public Tag commit(Id commit) {
-      builder.setTag(ValueProtos.Tag.newBuilder().setId(commit.getValue()).build());
+      refBuilder.setTag(ValueProtos.Tag.newBuilder().setId(commit.getValue()).build());
       return this;
     }
 
@@ -287,11 +287,11 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   class RocksBranch implements Branch {
     @Override
     public Branch metadata(Id metadata) {
-      if (builder.getRefValueCase() != ValueProtos.Ref.RefValueCase.BRANCH) {
-        builder.setBranch(ValueProtos.Branch.newBuilder().setMetadataId(metadata.getValue()));
+      if (refBuilder.getRefValueCase() != ValueProtos.Ref.RefValueCase.BRANCH) {
+        refBuilder.setBranch(ValueProtos.Branch.newBuilder().setMetadataId(metadata.getValue()));
       } else {
-        builder.setBranch(
-            ValueProtos.Branch.newBuilder(builder.getBranch()).setMetadataId(metadata.getValue())
+        refBuilder.setBranch(
+            ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(metadata.getValue())
         );
       }
 
@@ -302,16 +302,16 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     public Branch children(Stream<Id> children) {
       final List<ByteString> childList = children.map(Id::getValue).collect(Collectors.toList());
 
-      if (!builder.hasBranch()) {
-        builder.setBranch(
+      if (!refBuilder.hasBranch()) {
+        refBuilder.setBranch(
             ValueProtos.Branch
                 .newBuilder()
                 .addAllChildren(childList)
         );
       } else {
-        builder.setBranch(
+        refBuilder.setBranch(
             ValueProtos.Branch
-                .newBuilder(builder.getBranch())
+                .newBuilder(refBuilder.getBranch())
                 .clearChildren()
                 .addAllChildren(childList)
         );
@@ -367,7 +367,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
     @Override
     public BranchCommit done() {
-      RocksRef.this.builder.setBranch(ValueProtos.Branch.newBuilder(RocksRef.this.builder.getBranch()).addCommits(builder.build()));
+      RocksRef.this.refBuilder.setBranch(ValueProtos.Branch.newBuilder(RocksRef.this.refBuilder.getBranch()).addCommits(builder.build()));
       builder.clear();
       return this;
     }
@@ -397,17 +397,17 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
   @Override
   byte[] build() {
-    checkPresent(builder.getName(), NAME);
+    checkPresent(refBuilder.getName(), NAME);
 
-    if (builder.hasTag()) {
-      checkPresent(builder.getTag().getId(), COMMIT);
+    if (refBuilder.hasTag()) {
+      checkPresent(refBuilder.getTag().getId(), COMMIT);
     } else {
-      checkPresent(builder.getBranch().getCommitsList(), COMMITS);
-      checkPresent(builder.getBranch().getChildrenList(), CHILDREN);
-      checkPresent(builder.getBranch().getMetadataId(), METADATA);
+      checkPresent(refBuilder.getBranch().getCommitsList(), COMMITS);
+      checkPresent(refBuilder.getBranch().getChildrenList(), CHILDREN);
+      checkPresent(refBuilder.getBranch().getMetadataId(), METADATA);
     }
 
-    return builder.setBase(buildBase()).build().toByteArray();
+    return refBuilder.setBase(buildBase()).build().toByteArray();
   }
 
   /**
@@ -455,28 +455,28 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   String getName() {
-    return builder.getName();
+    return refBuilder.getName();
   }
 
   Stream<Id> getChildren() {
-    if (builder.hasBranch()) {
-      return builder.getBranch().getChildrenList().stream().map(Id::of);
+    if (refBuilder.hasBranch()) {
+      return refBuilder.getBranch().getChildrenList().stream().map(Id::of);
     } else {
       return Stream.empty();
     }
   }
 
   Id getMetadata() {
-    if (builder.hasBranch()) {
-      return Id.of(builder.getBranch().getMetadataId());
+    if (refBuilder.hasBranch()) {
+      return Id.of(refBuilder.getBranch().getMetadataId());
     } else {
       return null;
     }
   }
 
   Id getCommit() {
-    if (builder.hasTag()) {
-      return Id.of(builder.getTag().getId());
+    if (refBuilder.hasTag()) {
+      return Id.of(refBuilder.getTag().getId());
     } else {
       return null;
     }

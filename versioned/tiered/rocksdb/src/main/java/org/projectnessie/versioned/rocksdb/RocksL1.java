@@ -48,7 +48,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   static final String CHECKPOINT_ID = "origin";
   static final String DISTANCE_FROM_CHECKPOINT = "dist";
 
-  private final ValueProtos.L1.Builder builder = ValueProtos.L1.newBuilder();
+  private final ValueProtos.L1.Builder l1Builder = ValueProtos.L1.newBuilder();
 
   RocksL1() {
     super();
@@ -56,13 +56,13 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   public L1 commitMetadataId(Id id) {
-    builder.setMetadataId(id.getValue());
+    l1Builder.setMetadataId(id.getValue());
     return this;
   }
 
   @Override
   public L1 ancestors(Stream<Id> ids) {
-    builder
+    l1Builder
         .clearAncestors()
         .addAllAncestors(ids.map(Id::getValue).collect(Collectors.toList()));
     return this;
@@ -70,7 +70,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   public L1 children(Stream<Id> ids) {
-    builder
+    l1Builder
         .clearTree()
         .addAllTree(ids.map(Id::getValue).collect(Collectors.toList()));
     return this;
@@ -78,7 +78,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   public L1 keyMutations(Stream<Key.Mutation> keyMutations) {
-    builder
+    l1Builder
         .clearKeyMutations()
         .addAllKeyMutations(
             keyMutations.map(km ->
@@ -96,7 +96,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   public L1 incrementalKeyList(Id checkpointId, int distanceFromCheckpoint) {
-    builder.setIncrementalList(
+    l1Builder.setIncrementalList(
         ValueProtos.IncrementalList
             .newBuilder()
             .setCheckpointId(checkpointId.getValue())
@@ -108,7 +108,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   public L1 completeKeyList(Stream<Id> fragmentIds) {
-    builder.setCompleteList(
+    l1Builder.setCompleteList(
         ValueProtos.CompleteList
           .newBuilder()
           .addAllFragmentIds(fragmentIds.map(Id::getValue).collect(Collectors.toList()))
@@ -127,30 +127,30 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         break;
       case COMMIT_METADATA:
         if (!function.isRootNameSegmentChildlessAndEquals()
-            || !Id.of(builder.getMetadataId()).toEntity().equals(function.getValue())) {
+            || !Id.of(l1Builder.getMetadataId()).toEntity().equals(function.getValue())) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
         break;
       case ANCESTORS:
-        evaluate(function, builder.getAncestorsList().stream().map(Id::of).collect(Collectors.toList()));
+        evaluate(function, l1Builder.getAncestorsList().stream().map(Id::of).collect(Collectors.toList()));
         break;
       case TREE:
-        evaluate(function, builder.getTreeList().stream().map(Id::of).collect(Collectors.toList()));
+        evaluate(function, l1Builder.getTreeList().stream().map(Id::of).collect(Collectors.toList()));
         break;
       case KEY_MUTATIONS:
         throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
       case CHECKPOINT_ID:
-        if (!Id.of(builder.getIncrementalList().getCheckpointId()).toEntity().equals(function.getValue())) {
+        if (!Id.of(l1Builder.getIncrementalList().getCheckpointId()).toEntity().equals(function.getValue())) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
         break;
       case DISTANCE_FROM_CHECKPOINT:
-        if (!Entity.ofNumber(builder.getIncrementalList().getDistanceFromCheckpointId()).equals(function.getValue())) {
+        if (!Entity.ofNumber(l1Builder.getIncrementalList().getDistanceFromCheckpointId()).equals(function.getValue())) {
           throw new ConditionFailedException(conditionNotMatchedMessage(function));
         }
         break;
       case COMPLETE_KEY_LIST:
-        evaluate(function, builder.getCompleteList().getFragmentIdsList().stream().map(Id::of).collect(Collectors.toList()));
+        evaluate(function, l1Builder.getCompleteList().getFragmentIdsList().stream().map(Id::of).collect(Collectors.toList()));
         break;
       default:
         // Invalid Condition Function.
@@ -162,22 +162,22 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   protected void remove(String fieldName, ExpressionPath.PathSegment path) {
     switch (fieldName) {
       case ANCESTORS:
-        List<ByteString> updatedAncestors = new ArrayList<>(builder.getAncestorsList());
+        List<ByteString> updatedAncestors = new ArrayList<>(l1Builder.getAncestorsList());
         updatedAncestors.remove(getPosition(path));
-        builder.clearAncestors().addAllAncestors(updatedAncestors);
+        l1Builder.clearAncestors().addAllAncestors(updatedAncestors);
         break;
       case TREE:
-        List<ByteString> updatedChildren = new ArrayList<>(builder.getTreeList());
+        List<ByteString> updatedChildren = new ArrayList<>(l1Builder.getTreeList());
         updatedChildren.remove(getPosition(path));
-        builder.clearTree().addAllTree(updatedChildren);
+        l1Builder.clearTree().addAllTree(updatedChildren);
         break;
       case KEY_MUTATIONS:
         removesKeyMutations(path);
         break;
       case COMPLETE_KEY_LIST:
-        List<ByteString> updatedKeyList = new ArrayList<>(builder.getCompleteList().getFragmentIdsList());
+        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
         updatedKeyList.remove(getPosition(path));
-        builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
+        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
         break;
       default:
         throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
@@ -186,7 +186,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   private void removesKeyMutations(ExpressionPath.PathSegment path) {
     if (path.isPosition() && !path.getChild().isPresent()) {
-      builder.removeKeyMutations(getPosition(path));
+      l1Builder.removeKeyMutations(getPosition(path));
     } else if (path.isPosition()) {
       if (!path.getChild().get().isName() || !KEY_MUTATIONS_KEY.equals(path.getChild().get().asName().getName())) {
         throw new UnsupportedOperationException("Invalid path for remove");
@@ -197,10 +197,10 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         throw new UnsupportedOperationException("Invalid path for remove");
       }
 
-      final List<String> updatedKeysList = new ArrayList<>(builder.getKeyMutations(getPosition(path)).getKey().getElementsList());
+      final List<String> updatedKeysList = new ArrayList<>(l1Builder.getKeyMutations(getPosition(path)).getKey().getElementsList());
       updatedKeysList.remove(getPosition(keyPath.getChild().get()));
-      builder.setKeyMutations(getPosition(path), ValueProtos.KeyMutation
-          .newBuilder(builder.getKeyMutations(getPosition(path)))
+      l1Builder.setKeyMutations(getPosition(path), ValueProtos.KeyMutation
+          .newBuilder(l1Builder.getKeyMutations(getPosition(path)))
           .setKey(ValueProtos.Key.newBuilder().addAllElements(updatedKeysList))
       );
     } else {
@@ -234,13 +234,13 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         if (childPath != null) {
           throw new UnsupportedOperationException("Invalid path for append");
         }
-        builder.addAllAncestors(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+        l1Builder.addAllAncestors(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
         break;
       case TREE:
         if (childPath != null) {
           throw new UnsupportedOperationException("Invalid path for append");
         }
-        builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+        l1Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
         break;
       case KEY_MUTATIONS:
         if (!childPath.isPosition() || !childPath.getChild().isPresent() || !childPath.getChild().get().isName()
@@ -249,11 +249,11 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         }
 
         int keyMutationPosition = childPath.asPosition().getPosition();
-        List<String> keyElements = new ArrayList<>(builder.getKeyMutations(keyMutationPosition).getKey().getElementsList());
+        List<String> keyElements = new ArrayList<>(l1Builder.getKeyMutations(keyMutationPosition).getKey().getElementsList());
         keyElements.addAll(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()));
 
-        builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
-            .newBuilder(builder.getKeyMutations(keyMutationPosition))
+        l1Builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
+            .newBuilder(l1Builder.getKeyMutations(keyMutationPosition))
             .setKey(ValueProtos.Key.newBuilder().addAllElements(keyElements))
         );
         break;
@@ -261,9 +261,9 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         if (childPath != null) {
           throw new UnsupportedOperationException("Invalid path for append");
         }
-        List<ByteString> updatedKeyList = new ArrayList<>(builder.getCompleteList().getFragmentIdsList());
+        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
         updatedKeyList.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
-        builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
+        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
         break;
       default:
         throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
@@ -275,16 +275,16 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
     switch (fieldName) {
       case ANCESTORS:
         if (childPath != null) {
-          builder.setAncestors(getPosition(childPath), newValue.getBinary());
+          l1Builder.setAncestors(getPosition(childPath), newValue.getBinary());
         } else {
-          builder.clearAncestors().addAllAncestors(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+          l1Builder.clearAncestors().addAllAncestors(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
         }
         break;
       case TREE:
         if (childPath != null) {
-          builder.setTree(getPosition(childPath), newValue.getBinary());
+          l1Builder.setTree(getPosition(childPath), newValue.getBinary());
         } else {
-          builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+          l1Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
         }
         break;
       case KEY_MUTATIONS:
@@ -293,22 +293,22 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       case COMPLETE_KEY_LIST:
         final List<ByteString> updatedKeyList;
         if (childPath != null) {
-          updatedKeyList = new ArrayList<>(builder.getCompleteList().getFragmentIdsList());
+          updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
           updatedKeyList.set(getPosition(childPath), newValue.getBinary());
         } else {
           updatedKeyList = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
         }
-        builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
+        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
         break;
       case CHECKPOINT_ID:
-        builder.setIncrementalList(ValueProtos.IncrementalList
-            .newBuilder(builder.getIncrementalList())
+        l1Builder.setIncrementalList(ValueProtos.IncrementalList
+            .newBuilder(l1Builder.getIncrementalList())
             .setCheckpointId(newValue.getBinary())
         );
         break;
       case DISTANCE_FROM_CHECKPOINT:
-        builder.setIncrementalList(ValueProtos.IncrementalList
-            .newBuilder(builder.getIncrementalList())
+        l1Builder.setIncrementalList(ValueProtos.IncrementalList
+            .newBuilder(l1Builder.getIncrementalList())
             .setDistanceFromCheckpointId((int)newValue.getNumber())
         );
         break;
@@ -333,25 +333,25 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
     switch (childPath.getChild().get().asName().getName()) {
       case KEY_MUTATIONS_MUTATION_TYPE:
-        builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
-            .newBuilder(builder.getKeyMutations(keyMutationPosition))
+        l1Builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
+            .newBuilder(l1Builder.getKeyMutations(keyMutationPosition))
             .setTypeValue((int)newValue.getNumber())
         );
         break;
       case KEY_MUTATIONS_KEY:
         if (!childPath.getChild().get().getChild().isPresent()) {
-          builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
-              .newBuilder(builder.getKeyMutations(keyMutationPosition))
+          l1Builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
+              .newBuilder(l1Builder.getKeyMutations(keyMutationPosition))
               .setKey(ValueProtos.Key.newBuilder().addAllElements(
               newValue.getList().stream().map(Entity::getString).collect(Collectors.toList())
             ))
           );
         } else if (childPath.getChild().get().getChild().isPresent() && childPath.getChild().get().getChild().get().isPosition()) {
-          List<String> keyElements = new ArrayList<>(builder.getKeyMutations(keyMutationPosition).getKey().getElementsList());
+          List<String> keyElements = new ArrayList<>(l1Builder.getKeyMutations(keyMutationPosition).getKey().getElementsList());
           keyElements.set(childPath.getChild().get().getChild().get().asPosition().getPosition(), newValue.getString());
 
-          builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
-              .newBuilder(builder.getKeyMutations(keyMutationPosition))
+          l1Builder.setKeyMutations(keyMutationPosition, ValueProtos.KeyMutation
+              .newBuilder(l1Builder.getKeyMutations(keyMutationPosition))
               .setKey(ValueProtos.Key.newBuilder().addAllElements(keyElements))
           );
         } else {
@@ -367,18 +367,18 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   byte[] build() {
-    checkPresent(builder.getMetadataId(), COMMIT_METADATA);
-    checkPresent(builder.getAncestorsList(), ANCESTORS);
-    checkPresent(builder.getTreeList(), TREE);
-    checkPresent(builder.getKeyMutationsList(), KEY_MUTATIONS);
+    checkPresent(l1Builder.getMetadataId(), COMMIT_METADATA);
+    checkPresent(l1Builder.getAncestorsList(), ANCESTORS);
+    checkPresent(l1Builder.getTreeList(), TREE);
+    checkPresent(l1Builder.getKeyMutationsList(), KEY_MUTATIONS);
 
-    if (builder.hasIncrementalList()) {
-      checkPresent(builder.getIncrementalList().getCheckpointId(), CHECKPOINT_ID);
+    if (l1Builder.hasIncrementalList()) {
+      checkPresent(l1Builder.getIncrementalList().getCheckpointId(), CHECKPOINT_ID);
     } else {
-      checkPresent(builder.getCompleteList().getFragmentIdsList(), COMPLETE_KEY_LIST);
+      checkPresent(l1Builder.getCompleteList().getFragmentIdsList(), COMPLETE_KEY_LIST);
     }
 
-    return builder.setBase(buildBase()).build().toByteArray();
+    return l1Builder.setBase(buildBase()).build().toByteArray();
   }
 
   /**
@@ -408,38 +408,38 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   Id getMetadataId() {
-    return Id.of(builder.getMetadataId());
+    return Id.of(l1Builder.getMetadataId());
   }
 
   Id getCheckpointId() {
-    return Id.of(builder.getIncrementalList().getCheckpointId());
+    return Id.of(l1Builder.getIncrementalList().getCheckpointId());
   }
 
   int getDistanceFromCheckpoint() {
-    return builder.getIncrementalList().getDistanceFromCheckpointId();
+    return l1Builder.getIncrementalList().getDistanceFromCheckpointId();
   }
 
   Stream<Id> getChildren() {
-    return builder.getTreeList().stream().map(Id::of);
+    return l1Builder.getTreeList().stream().map(Id::of);
   }
 
   Stream<Id> getAncestors() {
-    return builder.getAncestorsList().stream().map(Id::of);
+    return l1Builder.getAncestorsList().stream().map(Id::of);
   }
 
   Stream<Id> getCompleteKeyList() {
-    return builder.getCompleteList().getFragmentIdsList().stream().map(Id::of);
+    return l1Builder.getCompleteList().getFragmentIdsList().stream().map(Id::of);
   }
 
   int getKeyMutationsCount() {
-    return builder.getKeyMutationsCount();
+    return l1Builder.getKeyMutationsCount();
   }
 
   int getKeyMutationType(int index) {
-    return builder.getKeyMutations(index).getTypeValue();
+    return l1Builder.getKeyMutations(index).getTypeValue();
   }
 
   List<String> getKeyMutationKeys(int index) {
-    return builder.getKeyMutations(index).getKey().getElementsList();
+    return l1Builder.getKeyMutations(index).getKey().getElementsList();
   }
 }

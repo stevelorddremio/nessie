@@ -45,7 +45,6 @@ public class TestUpdateFunctionMultiple {
   private static final String NESTED_VALUE = "nestedValue";
 
   private static class RocksValueForTest extends RocksBaseValue<RocksValueForTest> {
-    private ValueProtos.BaseValue base;
     private String scalarValue;
     private List<ByteString> listValue;
     private List<List<ByteString>> nestedValue;
