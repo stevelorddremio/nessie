@@ -57,16 +57,6 @@ public class TestUpdateFunctionMultiple {
     }
 
     @Override
-    public ValueProtos.BaseValue getBase() {
-      return base;
-    }
-
-    @Override
-    public void setBase(ValueProtos.BaseValue base) {
-      this.base = base;
-    }
-
-    @Override
     public void evaluate(Function function) throws ConditionFailedException {
     }
 

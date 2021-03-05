@@ -76,7 +76,7 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
   @Override
   protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
     if (VALUE.equals(fieldName) && childPath == null) {
-      wrappedValueBuilder.setValue(newValue.getBinary());
+      builder.setValue(newValue.getBinary());
     } else {
       throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
     }
@@ -113,6 +113,6 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
   }
 
   ByteString getValue() {
-    return wrappedValueBuilder.getValue();
+    return builder.getValue();
   }
 }
