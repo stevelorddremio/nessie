@@ -21,12 +21,12 @@ import org.projectnessie.versioned.tiered.Value;
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.Value} providing
  * SerDe and Condition evaluation.
  *
- * Conceptually, this is matching the following JSON structure:
- * {
+ * <p>Conceptually, this is matching the following JSON structure:</p>
+ * <pre>{
  *   "id": &lt;ByteString&gt;,   // ID
  *   "dt": &lt;int64&gt;,        // DATETIME
  *   "value": &lt;ByteString&gt; // VALUE
- * }
+ * }</pre>
  */
 class RocksValue extends RocksWrappedValue<Value> implements Value {
   RocksValue() {

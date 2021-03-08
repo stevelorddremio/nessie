@@ -34,8 +34,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.Fragment} providing
  * SerDe and Condition evaluation.
  *
- * Conceptually, this is matching the following JSON structure:
- * {
+ * <p>Conceptually, this is matching the following JSON structure:</p>
+ * <pre>{
  *   "id": &lt;ByteString&gt;, // ID
  *   "dt": &lt;int64&gt;,      // DATETIME
  *   "keys": [                 // KEY_LIST
@@ -43,7 +43,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
  *       &lt;String&gt;
  *     ]
  *   ]
- * }
+ * }</pre>
  */
 class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   static final String KEY_LIST = "keys";
@@ -142,84 +142,91 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    if (KEY_LIST.equals(fieldName)) {
-      if (path.isPosition()) {
-        if (path.getChild().isPresent()) {
-          if (path.getChild().get().isPosition()) {
-            final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(path.asPosition().getPosition()).getElementsList());
-            updatedKeys.remove(path.getChild().get().asPosition().getPosition());
-            fragmentBuilder.setKeys(path.asPosition().getPosition(), ValueProtos.Key
-                .newBuilder()
-                .addAllElements(updatedKeys)
-            );
-          } else {
-            throw new UnsupportedOperationException("Invalid path for remove");
-          }
-        } else {
-          fragmentBuilder.removeKeys(path.asPosition().getPosition());
-        }
-      } else {
-        throw new UnsupportedOperationException("Invalid path for remove");
-      }
+    final PathPattern keyItemPath = new PathPattern().anyPosition();
+    final PathPattern keyInnerItemPath = new PathPattern().anyPosition().anyPosition();
+
+    if (keyItemPath.matches(path)) {
+      final int i = path.asPosition().getPosition();
+      fragmentBuilder.removeKeys(i);
+    } else if (keyInnerItemPath.matches(path)) {
+      final int outerIndex = path.asPosition().getPosition();
+      final int innerIndex = path.getChild().get().asPosition().getPosition();
+
+      final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(outerIndex).getElementsList());
+      updatedKeys.remove(innerIndex);
+
+      fragmentBuilder.setKeys(path.asPosition().getPosition(), ValueProtos.Key
+          .newBuilder()
+          .addAllElements(updatedKeys)
+      );
     } else {
-      throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
+      throw new UnsupportedOperationException("Invalid path for remove");
     }
   }
 
   @Override
   protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
-    return KEY_LIST.equals(fieldName);
+    if (!KEY_LIST.equals(fieldName)) {
+      return false;
+    }
+
+    return new PathPattern().matches(childPath) || new PathPattern().anyPosition().matches(childPath);
   }
 
   @Override
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    if (KEY_LIST.equals(fieldName)) {
-      if (childPath == null) {
-        fragmentBuilder.addAllKeys(valuesToAdd.stream().map(v -> ValueProtos.Key
-            .newBuilder()
-            .addAllElements(v.getList().stream().map(Entity::getString).collect(Collectors.toList()))
-            .build()
-        ).collect(Collectors.toList()));
-      } else if (childPath.isPosition()) {
-        fragmentBuilder.setKeys(childPath.asPosition().getPosition(), ValueProtos.Key
-            .newBuilder()
-            .addAllElements(fragmentBuilder.getKeys(childPath.asPosition().getPosition()).getElementsList())
-            .addAllElements(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()))
-        );
-      } else {
-        throw new UnsupportedOperationException("Invalid path for appending to \"keys\"");
-      }
+    final PathPattern keyPath = new PathPattern();
+    final PathPattern keyItemPath = new PathPattern().anyPosition();
+
+    if (keyPath.matches(childPath)) {
+      fragmentBuilder.addAllKeys(valuesToAdd.stream().map(v -> ValueProtos.Key
+          .newBuilder()
+          .addAllElements(v.getList().stream().map(Entity::getString).collect(Collectors.toList()))
+          .build()
+      ).collect(Collectors.toList()));
+    } else if (keyItemPath.matches(childPath)) {
+      final int i = childPath.asPosition().getPosition();
+
+      fragmentBuilder.setKeys(i, ValueProtos.Key
+          .newBuilder()
+          .addAllElements(fragmentBuilder.getKeys(i).getElementsList())
+          .addAllElements(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()))
+      );
     } else {
-      throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
+      throw new UnsupportedOperationException("Invalid path for append");
     }
   }
 
   @Override
   protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    if (KEY_LIST.equals(fieldName)) {
-      if (childPath.isPosition()) {
-        int index = childPath.asPosition().getPosition();
+    final PathPattern keyPath = new PathPattern();
+    final PathPattern keyItemPath = new PathPattern().anyPosition();
+    final PathPattern keyInnerItemPath = new PathPattern().anyPosition().anyPosition();
 
-        if (childPath.getChild().isPresent() && childPath.getChild().get().isPosition()) {
-          final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(index).getElementsList());
-          updatedKeys.set(childPath.getChild().get().asPosition().getPosition(), newValue.getString());
-          fragmentBuilder.setKeys(index, ValueProtos.Key
+    if (keyPath.matches(childPath)) {
+      fragmentBuilder.addAllKeys(newValue.getList()
+          .stream()
+          .map(keys -> ValueProtos.Key
               .newBuilder()
-              .addAllElements(updatedKeys)
-          );
-        } else if (!childPath.getChild().isPresent()) {
-          fragmentBuilder.setKeys(index, ValueProtos.Key
-              .newBuilder()
-              .addAllElements(newValue.getList().stream().map(Entity::getString).collect(Collectors.toList()))
-          );
-        } else {
-          throw new UnsupportedOperationException("Invalid path for set equals");
-        }
-      } else {
-        throw new UnsupportedOperationException("Invalid path for set equals");
-      }
+              .addAllElements(keys.getList().stream().map(Entity::getString).collect(Collectors.toList()))
+              .build())
+          .collect(Collectors.toList()));
+    } else if (keyItemPath.matches(childPath)) {
+      final int i = childPath.asPosition().getPosition();
+
+      fragmentBuilder.setKeys(i, ValueProtos.Key
+          .newBuilder()
+          .addAllElements(newValue.getList().stream().map(Entity::getString).collect(Collectors.toList())));
+    } else if (keyInnerItemPath.matches(childPath)) {
+      final int outerIndex = childPath.asPosition().getPosition();
+      final int innerIndex = childPath.getChild().get().asPosition().getPosition();
+
+      final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(outerIndex).getElementsList());
+      updatedKeys.remove(innerIndex);
+
+      fragmentBuilder.setKeys(outerIndex, ValueProtos.Key.newBuilder().addAllElements(updatedKeys));
     } else {
-      throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
+      throw new UnsupportedOperationException("Invalid path for set equals");
     }
   }
 }

@@ -36,6 +36,45 @@ import com.google.protobuf.InvalidProtocolBufferException;
 /**
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.Ref} providing
  * SerDe and Condition evaluation.
+ *
+ * <p>Conceptually, this is matching one of the following JSON structures:</p>
+ * <pre>{
+ *   "id": &lt;ByteString&gt;, // ID
+ *   "dt": &lt;int64&gt;,      // DATETIME
+ *   "name": &lt;String&gt;,   // NAME
+ *   "id": &lt;ByteString&gt;  // COMMIT
+ * }
+ *
+ * {
+ *   "id": &lt;ByteString&gt;,           // ID
+ *   "dt": &lt;int64&gt;,                // DATETIME
+ *   "commits": [                        // COMMITS
+ *     {
+ *       "id": &lt;ByteString&gt;,       // COMMITS_ID
+ *       "commit": &lt;ByteString&gt;,   // COMMITS_COMMIT
+ *       "parent": &lt;ByteString&gt;,   // COMMITS_PARENT
+ *       "deltas": [                     // COMMITS_DELTA
+ *         {
+ *           "position": &lt;int32&gt;,  // COMMITS_POSITION
+ *           "old": &lt;ByteString&gt;,  // COMMITS_OLD_ID
+ *           "new": &lt;ByteString&gt;,  // COMMITS_NEW_ID
+ *         }
+ *       ],
+ *       "keys": [                       // COMMITS_KEY_LIST
+ *         {
+ *           "mutationType": "a" or "b", // COMMITS_KEY_ADDITION or COMMITS_KEY_REMOVAL
+ *           "key": [
+ *             &lt;String&gt;
+ *           ]
+ *         }
+ *       ]
+ *     }
+ *   ],
+ *   "children": [                       // CHILDREN
+ *     &lt;ByteString&gt;
+ *   ],
+ *   "metadata": &lt;ByteString&gt;      // METADATA
+ * }</pre>
  */
 class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
