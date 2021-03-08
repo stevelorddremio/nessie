@@ -34,6 +34,15 @@ import com.google.protobuf.InvalidProtocolBufferException;
 /**
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.L2} providing
  * SerDe and Condition evaluation.
+ *
+ * Conceptually, this is matching the following JSON structure:
+ * {
+ *   "id": &lt;ByteString&gt;, // ID
+ *   "dt": &lt;int64&gt;,      // DATETIME
+ *   "tree": [                 // TREE
+ *     &lt;ByteString&gt;
+ *   ]
+ * }
  */
 class RocksL2 extends RocksBaseValue<L2> implements L2 {
   static final String TREE = "tree";

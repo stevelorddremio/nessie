@@ -34,6 +34,35 @@ import com.google.protobuf.InvalidProtocolBufferException;
 /**
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.L1} providing
  * SerDe and Condition evaluation.
+ *
+ * Conceptually, this is matching the following JSON structure:
+ * {
+ *   "id": &lt;ByteString&gt;,         // ID
+ *   "dt": &lt;int64&gt;,              // DATETIME
+ *   "metadataId": &lt;ByteString&gt;, // COMMIT_METADATA
+ *   "ancestors": [                    // ANCESTORS
+ *     &lt;ByteString&gt;
+ *   ],
+ *   "tree": [                         // TREE
+ *     &lt;ByteString&gt;
+ *   ],
+ *   "mutations": [                    // KEY_MUTATIONS
+ *     {
+ *       "MutationType": &lt;int&gt;,  // KEY_MUTATIONS_MUTATION_TYPE
+ *       "key": [                      // KEY_MUTATIONS_KEY
+ *         &lt;String&gt;
+ *       ]
+ *     }
+ *   ],
+ *   "origin": &lt;ByteString&gt;,     // CHECKPOINT_ID
+ *   "dist": &lt;int32&gt;,            // DISTANCE_FROM_CHECKPOINT
+ *   "fragments": [                    // COMPLETE_KEY_LIST
+ *     &lt;ByteString&gt;
+ *   ]
+ * }
+ *
+ * NOTE: Will either contain origin and dist, or it will fragments. Cannot contain all three
+ * fields.
  */
 class RocksL1 extends RocksBaseValue<L1> implements L1 {
 

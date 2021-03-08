@@ -33,6 +33,17 @@ import com.google.protobuf.InvalidProtocolBufferException;
 /**
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.Fragment} providing
  * SerDe and Condition evaluation.
+ *
+ * Conceptually, this is matching the following JSON structure:
+ * {
+ *   "id": &lt;ByteString&gt;, // ID
+ *   "dt": &lt;int64&gt;,      // DATETIME
+ *   "keys": [                 // KEY_LIST
+ *     [
+ *       &lt;String&gt;
+ *     ]
+ *   ]
+ * }
  */
 class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   static final String KEY_LIST = "keys";
