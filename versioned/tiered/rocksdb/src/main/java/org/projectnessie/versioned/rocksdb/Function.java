@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.projectnessie.versioned.rocksdb;
 
 import java.util.Objects;
@@ -23,7 +22,7 @@ import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.store.Entity;
 
 /**
- * A condition that is asserted against an entity.
+ * An expression that is asserted against an Entity.
  */
 @Immutable
 abstract class Function {
@@ -39,7 +38,7 @@ abstract class Function {
   }
 
   /**
-   * Compares for equality with a provided ConditionFunction object.
+   * Compares for equality with a provided Function object.
    * @param object  the object to compare
    * @return true if this is equal to provided object
    */
@@ -55,8 +54,8 @@ abstract class Function {
 
     final Function function = (Function) object;
     return (getOperator().equals(function.getOperator())
-      && getPath().equals(function.getPath())
-      && getValue().equals(function.getValue()));
+        && getPath().equals(function.getPath())
+        && getValue().equals(function.getValue()));
   }
 
   @Override
@@ -75,7 +74,7 @@ abstract class Function {
   }
 
   /**
-   * A utility to aid evaluation of the ConditionFunction in checking for equality on
+   * A utility to aid evaluation of the Function in checking for equality on
    * a leaf {@link org.projectnessie.versioned.impl.condition.ExpressionPath.NameSegment}.
    * @return true if both root nameSegment is childless and function has an equality operator
    */

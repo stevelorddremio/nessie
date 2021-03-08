@@ -54,7 +54,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   static final String COMMITS_KEY_ADDITION = "a";
   static final String COMMITS_KEY_REMOVAL = "d";
   static final String COMMIT = "commit";
-  static final String CHILDREN = "tree";
+  static final String CHILDREN = "children";
 
   private final ValueProtos.Ref.Builder refBuilder = ValueProtos.Ref.newBuilder();
 
@@ -610,7 +610,17 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
   @Override
   byte[] build() {
-    return refBuilder.build().toByteArray();
+    checkPresent(refBuilder.getName(), NAME);
+
+    if (refBuilder.hasTag()) {
+      checkPresent(refBuilder.getTag().getId(), COMMIT);
+    } else {
+      checkPresent(refBuilder.getBranch().getCommitsList(), COMMITS);
+      checkPresent(refBuilder.getBranch().getChildrenList(), CHILDREN);
+      checkPresent(refBuilder.getBranch().getMetadataId(), METADATA);
+    }
+
+    return refBuilder.setBase(buildBase()).build().toByteArray();
   }
 
   /**
