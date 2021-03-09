@@ -47,17 +47,9 @@ class EntityConverter {
           builder.setCommit(entry.getValue().getBinary());
           break;
         case RocksRef.COMMITS_DELTA:
-          if (!entry.getValue().getType().equals(Entity.EntityType.LIST)) {
-            throw new UnsupportedOperationException();
-          }
-
           entry.getValue().getList().forEach(e -> builder.addDelta(entityToDelta(e)));
           break;
         case RocksRef.COMMITS_KEY_LIST:
-          if (!entry.getValue().getType().equals(Entity.EntityType.LIST)) {
-            throw new UnsupportedOperationException();
-          }
-
           entry.getValue().getList().forEach(e -> builder.addKeyMutation(entityToKeyMutation(e)));
           break;
         default:
