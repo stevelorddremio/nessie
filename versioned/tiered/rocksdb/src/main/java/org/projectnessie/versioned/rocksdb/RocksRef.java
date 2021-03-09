@@ -17,7 +17,6 @@ package org.projectnessie.versioned.rocksdb;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -257,7 +256,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
         List<ValueProtos.Commit> updatedCommits = new ArrayList<>(refBuilder.getBranch().getCommitsList());
         // TODO: this needs to convert a MapEntity into a Commit object
-        updatedCommits.addAll(valuesToAdd.stream().map(e -> entityToCommit(e)).collect(Collectors.toList()));
+        updatedCommits.addAll(valuesToAdd.stream().map(e -> EntityConverter.entityToCommit(e)).collect(Collectors.toList()));
         refBuilder.setBranch(ValueProtos.Branch
             .newBuilder(refBuilder.getBranch())
             .clearCommits()
@@ -266,109 +265,6 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       default:
         throw new UnsupportedOperationException(String.format("\"%s\" is not a list", fieldName));
     }
-  }
-
-  /**
-   * This converts a complex Entity type into an existing Protobuf object type.
-   * @param entity the entity to convert
-   * @return the object converted from the entity
-   */
-  static ValueProtos.Commit entityToCommit(Entity entity) {
-    if (!entity.getType().equals(Entity.EntityType.MAP)) {
-      throw new UnsupportedOperationException();
-    }
-    ValueProtos.Commit.Builder builder = ValueProtos.Commit.newBuilder();
-
-    for (Map.Entry<String, Entity> level0 : entity.getMap().entrySet()) {
-      switch (level0.getKey()) {
-        case RocksRef.COMMITS_ID:
-          builder.setId(level0.getValue().getBinary());
-          break;
-        case RocksRef.COMMITS_PARENT:
-          builder.setParent(level0.getValue().getBinary());
-          break;
-        case RocksRef.COMMITS_COMMIT:
-          builder.setCommit(level0.getValue().getBinary());
-          break;
-        case RocksRef.COMMITS_DELTA:
-          if (!level0.getValue().getType().equals(Entity.EntityType.LIST)) {
-            throw new UnsupportedOperationException();
-          }
-          for (Entity level1 : level0.getValue().getList()) {
-            builder.addDelta(entityToDelta(level1));
-          }
-          break;
-        case RocksRef.COMMITS_KEY_LIST:
-          if (!level0.getValue().getType().equals(Entity.EntityType.LIST)) {
-            throw new UnsupportedOperationException();
-          }
-          for (Entity level1 : level0.getValue().getList()) {
-            builder.addKeyMutation(entityToKeyMutation(level1));
-          }
-          break;
-        default:
-          throw new UnsupportedOperationException();
-      }
-    }
-    return builder.build();
-  }
-
-  static ValueProtos.Delta entityToDelta(Entity entity) {
-    if (!entity.getType().equals(Entity.EntityType.MAP)) {
-      throw new UnsupportedOperationException();
-    }
-
-    ValueProtos.Delta.Builder builder = ValueProtos.Delta.newBuilder();
-
-    for (Map.Entry<String, Entity> level0 : entity.getMap().entrySet()) {
-      switch (level0.getKey()) {
-        case RocksRef.COMMITS_POSITION:
-          builder.setPosition((int) level0.getValue().getNumber());
-          break;
-        case RocksRef.COMMITS_OLD_ID:
-          builder.setOldId(level0.getValue().getBinary());
-          break;
-        case RocksRef.COMMITS_NEW_ID:
-          builder.setNewId(level0.getValue().getBinary());
-          break;
-        default:
-          throw new UnsupportedOperationException();
-      }
-    }
-    return builder.build();
-  }
-
-  static ValueProtos.KeyMutation entityToKeyMutation(Entity entity) {
-    if (!entity.getType().equals(Entity.EntityType.MAP)) {
-      throw new UnsupportedOperationException();
-    }
-
-    ValueProtos.KeyMutation.Builder builder = ValueProtos.KeyMutation.newBuilder();
-
-    for (Map.Entry<String, Entity> level0 : entity.getMap().entrySet()) {
-      switch (level0.getKey()) {
-        case RocksRef.COMMITS_KEY_ADDITION:
-          builder.setType(ValueProtos.KeyMutation.MutationType.ADDITION);
-          builder.setKey(entityToKey(level0.getValue()));
-          break;
-        case RocksRef.COMMITS_KEY_REMOVAL:
-          builder.setType(ValueProtos.KeyMutation.MutationType.REMOVAL);
-          builder.setKey(entityToKey(level0.getValue()));
-          break;
-        default:
-          throw new UnsupportedOperationException();
-      }
-    }
-    return builder.build();
-  }
-
-  static ValueProtos.Key entityToKey(Entity entity) {
-    if (!entity.getType().equals(Entity.EntityType.LIST)) {
-      throw new UnsupportedOperationException();
-    }
-
-    return ValueProtos.Key.newBuilder().addAllElements(
-        entity.getList().stream().map(Entity::getString).collect(Collectors.toList())).build();
   }
 
   @Override

@@ -142,13 +142,10 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    final PathPattern keyItemPath = new PathPattern().anyPosition();
-    final PathPattern keyInnerItemPath = new PathPattern().anyPosition().anyPosition();
-
-    if (keyItemPath.matches(path)) {
+    if (new PathPattern().anyPosition().matches(path)) {
       final int i = path.asPosition().getPosition();
       fragmentBuilder.removeKeys(i);
-    } else if (keyInnerItemPath.matches(path)) {
+    } else if (new PathPattern().anyPosition().anyPosition().matches(path)) {
       final int outerIndex = path.asPosition().getPosition();
       final int innerIndex = path.getChild().get().asPosition().getPosition();
 
@@ -175,16 +172,13 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    final PathPattern keyPath = new PathPattern();
-    final PathPattern keyItemPath = new PathPattern().anyPosition();
-
-    if (keyPath.matches(childPath)) {
+    if (new PathPattern().matches(childPath)) {
       fragmentBuilder.addAllKeys(valuesToAdd.stream().map(v -> ValueProtos.Key
           .newBuilder()
           .addAllElements(v.getList().stream().map(Entity::getString).collect(Collectors.toList()))
           .build()
       ).collect(Collectors.toList()));
-    } else if (keyItemPath.matches(childPath)) {
+    } else if (new PathPattern().anyPosition().matches(childPath)) {
       final int i = childPath.asPosition().getPosition();
 
       fragmentBuilder.setKeys(i, ValueProtos.Key
@@ -199,32 +193,21 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    final PathPattern keyPath = new PathPattern();
-    final PathPattern keyItemPath = new PathPattern().anyPosition();
-    final PathPattern keyInnerItemPath = new PathPattern().anyPosition().anyPosition();
-
-    if (keyPath.matches(childPath)) {
+    if (new PathPattern().matches(childPath)) {
       fragmentBuilder.addAllKeys(newValue.getList()
           .stream()
-          .map(keys -> ValueProtos.Key
-              .newBuilder()
-              .addAllElements(keys.getList().stream().map(Entity::getString).collect(Collectors.toList()))
-              .build())
+          .map(EntityConverter::entityToKey)
           .collect(Collectors.toList()));
-    } else if (keyItemPath.matches(childPath)) {
+    } else if (new PathPattern().anyPosition().matches(childPath)) {
       final int i = childPath.asPosition().getPosition();
-
-      fragmentBuilder.setKeys(i, ValueProtos.Key
-          .newBuilder()
-          .addAllElements(newValue.getList().stream().map(Entity::getString).collect(Collectors.toList())));
-    } else if (keyInnerItemPath.matches(childPath)) {
+      fragmentBuilder.setKeys(i, EntityConverter.entityToKey(newValue));
+    } else if (new PathPattern().anyPosition().anyPosition().matches(childPath)) {
       final int outerIndex = childPath.asPosition().getPosition();
       final int innerIndex = childPath.getChild().get().asPosition().getPosition();
 
-      final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(outerIndex).getElementsList());
-      updatedKeys.remove(innerIndex);
-
-      fragmentBuilder.setKeys(outerIndex, ValueProtos.Key.newBuilder().addAllElements(updatedKeys));
+      fragmentBuilder.setKeys(outerIndex, ValueProtos.Key
+          .newBuilder(fragmentBuilder.getKeys(outerIndex))
+          .setElements(innerIndex, newValue.getString()));
     } else {
       throw new UnsupportedOperationException("Invalid path for set equals");
     }

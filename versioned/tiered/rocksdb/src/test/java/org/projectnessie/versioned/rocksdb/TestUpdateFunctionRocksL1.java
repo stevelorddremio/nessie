@@ -359,18 +359,6 @@ public class TestUpdateFunctionRocksL1 extends TestUpdateFunctionBase {
   }
 
   @Test
-  void keyMutationsSetEqualsType() {
-    final UpdateExpression updateExpression =
-        UpdateExpression.of(SetClause.equals(ExpressionPath
-            .builder(RocksL1.KEY_MUTATIONS)
-            .position(0)
-            .name(RocksL1.KEY_MUTATIONS_MUTATION_TYPE)
-            .build(), Entity.ofNumber(ValueProtos.KeyMutation.MutationType.REMOVAL_VALUE)));
-    rocksL1.update(updateExpression);
-    Assertions.assertEquals(ValueProtos.KeyMutation.MutationType.REMOVAL_VALUE, rocksL1.getKeyMutationType(0));
-  }
-
-  @Test
   void keyMutationsSetEqualsKey() {
     final int index = 0;
     final UpdateExpression updateExpression =
