@@ -53,7 +53,7 @@ class EntityConverter {
           entry.getValue().getList().forEach(e -> builder.addKeyMutation(entityToKeyMutation(e)));
           break;
         default:
-          throw new UnsupportedOperationException(String.format("Unknown field \"%s\" for keyDelta", entry.getKey()));
+          throw new UnsupportedOperationException(String.format("Unknown field \"%s\" for commit", entry.getKey()));
       }
     }
     return builder.build();
