@@ -302,6 +302,18 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       case CHILDREN:
       case COMMITS:
         return true;
+      case COMMITS_KEY_LIST:
+        if (childPath == null || childPath.isPosition()) {
+          return true;
+        } else if (COMMITS_KEY_LIST_KEY.equals(childPath.asName().getName())) {
+          return !childPath.getChild().isPresent() || childPath.getChild().get().isPosition();
+        }
+        return false;
+      case COMMITS_DELTA:
+        if (childPath == null || childPath.isPosition()) {
+          return true;
+        }
+        return false;
       default:
         return false;
     }
@@ -374,7 +386,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(newValue.getBinary()));
         break;
       case COMMITS:
-        setCommits(childPath, newValue);
+        setCommits(childPath.getChild().get().asName().getName(), childPath, newValue);
         break;
       case COMMIT:
         if (!refBuilder.hasTag()) {
@@ -391,7 +403,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   // TODO: pass the fieldName in rather than calculate from the childPath, for consistency.
-  private void setCommits(ExpressionPath.PathSegment childPath, Entity newValue) {
+  private void setCommits(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
     if (!refBuilder.hasBranch() || childPath == null || !childPath.isPosition() || !childPath.getChild().isPresent()
         || !childPath.getChild().get().isName()) {
       throw new UnsupportedOperationException(String.format("Update not supported for %s", COMMITS));
@@ -399,7 +411,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
     final int commitsPosition = childPath.asPosition().getPosition();
 
-    switch (childPath.getChild().get().asName().getName()) {
+    switch (fieldName) {
       case COMMITS_ID:
         refBuilder.setBranch(
             ValueProtos.Branch.newBuilder(refBuilder.getBranch())
@@ -419,14 +431,17 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
                 ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setParent(newValue.getBinary())));
         break;
       case COMMITS_DELTA:
-        setDelta(childPath.getChild().get(), commitsPosition, newValue);
+        setDelta(childPath.getChild().get().getChild().get().getChild().get().asName().getName(),
+            childPath.getChild().get(), commitsPosition, newValue);
         break;
+      case COMMITS_KEY_LIST:
+        // TODO: set Keys. Take from RocksL1
       default:
         throw new UnsupportedOperationException();
     }
   }
 
-  private void setDelta(ExpressionPath.PathSegment childPath, int commitsPosition, Entity newValue) {
+  private void setDelta(String fieldName, ExpressionPath.PathSegment childPath, int commitsPosition, Entity newValue) {
     if (!childPath.getChild().isPresent() || !childPath.getChild().get().isPosition()) {
       throw new UnsupportedOperationException();
     }
@@ -436,7 +451,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     final ValueProtos.Delta.Builder deltaBuilder =
         ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition));
 
-    switch (childPath.getChild().get().getChild().get().asName().getName()) {
+    switch (fieldName) {
       case COMMITS_POSITION:
         setDelta(commitsPosition, deltaPosition, deltaBuilder.setPosition((int)newValue.getNumber()));
         break;

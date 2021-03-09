@@ -16,7 +16,9 @@
 
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -271,6 +273,35 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
       @Test
       void commitsAppendToList() {
+        final Map<String, Entity> deltaMap = new HashMap<String, Entity>();
+        deltaMap.put(RocksRef.COMMITS_POSITION, Entity.ofNumber(0));
+        deltaMap.put(RocksRef.COMMITS_OLD_ID, SampleEntities.createId(RANDOM).toEntity());
+        deltaMap.put(RocksRef.COMMITS_NEW_ID, SampleEntities.createId(RANDOM).toEntity());
+        Entity deltaList = Entity.ofList(Entity.ofMap(deltaMap));
+
+        final Entity keyListEntity1 = Entity.ofList(Entity.ofString("no"), Entity.ofString("hi"));
+        final Entity keyListEntity2 = Entity.ofList(Entity.ofString("go"), Entity.ofString("away"));
+        final Map<String, Entity> keyMap1 = new HashMap<>();
+        keyMap1.put(RocksRef.KEY_MUTATIONS_ADDITION, keyListEntity1);
+        final Map<String, Entity> keyMap2 = new HashMap<>();
+        keyMap2.put(RocksRef.KEY_MUTATIONS_REMOVAL, keyListEntity2);
+        final Entity keysList = Entity.ofList(Entity.ofMap(keyMap1), Entity.ofMap(keyMap2));
+
+        final Map<String, Entity> commitsMap = new HashMap<String, Entity>();
+        commitsMap.put(RocksBaseValue.ID, SampleEntities.createId(RANDOM).toEntity());
+        commitsMap.put(RocksRef.COMMIT, SampleEntities.createId(RANDOM).toEntity());
+        commitsMap.put(RocksRef.COMMITS_DELTA, deltaList);
+        commitsMap.put(RocksRef.COMMITS_KEY_LIST, keysList);
+
+        final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS).build(), Entity.ofMap(commitsMap)));
+        int initialCommitListSize = rocksRefBranch.getCommits().size();
+        rocksRefBranch.update(updateExpression);
+        Assertions.assertEquals(initialCommitListSize + 1, rocksRefBranch.getCommits().size());
+      }
+
+      @Test
+      void commitsAppendToListInvalidEntity() {
         final Id newId = SampleEntities.createId(RANDOM);
         final UpdateExpression updateExpression =
             UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS).build(), newId.toEntity()));
