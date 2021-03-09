@@ -92,7 +92,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   static final String COMMITS_KEY_ADDITION = "a";
   static final String COMMITS_KEY_REMOVAL = "d";
   static final String COMMIT = "commit";
-  static final String CHILDREN = "children";
+  static final String CHILDREN = "tree";
 
   private final ValueProtos.Ref.Builder refBuilder = ValueProtos.Ref.newBuilder();
 
@@ -165,14 +165,30 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
    */
   private void evaluateBranchCommits(Function function) {
     // TODO: refactor once jdbc-store Store changes are available.
-    if (function.getOperator().equals(Function.Operator.SIZE)) {
-      if (function.getRootPathAsNameSegment().getChild().isPresent()
-          || !refBuilder.hasBranch()
-          || refBuilder.getBranch().getCommitsCount() != function.getValue().getNumber()) {
+    if (!refBuilder.hasBranch()) {
+      throw new ConditionFailedException(conditionNotMatchedMessage(function));
+    }
+
+    switch (function.getOperator()) {
+      case SIZE:
+        if (function.getRootPathAsNameSegment().getChild().isPresent()
+            || refBuilder.getBranch().getCommitsCount() != function.getValue().getNumber()) {
+          throw new ConditionFailedException(conditionNotMatchedMessage(function));
+        }
+        break;
+      case EQUALS:
+        if (new PathPattern().nameEquals(COMMITS).anyPosition().nameEquals(COMMITS_ID).matches(function.getPath().getRoot())) {
+          final int i = function.getPath().getRoot().getChild().get().asPosition().getPosition();
+          if (refBuilder.getBranch().getCommitsCount() <= i
+              || !function.getValue().getBinary().equals(refBuilder.getBranch().getCommits(i).getId())) {
+            throw new ConditionFailedException(conditionNotMatchedMessage(function));
+          }
+        } else {
+          throw new ConditionFailedException(conditionNotMatchedMessage(function));
+        }
+        break;
+      default:
         throw new ConditionFailedException(conditionNotMatchedMessage(function));
-      }
-    } else {
-      throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
   }
 
@@ -207,16 +223,34 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         break;
       case COMMITS:
         // TODO: implement removal of commits.delta and commits.key_mutations, but for now do not fail.
-        if (!refBuilder.hasBranch() || path.getChild().isPresent()) {
+        if (!refBuilder.hasBranch()) {
           throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", fieldName));
         }
 
-        List<ValueProtos.Commit> updatedCommits = new ArrayList<>(refBuilder.getBranch().getCommitsList());
-        updatedCommits.remove(getPosition(path));
-        refBuilder.setBranch(ValueProtos.Branch
-            .newBuilder(refBuilder.getBranch())
-            .clearCommits()
-            .addAllCommits(updatedCommits));
+        if (new PathPattern().anyPosition().matches(path)) {
+          List<ValueProtos.Commit> updatedCommits = new ArrayList<>(refBuilder.getBranch().getCommitsList());
+          updatedCommits.remove(getPosition(path));
+          refBuilder.setBranch(ValueProtos.Branch
+              .newBuilder(refBuilder.getBranch())
+              .clearCommits()
+              .addAllCommits(updatedCommits));
+        } else if (new PathPattern().anyPosition().nameEquals(COMMITS_DELTA).matches(path)) {
+          final int i = getPosition(path);
+          refBuilder.setBranch(ValueProtos.Branch
+              .newBuilder(refBuilder.getBranch())
+              .setCommits(i, ValueProtos.Commit
+                .newBuilder(refBuilder.getBranch().getCommits(i))
+                .clearDelta()));
+        } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST).matches(path)) {
+          final int i = getPosition(path);
+          refBuilder.setBranch(ValueProtos.Branch
+              .newBuilder(refBuilder.getBranch())
+              .setCommits(i, ValueProtos.Commit
+                .newBuilder(refBuilder.getBranch().getCommits(i))
+                .clearKeyMutation()));
+        } else {
+          throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", fieldName));
+        }
         break;
       default:
         throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", fieldName));

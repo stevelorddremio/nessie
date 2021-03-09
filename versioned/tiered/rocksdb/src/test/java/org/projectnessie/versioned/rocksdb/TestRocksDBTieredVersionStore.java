@@ -17,13 +17,11 @@ package org.projectnessie.versioned.rocksdb;
 
 import java.nio.file.Path;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.io.TempDir;
 import org.projectnessie.versioned.impl.AbstractITTieredVersionStore;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled("RocksDBStore not fully implemented")
 class TestRocksDBTieredVersionStore extends AbstractITTieredVersionStore {
   @TempDir
   static Path DB_PATH;
