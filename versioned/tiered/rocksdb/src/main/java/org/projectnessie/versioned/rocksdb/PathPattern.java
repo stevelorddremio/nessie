@@ -44,16 +44,16 @@ import org.projectnessie.versioned.impl.condition.ExpressionPath;
  *   boolean matches = new PathPattern().nameEquals("foo").anyPosition().nameEquals("bar").anyPosition().matches(path);
  * </pre>
  */
-public class PathPattern {
-  private List<java.util.function.Function<ExpressionPath.PathSegment, Boolean>> pathPatternElements = new ArrayList<>();
+class PathPattern {
+  private final List<java.util.function.Function<ExpressionPath.PathSegment, Boolean>> pathPatternElements = new ArrayList<>();
 
   /**
    * Adds an exact name match path component.
    * @param name the name to match against
    * @return the object the pattern component is added to
    */
-  public PathPattern nameEquals(String name) {
-    pathPatternElements.add((p) -> p != null && p.isName() && name.equals(p.asName().getName()));
+  PathPattern nameEquals(String name) {
+    pathPatternElements.add((p) -> p.isName() && name.equals(p.asName().getName()));
     return this;
   }
 
@@ -61,8 +61,8 @@ public class PathPattern {
    * Adds an any name match path component.
    * @return the object the pattern component is added to
    */
-  public PathPattern anyName() {
-    pathPatternElements.add((p) -> p != null && p.isName());
+  PathPattern anyName() {
+    pathPatternElements.add(ExpressionPath.PathSegment::isName);
     return this;
   }
 
@@ -71,8 +71,8 @@ public class PathPattern {
    * @param position the position to match against
    * @return the object the pattern component is added to
    */
-  public PathPattern positionEquals(int position) {
-    pathPatternElements.add((p) -> p != null && p.isPosition() && position == p.asPosition().getPosition());
+  PathPattern positionEquals(int position) {
+    pathPatternElements.add((p) -> p.isPosition() && position == p.asPosition().getPosition());
     return this;
   }
 
@@ -80,8 +80,8 @@ public class PathPattern {
    * Adds an any position match path component.
    * @return the object the pattern component is added to
    */
-  public PathPattern anyPosition() {
-    pathPatternElements.add((p) -> p != null && p.isPosition());
+  PathPattern anyPosition() {
+    pathPatternElements.add(ExpressionPath.PathSegment::isPosition);
     return this;
   }
 
@@ -90,11 +90,9 @@ public class PathPattern {
    * @param path the path to test
    * @return true if the path matches
    */
-  public boolean matches(ExpressionPath.PathSegment path) {
+  boolean matches(ExpressionPath.PathSegment path) {
     for (java.util.function.Function<ExpressionPath.PathSegment, Boolean> pathPatternElement : pathPatternElements) {
-      if (!pathPatternElement.apply(path)) {
-        return false;
-      } else if (path == null) {
+      if (path == null || !pathPatternElement.apply(path)) {
         return false;
       }
 
