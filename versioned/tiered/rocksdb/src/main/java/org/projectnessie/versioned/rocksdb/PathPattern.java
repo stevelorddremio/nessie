@@ -21,29 +21,75 @@ import java.util.List;
 
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
 
-class PathPattern {
+/**
+ * Path patterns provide a simple way to verify that an expression path matches what is expected. All
+ * of the path will be matched against the pattern. An expression path consists of a sequence of name
+ * and position components. For example, you could have the path "foo[0]". This path has the following components:
+ * <ol>
+ *   <li>foo - a name</li>
+ *   <li>[0] - an index</li>
+ *   <li>bar - a name</li>
+ *   <li>[1] - an index</li>
+ * </ol>
+ * Path patterns support exact matching on parts of the path, and any matching. The following patterns all
+ * match the example path above.
+ * <ul>
+ *   <li>new PathPattern().anyName().anyPosition()</li>
+ *   <li>new PathPattern().anyName().positionEquals(0)</li>
+ *   <li>new PathPattern().nameEquals("foo").anyPosition()</li>
+ *   <li>new PathPattern().nameEquals("foo").positionEquals(0)</li>
+ * </ul>
+ * After building up a path pattern, you can test a path against it with the match method. ex.
+ * <pre>
+ *   boolean matches = new PathPattern().nameEquals("foo").anyPosition().nameEquals("bar").anyPosition().matches(path);
+ * </pre>
+ */
+public class PathPattern {
   private List<java.util.function.Function<ExpressionPath.PathSegment, Boolean>> pathPatternElements = new ArrayList<>();
 
+  /**
+   * Adds an exact name match path component.
+   * @param name the name to match against
+   * @return the object the pattern component is added to
+   */
   public PathPattern nameEquals(String name) {
     pathPatternElements.add((p) -> p != null && p.isName() && name.equals(p.asName().getName()));
     return this;
   }
 
+  /**
+   * Adds an any name match path component.
+   * @return the object the pattern component is added to
+   */
   public PathPattern anyName() {
     pathPatternElements.add((p) -> p != null && p.isName());
     return this;
   }
 
+  /**
+   * Adds an exact position match component.
+   * @param position the position to match against
+   * @return the object the pattern component is added to
+   */
   public PathPattern positionEquals(int position) {
     pathPatternElements.add((p) -> p != null && p.isPosition() && position == p.asPosition().getPosition());
     return this;
   }
 
+  /**
+   * Adds an any position match path component.
+   * @return the object the pattern component is added to
+   */
   public PathPattern anyPosition() {
     pathPatternElements.add((p) -> p != null && p.isPosition());
     return this;
   }
 
+  /**
+   * Tests a path to see if it matches the configured pattern.
+   * @param path the path to test
+   * @return true if the path matches
+   */
   public boolean matches(ExpressionPath.PathSegment path) {
     for (java.util.function.Function<ExpressionPath.PathSegment, Boolean> pathPatternElement : pathPatternElements) {
       if (!pathPatternElement.apply(path)) {

@@ -89,6 +89,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   static final String COMMITS_OLD_ID = "old";
   static final String COMMITS_NEW_ID = "new";
   static final String COMMITS_KEY_LIST = "keys";
+  static final String COMMITS_KEY_LIST_KEY = "key";
   static final String COMMITS_KEY_ADDITION = "a";
   static final String COMMITS_KEY_REMOVAL = "d";
   static final String COMMIT = "commit";
@@ -222,38 +223,76 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
             .addAllChildren(updatedChildren));
         break;
       case COMMITS:
-        // TODO: implement removal of commits.delta and commits.key_mutations, but for now do not fail.
-        if (!refBuilder.hasBranch()) {
-          throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", fieldName));
-        }
-
-        if (new PathPattern().anyPosition().matches(path)) {
-          List<ValueProtos.Commit> updatedCommits = new ArrayList<>(refBuilder.getBranch().getCommitsList());
-          updatedCommits.remove(getPosition(path));
-          refBuilder.setBranch(ValueProtos.Branch
-              .newBuilder(refBuilder.getBranch())
-              .clearCommits()
-              .addAllCommits(updatedCommits));
-        } else if (new PathPattern().anyPosition().nameEquals(COMMITS_DELTA).matches(path)) {
-          final int i = getPosition(path);
-          refBuilder.setBranch(ValueProtos.Branch
-              .newBuilder(refBuilder.getBranch())
-              .setCommits(i, ValueProtos.Commit
-                .newBuilder(refBuilder.getBranch().getCommits(i))
-                .clearDelta()));
-        } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST).matches(path)) {
-          final int i = getPosition(path);
-          refBuilder.setBranch(ValueProtos.Branch
-              .newBuilder(refBuilder.getBranch())
-              .setCommits(i, ValueProtos.Commit
-                .newBuilder(refBuilder.getBranch().getCommits(i))
-                .clearKeyMutation()));
-        } else {
-          throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", fieldName));
-        }
+        removesCommits(path);
         break;
       default:
         throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", fieldName));
+    }
+  }
+
+  private void removesCommits(ExpressionPath.PathSegment path) {
+    if (!refBuilder.hasBranch()) {
+      throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", COMMITS));
+    }
+
+    if (new PathPattern().anyPosition().matches(path)) {
+      List<ValueProtos.Commit> updatedCommits = new ArrayList<>(refBuilder.getBranch().getCommitsList());
+      updatedCommits.remove(getPosition(path));
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .clearCommits()
+          .addAllCommits(updatedCommits));
+    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_DELTA).matches(path)) {
+      final int i = getPosition(path);
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .setCommits(i, ValueProtos.Commit
+            .newBuilder(refBuilder.getBranch().getCommits(i))
+            .clearDelta()));
+    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_DELTA).anyPosition().matches(path)) {
+      final int commitIndex = getPosition(path);
+      final int deltaIndex = path.getChild().get().getChild().get().getChild().get().asPosition().getPosition();
+
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .setCommits(commitIndex, ValueProtos.Commit
+            .newBuilder(refBuilder.getBranch().getCommits(commitIndex))
+            .removeDelta(deltaIndex)));
+    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST).matches(path)) {
+      final int i = getPosition(path);
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .setCommits(i, ValueProtos.Commit
+            .newBuilder(refBuilder.getBranch().getCommits(i))
+            .clearKeyMutation()));
+    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST).anyPosition().matches(path)) {
+      final int commitIndex = getPosition(path);
+      final int keyMutationIndex = path.getChild().get().getChild().get().asPosition().getPosition();
+
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .setCommits(commitIndex, ValueProtos.Commit
+            .newBuilder(refBuilder.getBranch().getCommits(commitIndex))
+            .removeKeyMutation(keyMutationIndex)));
+    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST).anyPosition()
+        .nameEquals(COMMITS_KEY_LIST_KEY).anyPosition().matches(path)) {
+      final int commitIndex = path.asPosition().getPosition();
+      final int keyMutationIndex = path.getChild().get().getChild().get().asPosition().getPosition();
+      final int keyIndex = path.getChild().get().getChild().get().getChild().get().asPosition().getPosition();
+
+      final List<String> updateKeys = new ArrayList<>(refBuilder.getBranch().getCommits(commitIndex)
+          .getKeyMutation(keyMutationIndex).getKey().getElementsList());
+      updateKeys.remove(keyIndex);
+
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .setCommits(commitIndex, ValueProtos.Commit
+            .newBuilder(refBuilder.getBranch().getCommits(commitIndex))
+            .setKeyMutation(keyMutationIndex, ValueProtos.KeyMutation
+              .newBuilder(refBuilder.getBranch().getCommits(commitIndex).getKeyMutation(keyMutationIndex))
+              .setKey(ValueProtos.Key.newBuilder().addAllElements(updateKeys)))));
+    } else {
+      throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", COMMITS));
     }
   }
 
