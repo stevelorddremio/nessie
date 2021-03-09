@@ -68,7 +68,7 @@ public abstract class TestUpdateFunctionBase {
     try {
       rocksBaseValue.update(updateExpression);
       Assertions.fail("UnsupportedOperationException should have been thrown");
-    } catch (UnsupportedOperationException e) {
+    } catch (UnsupportedOperationException | IllegalStateException e) {
       // Expected result
     }
   }
