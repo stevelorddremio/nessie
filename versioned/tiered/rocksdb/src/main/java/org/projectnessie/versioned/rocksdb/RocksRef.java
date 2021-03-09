@@ -89,9 +89,9 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   static final String COMMITS_OLD_ID = "old";
   static final String COMMITS_NEW_ID = "new";
   static final String COMMITS_KEY_LIST = "keys";
-  static final String COMMITS_KEY_LIST_KEY = "key";
   static final String COMMITS_KEY_ADDITION = "a";
   static final String COMMITS_KEY_REMOVAL = "d";
+  static final String COMMITS_KEY_LIST_KEY = "key";
   static final String COMMIT = "commit";
   static final String CHILDREN = "tree";
 
@@ -386,7 +386,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(newValue.getBinary()));
         break;
       case COMMITS:
-        setCommits(childPath.getChild().get().asName().getName(), childPath, newValue);
+        setCommits(childPath, newValue);
         break;
       case COMMIT:
         if (!refBuilder.hasTag()) {
@@ -402,8 +402,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     }
   }
 
-  // TODO: pass the fieldName in rather than calculate from the childPath, for consistency.
-  private void setCommits(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
+  private void setCommits(ExpressionPath.PathSegment childPath, Entity newValue) {
     if (!refBuilder.hasBranch() || childPath == null || !childPath.isPosition() || !childPath.getChild().isPresent()
         || !childPath.getChild().get().isName()) {
       throw new UnsupportedOperationException(String.format("Update not supported for %s", COMMITS));
@@ -411,7 +410,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
     final int commitsPosition = childPath.asPosition().getPosition();
 
-    switch (fieldName) {
+    switch (childPath.getChild().get().asName().getName()) {
       case COMMITS_ID:
         refBuilder.setBranch(
             ValueProtos.Branch.newBuilder(refBuilder.getBranch())
@@ -719,17 +718,17 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     }
   }
 
-  Id getCommitsCommit(int index) {
+  Id getCommitsParent(int index) {
     if (refBuilder.hasBranch()) {
-      return Id.of(refBuilder.getBranch().getCommits(index).getCommit());
+      return Id.of(refBuilder.getBranch().getCommits(index).getParent());
     } else {
       return null;
     }
   }
 
-  Id getCommitsParent(int index) {
+  ValueProtos.Delta getCommitsDelta(int commitsPosition, int deltaPosition) {
     if (refBuilder.hasBranch()) {
-      return Id.of(refBuilder.getBranch().getCommits(index).getParent());
+      return refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition);
     } else {
       return null;
     }
