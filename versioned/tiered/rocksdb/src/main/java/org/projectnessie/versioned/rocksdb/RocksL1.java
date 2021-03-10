@@ -95,35 +95,30 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   public L1 ancestors(Stream<Id> ids) {
-    l1Builder
-        .clearAncestors()
-        .addAllAncestors(ids.map(Id::getValue).collect(Collectors.toList()));
+    l1Builder.clearAncestors();
+    ids.forEach(id -> l1Builder.addAncestors(id.getValue()));
     return this;
   }
 
   @Override
   public L1 children(Stream<Id> ids) {
-    l1Builder
-        .clearTree()
-        .addAllTree(ids.map(Id::getValue).collect(Collectors.toList()));
+    l1Builder.clearTree();
+    ids.forEach(id -> l1Builder.addTree(id.getValue()));
     return this;
   }
 
   @Override
   public L1 keyMutations(Stream<Key.Mutation> keyMutations) {
-    l1Builder
-        .clearKeyMutations()
-        .addAllKeyMutations(
-            keyMutations.map(km ->
-                ValueProtos.KeyMutation
-                    .newBuilder()
-                    .setTypeValue(km.getType().ordinal())
-                    .setKey(
-                        ValueProtos.Key.newBuilder().addAllElements(km.getKey().getElements()).build()
-                    )
-                    .build())
-            .collect(Collectors.toList())
-        );
+    l1Builder.clearKeyMutations();
+
+    keyMutations.forEach(km -> {
+      final ValueProtos.KeyMutation.Builder keyMutationBuilder = ValueProtos.KeyMutation.newBuilder();
+      keyMutationBuilder.setTypeValue(km.getType().ordinal());
+      keyMutationBuilder.setKey(ValueProtos.Key.newBuilder().addAllElements(km.getKey().getElements()));
+
+      l1Builder.addKeyMutations(keyMutationBuilder);
+    });
+
     return this;
   }
 
@@ -141,12 +136,9 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   public L1 completeKeyList(Stream<Id> fragmentIds) {
-    l1Builder.setCompleteList(
-        ValueProtos.CompleteList
-          .newBuilder()
-          .addAllFragmentIds(fragmentIds.map(Id::getValue).collect(Collectors.toList()))
-          .build()
-    );
+    final ValueProtos.CompleteList.Builder completeListBuilder = ValueProtos.CompleteList.newBuilder();
+    fragmentIds.forEach(id -> completeListBuilder.addFragmentIds(id.getValue()));
+    l1Builder.setCompleteList(completeListBuilder);
     return this;
   }
 
@@ -270,25 +262,27 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         if (childPath != null) {
           throw new UnsupportedOperationException("Invalid path for append");
         }
-        l1Builder.addAllAncestors(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+
+        valuesToAdd.forEach(e -> l1Builder.addAncestors(e.getBinary()));
         break;
       case TREE:
         if (childPath != null) {
           throw new UnsupportedOperationException("Invalid path for append");
         }
-        l1Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+
+        valuesToAdd.forEach(e -> l1Builder.addTree(e.getBinary()));
         break;
       case KEY_MUTATIONS:
         if (new PathPattern().matches(childPath)) {
-          l1Builder.addAllKeyMutations(valuesToAdd.stream().map(EntityConverter::entityToKeyMutation).collect(Collectors.toList()));
+          valuesToAdd.forEach(e -> l1Builder.addKeyMutations(EntityConverter.entityToKeyMutation(e)));
         } else if (new PathPattern().anyPosition().nameEquals(KEY_MUTATIONS_KEY).matches(childPath)) {
           final int i = childPath.asPosition().getPosition();
 
+          final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(l1Builder.getKeyMutations(i).getKey());
+          valuesToAdd.forEach(e -> keyBuilder.addElements(e.getString()));
           l1Builder.setKeyMutations(i, ValueProtos.KeyMutation
               .newBuilder(l1Builder.getKeyMutations(i))
-              .setKey(ValueProtos.Key
-                  .newBuilder(l1Builder.getKeyMutations(i).getKey())
-                  .addAllElements(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()))));
+              .setKey(keyBuilder));
         } else {
           throw new UnsupportedOperationException("Invalid path for append");
         }
@@ -299,7 +293,10 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         }
         List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
         updatedKeyList.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
-        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
+
+        final ValueProtos.CompleteList.Builder completeListBuilder = ValueProtos.CompleteList.newBuilder();
+        updatedKeyList.forEach(completeListBuilder::addFragmentIds);
+        l1Builder.setCompleteList(completeListBuilder);
         break;
       default:
         throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
@@ -313,14 +310,16 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
         if (childPath != null) {
           l1Builder.setAncestors(getPosition(childPath), newValue.getBinary());
         } else {
-          l1Builder.clearAncestors().addAllAncestors(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+          l1Builder.clearAncestors();
+          newValue.getList().forEach(e -> l1Builder.addAncestors(e.getBinary()));
         }
         break;
       case TREE:
         if (childPath != null) {
           l1Builder.setTree(getPosition(childPath), newValue.getBinary());
         } else {
-          l1Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+          l1Builder.clearTree();
+          newValue.getList().forEach(e -> l1Builder.addTree(e.getBinary()));
         }
         break;
       case KEY_MUTATIONS:
@@ -362,10 +361,8 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   private void setsKeyMutations(ExpressionPath.PathSegment childPath, Entity newValue) {
     if (new PathPattern().matches(childPath)) {
-      l1Builder.clearKeyMutations().addAllKeyMutations(newValue.getList()
-          .stream()
-          .map(EntityConverter::entityToKeyMutation)
-          .collect(Collectors.toList()));
+      l1Builder.clearKeyMutations();
+      newValue.getList().forEach(e -> l1Builder.addKeyMutations(EntityConverter.entityToKeyMutation(e)));
     } else if (new PathPattern().anyPosition().matches(childPath)) {
       final int i = childPath.asPosition().getPosition();
       l1Builder.setKeyMutations(i, EntityConverter.entityToKeyMutation(newValue));

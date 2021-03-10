@@ -55,9 +55,8 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   public L2 children(Stream<Id> ids) {
-    l2Builder
-        .clearTree()
-        .addAllTree(ids.map(Id::getValue).collect(Collectors.toList()));
+    l2Builder.clearTree();
+    ids.forEach(id -> l2Builder.addTree(id.getValue()));
     return this;
   }
 
@@ -83,7 +82,9 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
     if (TREE.equals(fieldName)) {
       List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
       updatedChildren.remove(getPosition(path));
-      l2Builder.clearTree().addAllTree(updatedChildren);
+
+      l2Builder.clearTree();
+      l2Builder.addAllTree(updatedChildren);
     } else {
       throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
     }
@@ -97,7 +98,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   @Override
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     if (TREE.equals(fieldName)) {
-      l2Builder.addAllTree(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+      valuesToAdd.forEach(e -> l2Builder.addTree(e.getBinary()));
     }
   }
 
@@ -107,7 +108,8 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
       if (childPath != null) {
         l2Builder.setTree(getPosition(childPath), newValue.getBinary());
       } else {
-        l2Builder.clearTree().addAllTree(newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList()));
+        l2Builder.clearTree();
+        newValue.getList().forEach(e -> l2Builder.addTree(e.getBinary()));
       }
     }
   }

@@ -121,12 +121,11 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   private List<Key> getKeys() {
     return fragmentBuilder.getKeysList()
       .stream()
-      .map(key ->
-        ImmutableKey
-          .builder()
-          .addAllElements(new ArrayList<>(key.getElementsList()))
-          .build()
-      )
+      .map(key -> {
+        final ImmutableKey.Builder keyBuilder = ImmutableKey.builder();
+        key.getElementsList().forEach(keyBuilder::addElements);
+        return keyBuilder.build();
+      })
       .collect(Collectors.toList());
   }
 
@@ -152,10 +151,10 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
       final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(outerIndex).getElementsList());
       updatedKeys.remove(innerIndex);
 
-      fragmentBuilder.setKeys(path.asPosition().getPosition(), ValueProtos.Key
-          .newBuilder()
-          .addAllElements(updatedKeys)
-      );
+      final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder();
+      updatedKeys.forEach(keyBuilder::addElements);
+
+      fragmentBuilder.setKeys(outerIndex, keyBuilder);
     } else {
       throw new UnsupportedOperationException("Invalid path for remove");
     }
@@ -173,19 +172,14 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   @Override
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     if (new PathPattern().matches(childPath)) {
-      fragmentBuilder.addAllKeys(valuesToAdd.stream().map(v -> ValueProtos.Key
-          .newBuilder()
-          .addAllElements(v.getList().stream().map(Entity::getString).collect(Collectors.toList()))
-          .build()
-      ).collect(Collectors.toList()));
+      valuesToAdd.forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
     } else if (new PathPattern().anyPosition().matches(childPath)) {
       final int i = childPath.asPosition().getPosition();
 
-      fragmentBuilder.setKeys(i, ValueProtos.Key
-          .newBuilder()
-          .addAllElements(fragmentBuilder.getKeys(i).getElementsList())
-          .addAllElements(valuesToAdd.stream().map(Entity::getString).collect(Collectors.toList()))
-      );
+      final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(fragmentBuilder.getKeys(i));
+      valuesToAdd.forEach(e -> keyBuilder.addElements(e.getString()));
+
+      fragmentBuilder.setKeys(i, keyBuilder);
     } else {
       throw new UnsupportedOperationException("Invalid path for append");
     }
@@ -194,10 +188,9 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   @Override
   protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
     if (new PathPattern().matches(childPath)) {
-      fragmentBuilder.addAllKeys(newValue.getList()
-          .stream()
-          .map(EntityConverter::entityToKey)
-          .collect(Collectors.toList()));
+      fragmentBuilder.clearKeys();
+
+      newValue.getList().forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
     } else if (new PathPattern().anyPosition().matches(childPath)) {
       final int i = childPath.asPosition().getPosition();
       fragmentBuilder.setKeys(i, EntityConverter.entityToKey(newValue));

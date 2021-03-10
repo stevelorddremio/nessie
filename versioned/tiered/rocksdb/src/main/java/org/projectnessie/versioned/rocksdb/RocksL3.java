@@ -58,20 +58,18 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
     super();
   }
 
-
   @Override
   public L3 keyDelta(Stream<KeyDelta> keyDelta) {
-    l3Builder
-        .clearKeyDelta()
-        .addAllKeyDelta(
-            keyDelta.map(kd -> ValueProtos.KeyDelta
-                .newBuilder()
-                .setKey(ValueProtos.Key.newBuilder().addAllElements(kd.getKey().getElements()).build())
-                .setId(kd.getId().getValue())
-                .build()
-            )
-            .collect(Collectors.toList())
-        );
+    l3Builder.clearKeyDelta();
+
+    keyDelta.forEach(kd -> {
+      final ValueProtos.KeyDelta.Builder keyDeltaBuilder = ValueProtos.KeyDelta.newBuilder();
+      keyDeltaBuilder.setId(kd.getId().getValue());
+      keyDeltaBuilder.setKey(ValueProtos.Key.newBuilder().addAllElements(kd.getKey().getElements()));
+
+      l3Builder.addKeyDelta(keyDeltaBuilder);
+    });
+
     return this;
   }
 
@@ -121,7 +119,7 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
     final PathPattern keyPattern = new PathPattern().anyPosition().nameEquals(TREE_KEY);
 
     if (treePattern.matches(childPath)) {
-      l3Builder.addAllKeyDelta(valuesToAdd.stream().map(EntityConverter::entityToKeyDelta).collect(Collectors.toList()));
+      valuesToAdd.forEach(e -> l3Builder.addKeyDelta(EntityConverter.entityToKeyDelta(e)));
     } else if (keyPattern.matches(childPath)) {
       final int treePosition = childPath.asPosition().getPosition();
       final ValueProtos.Key updatedKey = ValueProtos.Key
@@ -142,10 +140,8 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
     }
 
     if (new PathPattern().matches(childPath)) {
-      l3Builder.clearKeyDelta().addAllKeyDelta(newValue.getList()
-          .stream()
-          .map(EntityConverter::entityToKeyDelta)
-          .collect(Collectors.toList()));
+      l3Builder.clearKeyDelta();
+      newValue.getList().forEach(e -> l3Builder.addKeyDelta(EntityConverter.entityToKeyDelta(e)));
     } else if (new PathPattern().anyPosition().matches(childPath)) {
       l3Builder.setKeyDelta(childPath.asPosition().getPosition(), EntityConverter.entityToKeyDelta(newValue));
     } else if (new PathPattern().anyPosition().nameEquals(TREE_ID).matches(childPath)) {
@@ -157,25 +153,17 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
 
       l3Builder.setKeyDelta(i, ValueProtos.KeyDelta
           .newBuilder(l3Builder.getKeyDelta(i))
-          .setKey(ValueProtos.Key
-              .newBuilder()
-              .addAllElements(newValue.getList()
-                  .stream()
-                  .map(Entity::toString)
-                  .collect(Collectors.toList()))));
+          .setKey(EntityConverter.entityToKey(newValue)));
     } else if (new PathPattern().anyPosition().nameEquals(TREE_KEY).anyPosition().matches(childPath)) {
       final int keyDeltaIndex = childPath.asPosition().getPosition();
       final int keyIndex = childPath.getChild().get().getChild().get().getChild().get().asPosition().getPosition();
 
+      final List<String> updatedKeyValues = new ArrayList<>(l3Builder.getKeyDelta(keyDeltaIndex).getKey().getElementsList());
+      updatedKeyValues.set(keyIndex, newValue.getString());
+
       l3Builder.setKeyDelta(keyDeltaIndex, ValueProtos.KeyDelta
           .newBuilder(l3Builder.getKeyDelta(keyDeltaIndex))
-          .setKey(ValueProtos.Key
-              .newBuilder()
-              .addAllElements(newValue.getList()
-                  .stream()
-                  .map(Entity::toString)
-                  .collect(Collectors.toList()))
-              .setElements(keyIndex, newValue.getString())));
+          .setKey(ValueProtos.Key.newBuilder().addAllElements(updatedKeyValues)));
     } else {
       throw new UnsupportedOperationException("Invalid path for update");
     }

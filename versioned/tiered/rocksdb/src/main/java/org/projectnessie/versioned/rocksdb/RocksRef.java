@@ -310,31 +310,26 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   @Override
   protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
     switch (fieldName) {
-      case CHILDREN:
+      case CHILDREN: {
         if (!refBuilder.hasBranch() || childPath != null) {
           throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for tags", fieldName));
         }
 
-        List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
-        updatedChildren.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
-        refBuilder.setBranch(ValueProtos.Branch
-            .newBuilder(refBuilder.getBranch())
-            .clearChildren()
-            .addAllChildren(updatedChildren));
+        final ValueProtos.Branch.Builder branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch());
+        valuesToAdd.forEach(e -> branchBuilder.addChildren(e.getBinary()));
+        refBuilder.setBranch(branchBuilder);
         break;
-      case COMMITS:
+      }
+      case COMMITS: {
         if (!refBuilder.hasBranch() || childPath != null) {
           throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for tags", fieldName));
         }
 
-        List<ValueProtos.Commit> updatedCommits = new ArrayList<>(refBuilder.getBranch().getCommitsList());
-        // TODO: this needs to convert a MapEntity into a Commit object
-        updatedCommits.addAll(valuesToAdd.stream().map(e -> EntityConverter.entityToCommit(e)).collect(Collectors.toList()));
-        refBuilder.setBranch(ValueProtos.Branch
-            .newBuilder(refBuilder.getBranch())
-            .clearCommits()
-            .addAllCommits(updatedCommits));
+        final ValueProtos.Branch.Builder branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch());
+        valuesToAdd.forEach(e -> branchBuilder.addCommits(EntityConverter.entityToCommit(e)));
+        refBuilder.setBranch(branchBuilder);
         break;
+      }
       default:
         throw new UnsupportedOperationException(String.format("\"%s\" is not a list", fieldName));
     }
@@ -520,22 +515,16 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
 
     @Override
     public Branch children(Stream<Id> children) {
-      final List<ByteString> childList = children.map(Id::getValue).collect(Collectors.toList());
-
+      final ValueProtos.Branch.Builder branchBuilder;
       if (!refBuilder.hasBranch()) {
-        refBuilder.setBranch(
-            ValueProtos.Branch
-                .newBuilder()
-                .addAllChildren(childList)
-        );
+        branchBuilder = ValueProtos.Branch.newBuilder();
       } else {
-        refBuilder.setBranch(
-            ValueProtos.Branch
-                .newBuilder(refBuilder.getBranch())
-                .clearChildren()
-                .addAllChildren(childList)
-        );
+        branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch());
+        branchBuilder.clearChildren();
       }
+
+      children.forEach(id -> branchBuilder.addChildren(id.getValue()));
+      refBuilder.setBranch(branchBuilder);
 
       return this;
     }
