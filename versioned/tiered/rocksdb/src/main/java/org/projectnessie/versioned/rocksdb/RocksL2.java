@@ -84,6 +84,8 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
       List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
       updatedChildren.remove(getPosition(path));
       l2Builder.clearTree().addAllTree(updatedChildren);
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
     }
   }
 

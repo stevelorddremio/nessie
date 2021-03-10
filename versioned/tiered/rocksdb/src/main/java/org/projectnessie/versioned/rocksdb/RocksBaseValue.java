@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.projectnessie.versioned.Key;
@@ -181,10 +180,17 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    */
   @Override
   public void update(UpdateExpression updates) {
-    List<ExpressionPath.PathSegment> removedPaths = removeUnecessaryFunctions(updates.getClauses())
+    final List<UpdateFunction> updatesToApply = removeUnnecessaryFunctions(updates.getClauses());
+
+    updatesToApply
         .stream()
-        .map(this::updateWithFunction)
-        .filter(Objects::nonNull)
+        .filter(uf -> uf.getOperator() != UpdateFunction.Operator.REMOVE)
+        .forEach(this::updateWithFunction);
+
+    updatesToApply
+        .stream()
+        .filter(uf -> uf.getOperator() == UpdateFunction.Operator.REMOVE)
+        .map(uf -> uf.getPath().getRoot())
         .sorted(new Comparator<ExpressionPath.PathSegment>() {
           /* Sort the PathSegments as follows
            * names before positions
@@ -217,13 +223,9 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
               return 1;
             }
           }
-        }).collect(Collectors.toList());
-
-    for (ExpressionPath.PathSegment removedPath : removedPaths) {
-      if (removedPath.getChild().isPresent()) {
-        remove(removedPath.asName().getName(), removedPath.getChild().get());
-      }
-    }
+        }).forEach(rp -> {
+          remove(rp.asName().getName(), rp.getChild().orElse(null));
+        });
   }
 
   /**
@@ -241,7 +243,7 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    * @param updateClauses The list of UpdateClause objects to filter
    * @return A safe list of UpdateFunction objects to apply
    */
-  private List<UpdateFunction> removeUnecessaryFunctions(List<UpdateClause> updateClauses) {
+  private List<UpdateFunction> removeUnnecessaryFunctions(List<UpdateClause> updateClauses) {
     final List<UpdateFunction> updateFunctions = updateClauses
         .stream()
         .map(uc -> uc.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR))
@@ -335,7 +337,7 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    * @param updateFunction the update to apply to the implementing class.
    * @return The PathSegment that should be removed, or null
    */
-  private ExpressionPath.PathSegment updateWithFunction(UpdateFunction updateFunction) {
+  private void updateWithFunction(UpdateFunction updateFunction) {
     final ExpressionPath.NameSegment nameSegment = updateFunction.getRootPathAsNameSegment();
     final String segment = nameSegment.getName();
     final ExpressionPath.PathSegment childPath = nameSegment.getChild().orElse(null);
@@ -348,45 +350,49 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
           );
         }
 
-        return nameSegment;
+        return;
       case SET:
-        UpdateFunction.SetFunction setFunction = (UpdateFunction.SetFunction) updateFunction;
-        switch (setFunction.getSubOperator()) {
-          case APPEND_TO_LIST:
-            if (fieldIsList(segment, childPath)) {
-              if (setFunction.getValue().getType() == Entity.EntityType.LIST) {
-                appendToList(segment, childPath, setFunction.getValue().getList());
-              } else {
-                appendToList(segment, childPath, Collections.singletonList(setFunction.getValue()));
-              }
-            } else {
-              throw new UnsupportedOperationException(String.format("The append to list operation is not valid for \"%s\"", segment));
-            }
-            break;
-          case EQUALS:
-            if (fieldIsList(segment, childPath) && childPath != null && childPath.isPosition()) {
-              set(segment, childPath, setFunction.getValue());
-            } else if (fieldIsList(segment, childPath) != (setFunction.getValue().getType() == Entity.EntityType.LIST)) {
-              throw new UnsupportedOperationException(
-                String.format("The value for \"%s\" must be a list", updateFunction.getPath().asString())
-              );
-            } else if (ID.equals(segment)) {
-              id(Id.of(setFunction.getValue().getBinary()));
-            } else if (DATETIME.equals(segment)) {
-              dt(setFunction.getValue().getNumber());
-            } else {
-              set(segment, childPath, setFunction.getValue());
-            }
-            break;
-          default:
-            throw new UnsupportedOperationException(String.format("Unknown sub operation \"%s\"", setFunction.getSubOperator().name()));
-        }
+        updateWithSetFunction((UpdateFunction.SetFunction) updateFunction, segment, childPath);
         break;
       default:
         throw new UnsupportedOperationException(String.format("Unknown operation \"%s\"", updateFunction.getOperator()));
     }
+  }
 
-    return null;
+  private void updateWithSetFunction(UpdateFunction.SetFunction setFunction, String segment, ExpressionPath.PathSegment childPath) {
+    switch (setFunction.getSubOperator()) {
+      case APPEND_TO_LIST:
+        if (!fieldIsList(segment, childPath)) {
+          throw new UnsupportedOperationException(String.format("The append to list operation is not valid for \"%s\"", segment));
+        }
+
+        final List<Entity> valuesToAppend;
+        if (setFunction.getValue().getType() == Entity.EntityType.LIST) {
+          valuesToAppend = setFunction.getValue().getList();
+        } else {
+          valuesToAppend = Collections.singletonList(setFunction.getValue());
+        }
+
+        appendToList(segment, childPath, valuesToAppend);
+        break;
+      case EQUALS:
+        if (fieldIsList(segment, childPath) && childPath != null && childPath.isPosition()) {
+          set(segment, childPath, setFunction.getValue());
+        } else if (fieldIsList(segment, childPath) != (setFunction.getValue().getType() == Entity.EntityType.LIST)) {
+          throw new UnsupportedOperationException(
+            String.format("The value for \"%s\" must be a list", setFunction.getPath().asString())
+          );
+        } else if (ID.equals(segment)) {
+          id(Id.of(setFunction.getValue().getBinary()));
+        } else if (DATETIME.equals(segment)) {
+          dt(setFunction.getValue().getNumber());
+        } else {
+          set(segment, childPath, setFunction.getValue());
+        }
+        break;
+      default:
+        throw new UnsupportedOperationException(String.format("Unknown sub operation \"%s\"", setFunction.getSubOperator().name()));
+    }
   }
 
   protected int getPosition(ExpressionPath.PathSegment path) {
