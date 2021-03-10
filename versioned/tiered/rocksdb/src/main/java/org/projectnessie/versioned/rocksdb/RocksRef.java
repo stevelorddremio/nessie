@@ -403,40 +403,47 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   private void setCommits(ExpressionPath.PathSegment childPath, Entity newValue) {
-    if (!refBuilder.hasBranch() || childPath == null || !childPath.isPosition() || !childPath.getChild().isPresent()
-        || !childPath.getChild().get().isName()) {
+    if (!refBuilder.hasBranch() || childPath == null || !childPath.isPosition()) {
       throw new UnsupportedOperationException(String.format("Update not supported for %s", COMMITS));
     }
-
     final int commitsPosition = childPath.asPosition().getPosition();
 
-    switch (childPath.getChild().get().asName().getName()) {
-      case COMMITS_ID:
-        refBuilder.setBranch(
+    if (!childPath.getChild().isPresent()) {
+      // This is to update a complete commit.
+      refBuilder.setBranch(
+        ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+        .setCommits(commitsPosition,
+          ValueProtos.Commit.newBuilder(EntityConverter.entityToCommit(newValue))));
+    } else {
+      // This is to update part of a commit.
+      switch (childPath.getChild().get().asName().getName()) {
+        case COMMITS_ID:
+          refBuilder.setBranch(
             ValueProtos.Branch.newBuilder(refBuilder.getBranch())
               .setCommits(commitsPosition,
                 ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setId(newValue.getBinary())));
-        break;
-      case COMMITS_COMMIT:
-        refBuilder.setBranch(
+          break;
+        case COMMITS_COMMIT:
+          refBuilder.setBranch(
             ValueProtos.Branch.newBuilder(refBuilder.getBranch())
               .setCommits(commitsPosition,
                 ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setCommit(newValue.getBinary())));
-        break;
-      case COMMITS_PARENT:
-        refBuilder.setBranch(
+          break;
+        case COMMITS_PARENT:
+          refBuilder.setBranch(
             ValueProtos.Branch.newBuilder(refBuilder.getBranch())
               .setCommits(commitsPosition,
                 ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setParent(newValue.getBinary())));
-        break;
-      case COMMITS_DELTA:
-        setDelta(childPath.getChild().get().getChild().get().getChild().get().asName().getName(),
+          break;
+        case COMMITS_DELTA:
+          setDelta(childPath.getChild().get().getChild().get().getChild().get().asName().getName(),
             childPath.getChild().get(), commitsPosition, newValue);
-        break;
-      case COMMITS_KEY_LIST:
-        // TODO: set Keys. Take from RocksL1
-      default:
-        throw new UnsupportedOperationException();
+          break;
+        case COMMITS_KEY_LIST:
+          // TODO: set Keys. Take from RocksL1
+        default:
+          throw new UnsupportedOperationException();
+      }
     }
   }
 
