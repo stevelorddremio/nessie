@@ -19,7 +19,10 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.projectnessie.versioned.impl.condition.ExpressionFunction;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
+import org.projectnessie.versioned.impl.condition.ValueVisitor;
+import org.projectnessie.versioned.store.Entity;
 
 /**
  * Path patterns provide a simple way to verify that an expression path matches what is expected. All
@@ -44,8 +47,18 @@ import org.projectnessie.versioned.impl.condition.ExpressionPath;
  *   boolean matches = new PathPattern().nameEquals("foo").anyPosition().nameEquals("bar").anyPosition().matches(path);
  * </pre>
  */
-class PathPattern {
+class PathPattern implements ValueVisitor<Boolean> {
   private final List<java.util.function.Function<ExpressionPath.PathSegment, Boolean>> pathPatternElements = new ArrayList<>();
+
+  PathPattern() {}
+
+  PathPattern(String name) {
+    nameEquals(name);
+  }
+
+  PathPattern(int position) {
+    positionEquals(position);
+  }
 
   /**
    * Adds an exact name match path component.
@@ -86,19 +99,42 @@ class PathPattern {
   }
 
   /**
+   * Not supported.
+   * @param entity the Entity to visit.
+   * @return throws an UnsupportedOperationException
+   */
+  @Override
+  public Boolean visit(Entity entity) {
+    throw new UnsupportedOperationException("Entity objects are not supported by PathPattern.");
+  }
+
+  /**
+   * Not supported.
+   * @param value the ExpressionFunction to visit.
+   * @return throws an UnsupportedOperationException
+   */
+  @Override
+  public Boolean visit(ExpressionFunction value) {
+    throw new UnsupportedOperationException("ExpressionFunction objects are not supported by PathPattern.");
+  }
+
+  /**
    * Tests a path to see if it matches the configured pattern.
    * @param path the path to test
    * @return true if the path matches
    */
-  boolean matches(ExpressionPath.PathSegment path) {
+  @Override
+  public Boolean visit(ExpressionPath path) {
+    ExpressionPath.PathSegment currentNode = path.getRoot();
+
     for (java.util.function.Function<ExpressionPath.PathSegment, Boolean> pathPatternElement : pathPatternElements) {
-      if (path == null || !pathPatternElement.apply(path)) {
+      if (currentNode == null || !pathPatternElement.apply(currentNode)) {
         return false;
       }
 
-      path = path.getChild().orElse(null);
+      currentNode = currentNode.getChild().orElse(null);
     }
 
-    return path == null;
+    return currentNode == null;
   }
 }

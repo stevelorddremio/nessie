@@ -60,86 +60,60 @@ public class TestUpdateFunctionMultiple {
     }
 
     @Override
-    protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-      switch (fieldName) {
-        case LIST_VALUE:
-          listValue.remove(path.asPosition().getPosition());
-          break;
-        case NESTED_VALUE:
-          if (path.getChild().isPresent()) {
-            int innerIndex = path.getChild().get().asPosition().getPosition();
-            nestedValue.get(path.asPosition().getPosition()).remove(innerIndex);
-          } else {
-            nestedValue.remove(path.asPosition().getPosition());
-          }
-          break;
-        default:
-          break;
+    protected void remove(ExpressionPath path) {
+      if (path.accept(new PathPattern(LIST_VALUE).anyPosition())) {
+        listValue.remove(path.getRoot().getChild().get().asPosition().getPosition());
+      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition())) {
+        nestedValue.remove(path.getRoot().getChild().get().asPosition().getPosition());
+      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition().anyPosition())) {
+        int innerIndex = path.getRoot().getChild().get().getChild().get().asPosition().getPosition();
+        nestedValue.get(path.getRoot().getChild().get().asPosition().getPosition()).remove(innerIndex);
       }
     }
 
     @Override
-    protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
-      if (LIST_VALUE.equals(fieldName) && (childPath == null || childPath.isPosition())) {
-        return true;
-      } else if (NESTED_VALUE.equals(fieldName)) {
-        if (childPath == null || childPath.isPosition()
-            || (childPath.isName() && childPath.getChild().isPresent() && childPath.getChild().get().isPosition())) {
-          return true;
-        }
-      }
-
-      return false;
+    protected boolean fieldIsList(ExpressionPath path) {
+      return path.accept(new PathPattern(LIST_VALUE))
+          || path.accept(new PathPattern(NESTED_VALUE))
+          || path.accept(new PathPattern(NESTED_VALUE).anyPosition());
     }
 
     @Override
-    protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-      if (LIST_VALUE.equals(fieldName)) {
+    protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
+      if (path.accept(new PathPattern(LIST_VALUE))) {
         listValue.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
-      } else if (NESTED_VALUE.equals(fieldName)) {
-        if (childPath != null) {
-          nestedValue.get(childPath.asPosition().getPosition())
-              .addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
-        } else {
-          nestedValue.addAll(valuesToAdd.stream().map(v ->
-              v.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
-          ).collect(Collectors.toList()));
-        }
+      } else if (path.accept(new PathPattern(NESTED_VALUE))) {
+        nestedValue.addAll(valuesToAdd.stream().map(v ->
+            v.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
+        ).collect(Collectors.toList()));
+      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition())) {
+        nestedValue.get(getPathSegmentAsPosition(path, 1))
+            .addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
       }
     }
 
     @Override
-    protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-      switch (fieldName) {
-        case SCALAR_VALUE:
-          scalarValue = newValue.getString();
-          break;
-        case LIST_VALUE:
-          if (childPath == null) {
-            listValue = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
-          } else {
-            listValue.set(childPath.asPosition().getPosition(), newValue.getBinary());
-          }
-          break;
-        case NESTED_VALUE:
-          if (childPath == null) {
-            nestedValue = newValue.getList().stream().map(v ->
-              v.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
-            ).collect(Collectors.toList());
-          } else if (!childPath.getChild().isPresent()) {
-            nestedValue.set(
-                childPath.asPosition().getPosition(),
-                newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
-            );
-          } else {
-            nestedValue.get(childPath.asPosition().getPosition()).set(
-                childPath.getChild().get().asPosition().getPosition(),
-                newValue.getBinary()
-            );
-          }
-          break;
-        default:
-          break;
+    protected void set(ExpressionPath path, Entity newValue) {
+      if (path.accept(new PathPattern(SCALAR_VALUE))) {
+        scalarValue = newValue.getString();
+      } else if (path.accept(new PathPattern(LIST_VALUE))) {
+        listValue = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
+      } else if (path.accept(new PathPattern(LIST_VALUE).anyPosition())) {
+        listValue.set(getPathSegmentAsPosition(path, 1), newValue.getBinary());
+      } else if (path.accept(new PathPattern(NESTED_VALUE))) {
+        nestedValue = newValue.getList().stream().map(v ->
+            v.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
+        ).collect(Collectors.toList());
+      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition())) {
+        nestedValue.set(
+            getPathSegmentAsPosition(path, 1),
+            newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
+        );
+      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition().anyPosition())) {
+        nestedValue.get(getPathSegmentAsPosition(path, 1)).set(
+            getPathSegmentAsPosition(path, 2),
+            newValue.getBinary()
+        );
       }
     }
 

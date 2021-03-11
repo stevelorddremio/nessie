@@ -59,26 +59,26 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
   }
 
   @Override
-  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    throw new UnsupportedOperationException(String.format("Remove is not supported for \"%s\"", fieldName));
+  protected void remove(ExpressionPath path) {
+    throw new UnsupportedOperationException(String.format("Remove is not supported for \"%s\"", path.asString()));
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
+  protected boolean fieldIsList(ExpressionPath path) {
     return false;
   }
 
   @Override
-  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    throw new UnsupportedOperationException(String.format("Append to list is not supported for \"%s\"", fieldName));
+  protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
+    throw new UnsupportedOperationException(String.format("Append to list is not supported for \"%s\"", path.asString()));
   }
 
   @Override
-  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    if (VALUE.equals(fieldName) && childPath == null) {
+  protected void set(ExpressionPath path, Entity newValue) {
+    if (path.accept(new PathPattern(VALUE))) {
       builder.setValue(newValue.getBinary());
     } else {
-      throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals", path.asString()));
     }
   }
 

@@ -178,7 +178,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         }
         break;
       case EQUALS:
-        if (new PathPattern().nameEquals(COMMITS).anyPosition().nameEquals(COMMITS_ID).matches(function.getPath().getRoot())) {
+        if (function.getPath().accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_ID))) {
           final int i = function.getPath().getRoot().getChild().get().asPosition().getPosition();
           if (refBuilder.getBranch().getCommitsCount() <= i
               || !function.getValue().getBinary().equals(refBuilder.getBranch().getCommits(i).getId())) {
@@ -208,77 +208,69 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   @Override
-  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    switch (fieldName) {
-      case CHILDREN:
-        if (!refBuilder.hasBranch()) {
-          throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", fieldName));
-        }
+  protected void remove(ExpressionPath path) {
+    // tree[*]
+    if (path.accept(new PathPattern(CHILDREN).anyPosition())) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", path.asString()));
+      }
 
-        List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
-        updatedChildren.remove(getPosition(path));
-        refBuilder.setBranch(ValueProtos.Branch
-            .newBuilder(refBuilder.getBranch())
-            .clearChildren()
-            .addAllChildren(updatedChildren));
-        break;
-      case COMMITS:
-        removesCommits(path);
-        break;
-      default:
-        throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", fieldName));
-    }
-  }
-
-  private void removesCommits(ExpressionPath.PathSegment path) {
-    if (!refBuilder.hasBranch()) {
-      throw new UnsupportedOperationException(String.format("Remove \"%s\" is not supported for tags", COMMITS));
-    }
-
-    if (new PathPattern().anyPosition().matches(path)) {
+      List<ByteString> updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
+      updatedChildren.remove(getPathSegmentAsPosition(path, 1));
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .clearChildren()
+          .addAllChildren(updatedChildren));
+    // commits[*]
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition())) {
       List<ValueProtos.Commit> updatedCommits = new ArrayList<>(refBuilder.getBranch().getCommitsList());
-      updatedCommits.remove(getPosition(path));
+      updatedCommits.remove(getPathSegmentAsPosition(path, 1));
       refBuilder.setBranch(ValueProtos.Branch
           .newBuilder(refBuilder.getBranch())
           .clearCommits()
           .addAllCommits(updatedCommits));
-    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_DELTA).matches(path)) {
-      final int i = getPosition(path);
+    // commits[*]/deltas
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_DELTA))) {
+      final int i = getPathSegmentAsPosition(path, 1);
       refBuilder.setBranch(ValueProtos.Branch
           .newBuilder(refBuilder.getBranch())
           .setCommits(i, ValueProtos.Commit
             .newBuilder(refBuilder.getBranch().getCommits(i))
             .clearDelta()));
-    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_DELTA).anyPosition().matches(path)) {
-      final int commitIndex = getPosition(path);
-      final int deltaIndex = path.getChild().get().getChild().get().getChild().get().asPosition().getPosition();
+    // commits[*]/deltas[*]
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_DELTA).anyPosition())) {
+      final int commitIndex = getPathSegmentAsPosition(path, 1);
+      final int deltaIndex = getPathSegmentAsPosition(path, 3);
 
       refBuilder.setBranch(ValueProtos.Branch
           .newBuilder(refBuilder.getBranch())
           .setCommits(commitIndex, ValueProtos.Commit
             .newBuilder(refBuilder.getBranch().getCommits(commitIndex))
             .removeDelta(deltaIndex)));
-    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST).matches(path)) {
-      final int i = getPosition(path);
+    // commits[*]/keys
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_KEY_LIST))) {
+      final int i = getPathSegmentAsPosition(path, 1);
       refBuilder.setBranch(ValueProtos.Branch
           .newBuilder(refBuilder.getBranch())
           .setCommits(i, ValueProtos.Commit
             .newBuilder(refBuilder.getBranch().getCommits(i))
             .clearKeyMutation()));
-    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST).anyPosition().matches(path)) {
-      final int commitIndex = getPosition(path);
-      final int keyMutationIndex = path.getChild().get().getChild().get().asPosition().getPosition();
+    // commits[*]/keys[*]
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_KEY_LIST).anyPosition())) {
+      final int commitIndex = getPathSegmentAsPosition(path, 1);
+      final int keyMutationIndex = getPathSegmentAsPosition(path, 3);
 
       refBuilder.setBranch(ValueProtos.Branch
           .newBuilder(refBuilder.getBranch())
           .setCommits(commitIndex, ValueProtos.Commit
             .newBuilder(refBuilder.getBranch().getCommits(commitIndex))
             .removeKeyMutation(keyMutationIndex)));
-    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST).anyPosition()
-        .nameEquals(COMMITS_KEY_LIST_KEY).anyPosition().matches(path)) {
-      final int commitIndex = path.asPosition().getPosition();
-      final int keyMutationIndex = path.getChild().get().getChild().get().asPosition().getPosition();
-      final int keyIndex = path.getChild().get().getChild().get().getChild().get().asPosition().getPosition();
+    // commits[*]/keys[*]/key[*]
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_KEY_LIST)
+        .anyPosition().nameEquals(COMMITS_KEY_LIST_KEY).anyPosition())) {
+      final int commitIndex = getPathSegmentAsPosition(path, 1);
+      final int keyMutationIndex = getPathSegmentAsPosition(path, 3);
+      final int keyIndex = getPathSegmentAsPosition(path, 5);
 
       final List<String> updateKeys = new ArrayList<>(refBuilder.getBranch().getCommits(commitIndex)
           .getKeyMutation(keyMutationIndex).getKey().getElementsList());
@@ -292,165 +284,144 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
               .newBuilder(refBuilder.getBranch().getCommits(commitIndex).getKeyMutation(keyMutationIndex))
               .setKey(ValueProtos.Key.newBuilder().addAllElements(updateKeys)))));
     } else {
-      throw new UnsupportedOperationException(String.format("Remove not supported for \"%s\"", COMMITS));
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for remove in Ref", path.asString()));
     }
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
-    switch (fieldName) {
-      case CHILDREN:
-      case COMMITS:
-        return true;
-      default:
-        return false;
-    }
+  protected boolean fieldIsList(ExpressionPath path) {
+    return path.accept(new PathPattern(CHILDREN))
+        || path.accept(new PathPattern(COMMITS))
+        || path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_DELTA))
+        || path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_KEY_LIST))
+        || path.accept(new PathPattern(COMMITS).anyPosition()
+            .nameEquals(COMMITS_KEY_LIST).anyPosition().nameEquals(COMMITS_KEY_LIST_KEY));
   }
 
   @Override
-  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    switch (fieldName) {
-      case CHILDREN: {
-        if (!refBuilder.hasBranch() || childPath != null) {
-          throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for tags", fieldName));
-        }
-
-        final ValueProtos.Branch.Builder branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch());
-        valuesToAdd.forEach(e -> branchBuilder.addChildren(e.getBinary()));
-        refBuilder.setBranch(branchBuilder);
-        break;
+  protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
+    if (path.accept(new PathPattern(CHILDREN))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for tags", CHILDREN));
       }
-      case COMMITS: {
-        if (!refBuilder.hasBranch() || childPath != null) {
-          throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for tags", fieldName));
-        }
 
-        final ValueProtos.Branch.Builder branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch());
-        valuesToAdd.forEach(e -> branchBuilder.addCommits(EntityConverter.entityToCommit(e)));
-        refBuilder.setBranch(branchBuilder);
-        break;
+      final ValueProtos.Branch.Builder branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch());
+      valuesToAdd.forEach(e -> branchBuilder.addChildren(e.getBinary()));
+      refBuilder.setBranch(branchBuilder);
+    } else if (path.accept(new PathPattern(COMMITS))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for tags", COMMITS));
       }
-      default:
-        throw new UnsupportedOperationException(String.format("\"%s\" is not a list", fieldName));
+
+      final ValueProtos.Branch.Builder branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch());
+      valuesToAdd.forEach(e -> branchBuilder.addCommits(EntityConverter.entityToCommit(e)));
+      refBuilder.setBranch(branchBuilder);
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for append in L1", path.asString()));
     }
   }
 
   @Override
-  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    switch (fieldName) {
-      case NAME:
-        if (childPath != null) {
-          throw new UnsupportedOperationException("Invalid path for SetEquals");
-        }
+  protected void set(ExpressionPath path, Entity newValue) {
+    if (path.accept(new PathPattern(NAME))) {
+      refBuilder.setName(newValue.getString());
+    } else if (path.accept(new PathPattern(CHILDREN))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
 
-        refBuilder.setName(newValue.getString());
-        break;
-      case CHILDREN:
-        if (!refBuilder.hasBranch()) {
-          throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", fieldName));
-        }
+      final ValueProtos.Branch.Builder branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch()).clearChildren();
+      newValue.getList().forEach(e -> branchBuilder.addChildren(e.getBinary()));
+      refBuilder.setBranch(branchBuilder);
+    } else if (path.accept(new PathPattern(CHILDREN).anyPosition())) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
 
-        final List<ByteString> updatedChildren;
-        if (childPath != null) {
-          updatedChildren = new ArrayList<>(refBuilder.getBranch().getChildrenList());
-          updatedChildren.set(getPosition(childPath), newValue.getBinary());
-        } else {
-          updatedChildren = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
-        }
+      final int i = getPathSegmentAsPosition(path, 1);
+      final ValueProtos.Branch.Builder branchBuilder = ValueProtos.Branch.newBuilder(refBuilder.getBranch());
+      branchBuilder.setChildren(i, newValue.getBinary());
+      refBuilder.setBranch(branchBuilder);
+    } else if (path.accept(new PathPattern(METADATA))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
 
-        refBuilder.setBranch(ValueProtos.Branch
-            .newBuilder(refBuilder.getBranch())
-            .clearChildren()
-            .addAllChildren(updatedChildren)
-        );
-        break;
-      case METADATA:
-        if (!refBuilder.hasBranch()) {
-          throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", fieldName));
-        } else if (childPath != null) {
-          throw new UnsupportedOperationException("Invalid path for SetEquals");
-        }
+      refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(newValue.getBinary()));
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_ID))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
 
-        refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setMetadataId(newValue.getBinary()));
-        break;
-      case COMMITS:
-        setCommits(childPath, newValue);
-        break;
-      case COMMIT:
-        if (!refBuilder.hasTag()) {
-          throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for branches", fieldName));
-        } else if (childPath != null) {
-          throw new UnsupportedOperationException("Invalid path for SetEquals");
-        }
+      final int i = getPathSegmentAsPosition(path, 1);
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .setCommits(i, ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(i)).setId(newValue.getBinary())));
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_COMMIT))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
 
-        refBuilder.setTag(ValueProtos.Tag.newBuilder(refBuilder.getTag()).setId(newValue.getBinary()));
-        break;
-      default:
-        throw new UnsupportedOperationException(String.format("Unknown field \"%s\"", fieldName));
+      final int i = getPathSegmentAsPosition(path, 1);
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .setCommits(i, ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(i)).setCommit(newValue.getBinary())));
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition().nameEquals(COMMITS_PARENT))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
+
+      final int i = getPathSegmentAsPosition(path, 1);
+      refBuilder.setBranch(ValueProtos.Branch
+          .newBuilder(refBuilder.getBranch())
+          .setCommits(i, ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(i)).setParent(newValue.getBinary())));
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition()
+        .nameEquals(COMMITS_DELTA).anyPosition().nameEquals(COMMITS_POSITION))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
+
+      final int commitsPosition = getPathSegmentAsPosition(path, 1);
+      final int deltaPosition = getPathSegmentAsPosition(path, 3);
+      final ValueProtos.Delta.Builder deltaBuilder = ValueProtos.Delta
+          .newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition));
+
+      setDelta(commitsPosition, deltaPosition, deltaBuilder.setPosition((int)newValue.getNumber()));
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition()
+        .nameEquals(COMMITS_DELTA).anyPosition().nameEquals(COMMITS_OLD_ID))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
+
+      final int commitsPosition = getPathSegmentAsPosition(path, 1);
+      final int deltaPosition = getPathSegmentAsPosition(path, 3);
+      final ValueProtos.Delta.Builder deltaBuilder = ValueProtos.Delta
+          .newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition));
+
+      setDelta(commitsPosition, deltaPosition, deltaBuilder.setOldId(newValue.getBinary()));
+    } else if (path.accept(new PathPattern(COMMITS).anyPosition()
+        .nameEquals(COMMITS_DELTA).anyPosition().nameEquals(COMMITS_NEW_ID))) {
+      if (!refBuilder.hasBranch()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for tags", path.asString()));
+      }
+
+      final int commitsPosition = getPathSegmentAsPosition(path, 1);
+      final int deltaPosition = getPathSegmentAsPosition(path, 3);
+      final ValueProtos.Delta.Builder deltaBuilder = ValueProtos.Delta
+          .newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition));
+
+      setDelta(commitsPosition, deltaPosition, deltaBuilder.setNewId(newValue.getBinary()));
+    } else if (path.accept(new PathPattern(COMMIT))) {
+      if (!refBuilder.hasTag()) {
+        throw new UnsupportedOperationException(String.format("Cannot set \"%s\" for branches", path.asString()));
+      }
+
+      refBuilder.setTag(ValueProtos.Tag.newBuilder(refBuilder.getTag()).setId(newValue.getBinary()));
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in Ref", path.asString()));
     }
   }
 
-  // TODO: pass the fieldName in rather than calculate from the childPath, for consistency.
-  private void setCommits(ExpressionPath.PathSegment childPath, Entity newValue) {
-    if (!refBuilder.hasBranch() || childPath == null || !childPath.isPosition() || !childPath.getChild().isPresent()
-        || !childPath.getChild().get().isName()) {
-      throw new UnsupportedOperationException(String.format("Update not supported for %s", COMMITS));
-    }
-
-    final int commitsPosition = childPath.asPosition().getPosition();
-
-    switch (childPath.getChild().get().asName().getName()) {
-      case COMMITS_ID:
-        refBuilder.setBranch(
-            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-              .setCommits(commitsPosition,
-                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setId(newValue.getBinary())));
-        break;
-      case COMMITS_COMMIT:
-        refBuilder.setBranch(
-            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-              .setCommits(commitsPosition,
-                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setCommit(newValue.getBinary())));
-        break;
-      case COMMITS_PARENT:
-        refBuilder.setBranch(
-            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-              .setCommits(commitsPosition,
-                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setParent(newValue.getBinary())));
-        break;
-      case COMMITS_DELTA:
-        setDelta(childPath.getChild().get(), commitsPosition, newValue);
-        break;
-      default:
-        throw new UnsupportedOperationException();
-    }
-  }
-
-  private void setDelta(ExpressionPath.PathSegment childPath, int commitsPosition, Entity newValue) {
-    if (!childPath.getChild().isPresent() || !childPath.getChild().get().isPosition()) {
-      throw new UnsupportedOperationException();
-    }
-
-    final int deltaPosition = childPath.getChild().get().asPosition().getPosition();
-
-    final ValueProtos.Delta.Builder deltaBuilder =
-        ValueProtos.Delta.newBuilder(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList().get(deltaPosition));
-
-    switch (childPath.getChild().get().getChild().get().asName().getName()) {
-      case COMMITS_POSITION:
-        setDelta(commitsPosition, deltaPosition, deltaBuilder.setPosition((int)newValue.getNumber()));
-        break;
-      case COMMITS_OLD_ID:
-        setDelta(commitsPosition, deltaPosition, deltaBuilder.setOldId(newValue.getBinary()));
-        break;
-      case COMMITS_NEW_ID:
-        setDelta(commitsPosition, deltaPosition, deltaBuilder.setNewId(newValue.getBinary()));
-        break;
-      default:
-        throw new UnsupportedOperationException();
-    }
-  }
-  
   private void setDelta(int commitsPosition, int deltaPosition, ValueProtos.Delta.Builder deltaBuilder) {
     refBuilder.setBranch(
         ValueProtos.Branch.newBuilder(refBuilder.getBranch())

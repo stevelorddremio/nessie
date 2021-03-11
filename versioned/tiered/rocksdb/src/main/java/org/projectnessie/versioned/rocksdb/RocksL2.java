@@ -78,39 +78,41 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   }
 
   @Override
-  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    if (TREE.equals(fieldName)) {
+  protected void remove(ExpressionPath path) {
+    if (path.accept(new PathPattern(TREE).anyPosition())) {
       List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
-      updatedChildren.remove(getPosition(path));
+      updatedChildren.remove(getPathSegmentAsPosition(path, 1));
 
       l2Builder.clearTree();
       l2Builder.addAllTree(updatedChildren);
     } else {
-      throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for remove in L2", path.asString()));
     }
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
-    return TREE.equals(fieldName) && childPath == null;
+  protected boolean fieldIsList(ExpressionPath path) {
+    return path.accept(new PathPattern(TREE));
   }
 
   @Override
-  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    if (TREE.equals(fieldName)) {
+  protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
+    if (path.accept(new PathPattern(TREE))) {
       valuesToAdd.forEach(e -> l2Builder.addTree(e.getBinary()));
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for append in L2", path.asString()));
     }
   }
 
   @Override
-  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    if (TREE.equals(fieldName)) {
-      if (childPath != null) {
-        l2Builder.setTree(getPosition(childPath), newValue.getBinary());
-      } else {
-        l2Builder.clearTree();
-        newValue.getList().forEach(e -> l2Builder.addTree(e.getBinary()));
-      }
+  protected void set(ExpressionPath path, Entity newValue) {
+    if (path.accept(new PathPattern(TREE))) {
+      l2Builder.clearTree();
+      newValue.getList().forEach(e -> l2Builder.addTree(e.getBinary()));
+    } else if (path.accept(new PathPattern(TREE).anyPosition())) {
+      l2Builder.setTree(getPathSegmentAsPosition(path, 1), newValue.getBinary());
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in L2", path.asString()));
     }
   }
 
