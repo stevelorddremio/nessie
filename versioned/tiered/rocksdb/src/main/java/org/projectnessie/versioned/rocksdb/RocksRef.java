@@ -478,7 +478,8 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
           setDelta(childPath.getChild().get(), commitsPosition, newValue);
           break;
         case COMMITS_KEY_LIST:
-          // TODO: set Keys. Take from RocksL1
+          setKeyMutations(childPath.getChild().get().getChild().get(), commitsPosition, newValue);
+          break;
         default:
           throw new UnsupportedOperationException();
       }
@@ -527,6 +528,41 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
           .setCommits(commitsPosition,
             ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
               .setDelta(deltaPosition, deltaBuilder)));
+  }
+
+  private void setKeyMutations(ExpressionPath.PathSegment childPath, int commitPosition, Entity newValue) {
+    if (new PathPattern().matches(childPath)) {
+      ValueProtos.Commit.Builder commitBuilder = ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitPosition))
+        .clearKeyMutation();
+      newValue.getList().forEach(e -> commitBuilder.addKeyMutation(EntityConverter.entityToKeyMutation(e)));
+      refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setCommits(commitPosition,commitBuilder));
+    } else if (new PathPattern().anyPosition().matches(childPath)) {
+      final int keyMutationsIndex = childPath.asPosition().getPosition();
+      ValueProtos.Commit.Builder commitBuilder = ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitPosition));
+      commitBuilder.setKeyMutation(keyMutationsIndex, EntityConverter.entityToKeyMutation(newValue));
+      refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setCommits(commitPosition,commitBuilder));
+    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST_KEY).matches(childPath)) {
+      final int keyMutationsIndex = childPath.asPosition().getPosition();
+      ValueProtos.Commit.Builder commitBuilder = ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitPosition));
+
+      commitBuilder.setKeyMutation(keyMutationsIndex, ValueProtos.KeyMutation
+        .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex))
+        .setKey(EntityConverter.entityToKey(newValue)));
+      refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setCommits(commitPosition,commitBuilder));
+    } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST_KEY).anyPosition().matches(childPath)) {
+      final int keyMutationsIndex = childPath.asPosition().getPosition();
+      final int keyIndex = childPath.getChild().get().getChild().get().asPosition().getPosition();
+      ValueProtos.Commit.Builder commitBuilder = ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitPosition));
+
+      commitBuilder.setKeyMutation(keyMutationsIndex, ValueProtos.KeyMutation
+        .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex))
+        .setKey(ValueProtos.Key
+          .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex).getKey())
+          .setElements(keyIndex, newValue.getString())));
+      refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setCommits(commitPosition,commitBuilder));
+    } else {
+      throw new UnsupportedOperationException("Invalid path for SetEquals");
+    }
   }
 
   @Override
