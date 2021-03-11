@@ -80,7 +80,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   @Override
   protected void remove(ExpressionPath path) {
     if (path.accept(PathPattern.exact(TREE).anyPosition())) {
-      List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
+      final List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
       updatedChildren.remove(getPathSegmentAsPosition(path, 1));
 
       l2Builder.clearTree();
