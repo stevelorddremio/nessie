@@ -47,6 +47,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
  */
 class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   static final String KEY_LIST = "keys";
+  static final PathPattern KEY_LIST_EXACT = PathPattern.exact(KEY_LIST);
+  static final PathPattern KEY_LIST_INDEX_EXACT = PathPattern.exact(KEY_LIST).anyPosition();
+  static final PathPattern KEY_LIST_INNER_INDEX_EXACT = PathPattern.exact(KEY_LIST).anyPosition().anyPosition();
 
   private final ValueProtos.Fragment.Builder fragmentBuilder = ValueProtos.Fragment.newBuilder();
 
@@ -142,11 +145,11 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   @Override
   protected void remove(ExpressionPath path) {
     // keys[*]
-    if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
+    if (path.accept(KEY_LIST_INDEX_EXACT)) {
       final int i = getPathSegmentAsPosition(path, 1);
       fragmentBuilder.removeKeys(i);
     // keys[*][*]
-    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition().anyPosition())) {
+    } else if (path.accept(KEY_LIST_INNER_INDEX_EXACT)) {
       final int outerIndex = getPathSegmentAsPosition(path, 1);
       final int innerIndex = getPathSegmentAsPosition(path, 2);
 
@@ -164,9 +167,9 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
-    if (path.accept(PathPattern.exact(KEY_LIST))) {
+    if (path.accept(KEY_LIST_EXACT)) {
       valuesToAdd.forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
-    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
+    } else if (path.accept(KEY_LIST_INDEX_EXACT)) {
       final int i = getPathSegmentAsPosition(path, 1);
 
       final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(fragmentBuilder.getKeys(i));
@@ -180,13 +183,13 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void set(ExpressionPath path, Entity newValue) {
-    if (path.accept(PathPattern.exact(KEY_LIST))) {
+    if (path.accept(KEY_LIST_EXACT)) {
       fragmentBuilder.clearKeys();
       newValue.getList().forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
-    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
+    } else if (path.accept(KEY_LIST_INDEX_EXACT)) {
       final int i = getPathSegmentAsPosition(path, 1);
       fragmentBuilder.setKeys(i, EntityConverter.entityToKey(newValue));
-    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition().anyPosition())) {
+    } else if (path.accept(KEY_LIST_INNER_INDEX_EXACT)) {
       final int outerIndex = getPathSegmentAsPosition(path, 1);
       final int innerIndex = getPathSegmentAsPosition(path, 2);
 

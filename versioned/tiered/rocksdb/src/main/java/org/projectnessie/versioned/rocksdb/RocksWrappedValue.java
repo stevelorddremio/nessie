@@ -33,6 +33,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C> implements BaseWrappedValue<C> {
 
   static final String VALUE = "value";
+  static final PathPattern VALUE_EXACT = PathPattern.exact(VALUE);
+
   private final ValueProtos.WrappedValue.Builder builder = ValueProtos.WrappedValue.newBuilder();
 
   RocksWrappedValue() {
@@ -70,7 +72,7 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
 
   @Override
   protected void set(ExpressionPath path, Entity newValue) {
-    if (path.accept(PathPattern.exact(VALUE))) {
+    if (path.accept(VALUE_EXACT)) {
       builder.setValue(newValue.getBinary());
     } else {
       throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals", path.asString()));

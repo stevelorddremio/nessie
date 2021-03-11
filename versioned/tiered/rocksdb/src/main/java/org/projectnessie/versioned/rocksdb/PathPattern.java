@@ -173,4 +173,35 @@ class PathPattern implements ValueVisitor<Boolean> {
 
     return matchType == MatchType.PREFIX || currentNode == null;
   }
+
+  ExpressionPath removePrefix(ExpressionPath path) {
+    ExpressionPath.PathSegment currentNode = path.getRoot();
+
+    for (java.util.function.Function<ExpressionPath.PathSegment, Boolean> pathPatternElement : pathPatternElements) {
+      if (currentNode == null || !pathPatternElement.apply(currentNode)) {
+        return path;
+      }
+
+      currentNode = currentNode.getChild().orElse(null);
+    }
+
+    if (currentNode != null && currentNode.isName()) {
+      ExpressionPath.PathSegment.Builder pathBuilder = ExpressionPath.builder(currentNode.asName().getName());
+      currentNode = currentNode.getChild().orElse(null);
+
+      while (currentNode != null) {
+        if (currentNode.isName()) {
+          pathBuilder = pathBuilder.name(currentNode.asName().getName());
+        } else {
+          pathBuilder = pathBuilder.position(currentNode.asPosition().getPosition());
+        }
+
+        currentNode = currentNode.getChild().orElse(null);
+      }
+
+      return pathBuilder.build();
+    } else {
+      return null;
+    }
+  }
 }
