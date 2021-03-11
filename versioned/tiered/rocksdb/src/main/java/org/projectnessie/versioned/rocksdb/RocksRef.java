@@ -533,7 +533,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   private void setKeyMutations(ExpressionPath.PathSegment childPath, int commitPosition, Entity newValue) {
     if (new PathPattern().matches(childPath)) {
       ValueProtos.Commit.Builder commitBuilder = ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitPosition))
-        .clearKeyMutation();
+          .clearKeyMutation();
       newValue.getList().forEach(e -> commitBuilder.addKeyMutation(EntityConverter.entityToKeyMutation(e)));
       refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setCommits(commitPosition,commitBuilder));
     } else if (new PathPattern().anyPosition().matches(childPath)) {
@@ -546,8 +546,8 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       ValueProtos.Commit.Builder commitBuilder = ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitPosition));
 
       commitBuilder.setKeyMutation(keyMutationsIndex, ValueProtos.KeyMutation
-        .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex))
-        .setKey(EntityConverter.entityToKey(newValue)));
+          .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex))
+          .setKey(EntityConverter.entityToKey(newValue)));
       refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setCommits(commitPosition,commitBuilder));
     } else if (new PathPattern().anyPosition().nameEquals(COMMITS_KEY_LIST_KEY).anyPosition().matches(childPath)) {
       final int keyMutationsIndex = childPath.asPosition().getPosition();
@@ -555,10 +555,10 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       ValueProtos.Commit.Builder commitBuilder = ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitPosition));
 
       commitBuilder.setKeyMutation(keyMutationsIndex, ValueProtos.KeyMutation
-        .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex))
-        .setKey(ValueProtos.Key
-          .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex).getKey())
-          .setElements(keyIndex, newValue.getString())));
+          .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex))
+          .setKey(ValueProtos.Key
+            .newBuilder(commitBuilder.getKeyMutation(keyMutationsIndex).getKey())
+            .setElements(keyIndex, newValue.getString())));
       refBuilder.setBranch(ValueProtos.Branch.newBuilder(refBuilder.getBranch()).setCommits(commitPosition,commitBuilder));
     } else {
       throw new UnsupportedOperationException("Invalid path for SetEquals");
