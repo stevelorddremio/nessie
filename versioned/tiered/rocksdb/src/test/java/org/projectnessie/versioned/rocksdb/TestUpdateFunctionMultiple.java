@@ -61,11 +61,11 @@ public class TestUpdateFunctionMultiple {
 
     @Override
     protected void remove(ExpressionPath path) {
-      if (path.accept(new PathPattern(LIST_VALUE).anyPosition())) {
+      if (path.accept(PathPattern.exact(LIST_VALUE).anyPosition())) {
         listValue.remove(path.getRoot().getChild().get().asPosition().getPosition());
-      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition())) {
+      } else if (path.accept(PathPattern.exact(NESTED_VALUE).anyPosition())) {
         nestedValue.remove(path.getRoot().getChild().get().asPosition().getPosition());
-      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition().anyPosition())) {
+      } else if (path.accept(PathPattern.exact(NESTED_VALUE).anyPosition().anyPosition())) {
         int innerIndex = path.getRoot().getChild().get().getChild().get().asPosition().getPosition();
         nestedValue.get(path.getRoot().getChild().get().asPosition().getPosition()).remove(innerIndex);
       }
@@ -73,20 +73,20 @@ public class TestUpdateFunctionMultiple {
 
     @Override
     protected boolean fieldIsList(ExpressionPath path) {
-      return path.accept(new PathPattern(LIST_VALUE))
-          || path.accept(new PathPattern(NESTED_VALUE))
-          || path.accept(new PathPattern(NESTED_VALUE).anyPosition());
+      return path.accept(PathPattern.exact(LIST_VALUE))
+          || path.accept(PathPattern.exact(NESTED_VALUE))
+          || path.accept(PathPattern.exact(NESTED_VALUE).anyPosition());
     }
 
     @Override
     protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
-      if (path.accept(new PathPattern(LIST_VALUE))) {
+      if (path.accept(PathPattern.exact(LIST_VALUE))) {
         listValue.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
-      } else if (path.accept(new PathPattern(NESTED_VALUE))) {
+      } else if (path.accept(PathPattern.exact(NESTED_VALUE))) {
         nestedValue.addAll(valuesToAdd.stream().map(v ->
             v.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
         ).collect(Collectors.toList()));
-      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition())) {
+      } else if (path.accept(PathPattern.exact(NESTED_VALUE).anyPosition())) {
         nestedValue.get(getPathSegmentAsPosition(path, 1))
             .addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
       }
@@ -94,22 +94,22 @@ public class TestUpdateFunctionMultiple {
 
     @Override
     protected void set(ExpressionPath path, Entity newValue) {
-      if (path.accept(new PathPattern(SCALAR_VALUE))) {
+      if (path.accept(PathPattern.exact(SCALAR_VALUE))) {
         scalarValue = newValue.getString();
-      } else if (path.accept(new PathPattern(LIST_VALUE))) {
+      } else if (path.accept(PathPattern.exact(LIST_VALUE))) {
         listValue = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
-      } else if (path.accept(new PathPattern(LIST_VALUE).anyPosition())) {
+      } else if (path.accept(PathPattern.exact(LIST_VALUE).anyPosition())) {
         listValue.set(getPathSegmentAsPosition(path, 1), newValue.getBinary());
-      } else if (path.accept(new PathPattern(NESTED_VALUE))) {
+      } else if (path.accept(PathPattern.exact(NESTED_VALUE))) {
         nestedValue = newValue.getList().stream().map(v ->
             v.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
         ).collect(Collectors.toList());
-      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition())) {
+      } else if (path.accept(PathPattern.exact(NESTED_VALUE).anyPosition())) {
         nestedValue.set(
             getPathSegmentAsPosition(path, 1),
             newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList())
         );
-      } else if (path.accept(new PathPattern(NESTED_VALUE).anyPosition().anyPosition())) {
+      } else if (path.accept(PathPattern.exact(NESTED_VALUE).anyPosition().anyPosition())) {
         nestedValue.get(getPathSegmentAsPosition(path, 1)).set(
             getPathSegmentAsPosition(path, 2),
             newValue.getBinary()

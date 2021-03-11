@@ -186,20 +186,20 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   @Override
   protected void remove(ExpressionPath path) {
     // parents[*]
-    if (path.accept(new PathPattern(ANCESTORS).anyPosition())) {
+    if (path.accept(PathPattern.exact(ANCESTORS).anyPosition())) {
       List<ByteString> updatedAncestors = new ArrayList<>(l1Builder.getAncestorsList());
       updatedAncestors.remove(getPathSegmentAsPosition(path, 1));
       l1Builder.clearAncestors().addAllAncestors(updatedAncestors);
     // tree[*]
-    } else if (path.accept(new PathPattern(TREE).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition())) {
       List<ByteString> updatedChildren = new ArrayList<>(l1Builder.getTreeList());
       updatedChildren.remove(getPathSegmentAsPosition(path, 1));
       l1Builder.clearTree().addAllTree(updatedChildren);
     // mutations[*]
-    } else if (path.accept(new PathPattern(KEY_MUTATIONS).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition())) {
       l1Builder.removeKeyMutations(getPathSegmentAsPosition(path, 1));
     // mutations[*]/key[*]
-    } else if (path.accept(new PathPattern(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition())) {
       final int keyMutationsIndex = getPathSegmentAsPosition(path, 1);
       final int keyIndex = getPathSegmentAsPosition(path, 3);
 
@@ -210,7 +210,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
           .setKey(ValueProtos.Key.newBuilder().addAllElements(updatedKeysList))
       );
     // fragments[*]
-    } else if (path.accept(new PathPattern(COMPLETE_KEY_LIST).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(COMPLETE_KEY_LIST).anyPosition())) {
       List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
       updatedKeyList.remove(getPathSegmentAsPosition(path, 1));
       l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
@@ -221,22 +221,22 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(new PathPattern(ANCESTORS))
-        || path.accept(new PathPattern(TREE))
-        || path.accept(new PathPattern(COMPLETE_KEY_LIST))
-        || path.accept(new PathPattern(KEY_MUTATIONS))
-        || path.accept(new PathPattern(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY));
+    return path.accept(PathPattern.exact(ANCESTORS))
+        || path.accept(PathPattern.exact(TREE))
+        || path.accept(PathPattern.exact(COMPLETE_KEY_LIST))
+        || path.accept(PathPattern.exact(KEY_MUTATIONS))
+        || path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY));
   }
 
   @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
-    if (path.accept(new PathPattern(ANCESTORS))) {
+    if (path.accept(PathPattern.exact(ANCESTORS))) {
       valuesToAdd.forEach(e -> l1Builder.addAncestors(e.getBinary()));
-    } else if (path.accept(new PathPattern(TREE))) {
+    } else if (path.accept(PathPattern.exact(TREE))) {
       valuesToAdd.forEach(e -> l1Builder.addTree(e.getBinary()));
-    } else if (path.accept(new PathPattern(KEY_MUTATIONS))) {
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS))) {
       valuesToAdd.forEach(e -> l1Builder.addTree(e.getBinary()));
-    } else if (path.accept(new PathPattern(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY))) {
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY))) {
       final int i = getPathSegmentAsPosition(path, 1);
 
       final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(l1Builder.getKeyMutations(i).getKey());
@@ -244,7 +244,7 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
       l1Builder.setKeyMutations(i, ValueProtos.KeyMutation
           .newBuilder(l1Builder.getKeyMutations(i))
           .setKey(keyBuilder));
-    } else if (path.accept(new PathPattern(COMPLETE_KEY_LIST))) {
+    } else if (path.accept(PathPattern.exact(COMPLETE_KEY_LIST))) {
       List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
       updatedKeyList.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
 
@@ -258,29 +258,29 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
 
   @Override
   protected void set(ExpressionPath path, Entity newValue) {
-    if (path.accept(new PathPattern(ANCESTORS))) {
+    if (path.accept(PathPattern.exact(ANCESTORS))) {
       l1Builder.clearAncestors();
       newValue.getList().forEach(e -> l1Builder.addAncestors(e.getBinary()));
-    } else if (path.accept(new PathPattern(ANCESTORS).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(ANCESTORS).anyPosition())) {
       l1Builder.setAncestors(getPathSegmentAsPosition(path, 1), newValue.getBinary());
-    } else if (path.accept(new PathPattern(TREE))) {
+    } else if (path.accept(PathPattern.exact(TREE))) {
       l1Builder.clearTree();
       newValue.getList().forEach(e -> l1Builder.addTree(e.getBinary()));
-    } else if (path.accept(new PathPattern(TREE).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition())) {
       l1Builder.setTree(getPathSegmentAsPosition(path, 1), newValue.getBinary());
-    } else if (path.accept(new PathPattern(KEY_MUTATIONS))) {
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS))) {
       l1Builder.clearKeyMutations();
       newValue.getList().forEach(e -> l1Builder.addKeyMutations(EntityConverter.entityToKeyMutation(e)));
-    } else if (path.accept(new PathPattern(KEY_MUTATIONS).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition())) {
       final int i = getPathSegmentAsPosition(path, 1);
       l1Builder.setKeyMutations(i, EntityConverter.entityToKeyMutation(newValue));
-    } else if (path.accept(new PathPattern(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY))) {
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY))) {
       final int i = getPathSegmentAsPosition(path, 1);
 
       l1Builder.setKeyMutations(i, ValueProtos.KeyMutation
           .newBuilder(l1Builder.getKeyMutations(i))
           .setKey(EntityConverter.entityToKey(newValue)));
-    } else if (path.accept(new PathPattern(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition())) {
       final int keyMutationsIndex = getPathSegmentAsPosition(path, 1);
       final int keyIndex = getPathSegmentAsPosition(path, 3);
 
@@ -289,24 +289,24 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
           .setKey(ValueProtos.Key
             .newBuilder(l1Builder.getKeyMutations(keyMutationsIndex).getKey())
             .setElements(keyIndex, newValue.getString())));
-    } else if (path.accept(new PathPattern(COMPLETE_KEY_LIST))) {
+    } else if (path.accept(PathPattern.exact(COMPLETE_KEY_LIST))) {
       final ValueProtos.CompleteList.Builder completeListBuilder = ValueProtos.CompleteList.newBuilder();
       newValue.getList().forEach(e -> completeListBuilder.addFragmentIds(e.getBinary()));
       l1Builder.setCompleteList(completeListBuilder);
-    } else if (path.accept(new PathPattern(COMPLETE_KEY_LIST).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(COMPLETE_KEY_LIST).anyPosition())) {
       final int i = getPathSegmentAsPosition(path, 1);
       l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder(l1Builder.getCompleteList()).setFragmentIds(i, newValue.getBinary()));
-    } else if (path.accept(new PathPattern(CHECKPOINT_ID))) {
+    } else if (path.accept(PathPattern.exact(CHECKPOINT_ID))) {
       l1Builder.setIncrementalList(ValueProtos.IncrementalList
           .newBuilder(l1Builder.getIncrementalList())
           .setCheckpointId(newValue.getBinary())
       );
-    } else if (path.accept(new PathPattern(DISTANCE_FROM_CHECKPOINT))) {
+    } else if (path.accept(PathPattern.exact(DISTANCE_FROM_CHECKPOINT))) {
       l1Builder.setIncrementalList(ValueProtos.IncrementalList
           .newBuilder(l1Builder.getIncrementalList())
           .setDistanceFromCheckpointId((int)newValue.getNumber())
       );
-    } else if (path.accept(new PathPattern(COMMIT_METADATA))) {
+    } else if (path.accept(PathPattern.exact(COMMIT_METADATA))) {
       commitMetadataId(Id.of(newValue.getBinary()));
     } else {
       throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in L1", path.asString()));

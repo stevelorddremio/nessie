@@ -48,16 +48,32 @@ import org.projectnessie.versioned.store.Entity;
  * </pre>
  */
 class PathPattern implements ValueVisitor<Boolean> {
+  private final MatchType matchType;
   private final List<java.util.function.Function<ExpressionPath.PathSegment, Boolean>> pathPatternElements = new ArrayList<>();
 
-  PathPattern() {}
-
-  PathPattern(String name) {
-    nameEquals(name);
+  enum MatchType {
+    EXACT,
+    PREFIX
   }
 
-  PathPattern(int position) {
-    positionEquals(position);
+  private PathPattern(MatchType matchType) {
+    this.matchType = matchType;
+  }
+
+  static PathPattern exact(String name) {
+    return new PathPattern(MatchType.EXACT).nameEquals(name);
+  }
+
+  static PathPattern exact(int position) {
+    return new PathPattern(MatchType.EXACT).positionEquals(position);
+  }
+
+  static PathPattern prefix(String name) {
+    return new PathPattern(MatchType.PREFIX).nameEquals(name);
+  }
+
+  static PathPattern prefix(int position) {
+    return new PathPattern(MatchType.PREFIX).positionEquals(position);
   }
 
   /**
@@ -135,6 +151,6 @@ class PathPattern implements ValueVisitor<Boolean> {
       currentNode = currentNode.getChild().orElse(null);
     }
 
-    return currentNode == null;
+    return matchType == MatchType.PREFIX || currentNode == null;
   }
 }

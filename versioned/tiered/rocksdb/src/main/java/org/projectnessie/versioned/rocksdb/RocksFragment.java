@@ -142,11 +142,11 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   @Override
   protected void remove(ExpressionPath path) {
     // keys[*]
-    if (path.accept(new PathPattern(KEY_LIST).anyPosition())) {
+    if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
       final int i = getPathSegmentAsPosition(path, 1);
       fragmentBuilder.removeKeys(i);
     // keys[*][*]
-    } else if (path.accept(new PathPattern(KEY_LIST).anyPosition().anyPosition())) {
+    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition().anyPosition())) {
       final int outerIndex = getPathSegmentAsPosition(path, 1);
       final int innerIndex = getPathSegmentAsPosition(path, 2);
 
@@ -164,14 +164,14 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(new PathPattern(KEY_LIST));
+    return path.accept(PathPattern.exact(KEY_LIST));
   }
 
   @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
-    if (path.accept(new PathPattern(KEY_LIST))) {
+    if (path.accept(PathPattern.exact(KEY_LIST))) {
       valuesToAdd.forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
-    } else if (path.accept(new PathPattern(KEY_LIST).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
       final int i = getPathSegmentAsPosition(path, 1);
 
       final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(fragmentBuilder.getKeys(i));
@@ -185,13 +185,13 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   protected void set(ExpressionPath path, Entity newValue) {
-    if (path.accept(new PathPattern(KEY_LIST))) {
+    if (path.accept(PathPattern.exact(KEY_LIST))) {
       fragmentBuilder.clearKeys();
       newValue.getList().forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
-    } else if (path.accept(new PathPattern(KEY_LIST).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
       final int i = getPathSegmentAsPosition(path, 1);
       fragmentBuilder.setKeys(i, EntityConverter.entityToKey(newValue));
-    } else if (path.accept(new PathPattern(KEY_LIST).anyPosition().anyPosition())) {
+    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition().anyPosition())) {
       final int outerIndex = getPathSegmentAsPosition(path, 1);
       final int innerIndex = getPathSegmentAsPosition(path, 2);
 

@@ -79,7 +79,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   protected void remove(ExpressionPath path) {
-    if (path.accept(new PathPattern(TREE).anyPosition())) {
+    if (path.accept(PathPattern.exact(TREE).anyPosition())) {
       List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
       updatedChildren.remove(getPathSegmentAsPosition(path, 1));
 
@@ -92,12 +92,12 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(new PathPattern(TREE));
+    return path.accept(PathPattern.exact(TREE));
   }
 
   @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
-    if (path.accept(new PathPattern(TREE))) {
+    if (path.accept(PathPattern.exact(TREE))) {
       valuesToAdd.forEach(e -> l2Builder.addTree(e.getBinary()));
     } else {
       throw new UnsupportedOperationException(String.format("%s is not a valid path for append in L2", path.asString()));
@@ -106,10 +106,10 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   protected void set(ExpressionPath path, Entity newValue) {
-    if (path.accept(new PathPattern(TREE))) {
+    if (path.accept(PathPattern.exact(TREE))) {
       l2Builder.clearTree();
       newValue.getList().forEach(e -> l2Builder.addTree(e.getBinary()));
-    } else if (path.accept(new PathPattern(TREE).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition())) {
       l2Builder.setTree(getPathSegmentAsPosition(path, 1), newValue.getBinary());
     } else {
       throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in L2", path.asString()));

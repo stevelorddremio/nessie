@@ -75,7 +75,7 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
 
   @Override
   protected void set(ExpressionPath path, Entity newValue) {
-    if (path.accept(new PathPattern(VALUE))) {
+    if (path.accept(PathPattern.exact(VALUE))) {
       builder.setValue(newValue.getBinary());
     } else {
       throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals", path.asString()));

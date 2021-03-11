@@ -86,12 +86,12 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
   @Override
   protected void remove(ExpressionPath path) {
     // tree[*]
-    if (path.accept(new PathPattern(TREE).anyPosition())) {
+    if (path.accept(PathPattern.exact(TREE).anyPosition())) {
       final List<ValueProtos.KeyDelta> updatedKeyDeltas = new ArrayList<>(l3Builder.getKeyDeltaList());
       updatedKeyDeltas.remove(getPathSegmentAsPosition(path, 1));
       l3Builder.clearKeyDelta().addAllKeyDelta(updatedKeyDeltas);
     // tree[*]/key[*]
-    } else if (path.accept(new PathPattern(TREE).anyPosition().nameEquals(TREE_KEY).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition().nameEquals(TREE_KEY).anyPosition())) {
       final int keyDeltaPosition = getPathSegmentAsPosition(path, 1);
       final int keyPosition = getPathSegmentAsPosition(path, 3);
 
@@ -112,15 +112,15 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
 
   @Override
   protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(new PathPattern(TREE))
-        || path.accept(new PathPattern(TREE).anyPosition().nameEquals(TREE_KEY));
+    return path.accept(PathPattern.exact(TREE))
+        || path.accept(PathPattern.exact(TREE).anyPosition().nameEquals(TREE_KEY));
   }
 
   @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
-    if (path.accept(new PathPattern(TREE))) {
+    if (path.accept(PathPattern.exact(TREE))) {
       valuesToAdd.forEach(e -> l3Builder.addKeyDelta(EntityConverter.entityToKeyDelta(e)));
-    } else if (path.accept(new PathPattern(TREE).anyPosition().nameEquals(TREE_KEY))) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition().nameEquals(TREE_KEY))) {
       final int treePosition = getPathSegmentAsPosition(path, 1);
 
       final ValueProtos.Key updatedKey = ValueProtos.Key
@@ -136,21 +136,21 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
 
   @Override
   protected void set(ExpressionPath path, Entity newValue) {
-    if (path.accept(new PathPattern(TREE))) {
+    if (path.accept(PathPattern.exact(TREE))) {
       l3Builder.clearKeyDelta();
       newValue.getList().forEach(e -> l3Builder.addKeyDelta(EntityConverter.entityToKeyDelta(e)));
-    } else if (path.accept(new PathPattern(TREE).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition())) {
       l3Builder.setKeyDelta(getPathSegmentAsPosition(path, 1), EntityConverter.entityToKeyDelta(newValue));
-    } else if (path.accept(new PathPattern(TREE).anyPosition().nameEquals(TREE_ID))) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition().nameEquals(TREE_ID))) {
       final int i = getPathSegmentAsPosition(path, 1);
       l3Builder.setKeyDelta(i, ValueProtos.KeyDelta.newBuilder(l3Builder.getKeyDelta(i)).setId(newValue.getBinary()));
-    } else if (path.accept(new PathPattern(TREE).anyPosition().nameEquals(TREE_KEY))) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition().nameEquals(TREE_KEY))) {
       final int i = getPathSegmentAsPosition(path,1);
 
       l3Builder.setKeyDelta(i, ValueProtos.KeyDelta
           .newBuilder(l3Builder.getKeyDelta(i))
           .setKey(EntityConverter.entityToKey(newValue)));
-    } else if (path.accept(new PathPattern(TREE).anyPosition().nameEquals(TREE_KEY).anyPosition())) {
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition().nameEquals(TREE_KEY).anyPosition())) {
       final int keyDeltaIndex = getPathSegmentAsPosition(path, 1);
       final int keyIndex = getPathSegmentAsPosition(path, 3);
 
