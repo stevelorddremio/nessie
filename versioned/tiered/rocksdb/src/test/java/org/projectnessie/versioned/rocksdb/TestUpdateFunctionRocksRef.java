@@ -275,7 +275,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
       void commitsSetEquals() {
         final Entity commitsMapEntity = createCommitMapEntity();
         final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS).position(0).build(), commitsMapEntity));
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS).position(0).build(), commitsMapEntity));
         rocksRefBranch.update(updateExpression);
         Assertions.assertEquals(EntityConverter.entityToCommit(commitsMapEntity), rocksRefBranch.getCommits().get(0));
       }
@@ -297,12 +297,14 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
         final Entity commitsMapEntity2 = createCommitMapEntity();
         final Entity commitsListEntity = Entity.ofList(commitsMapEntity1, commitsMapEntity2);
         final UpdateExpression updateExpression =
-          UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS).build(), commitsListEntity));
+            UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS).build(), commitsListEntity));
         int initialCommitListSize = rocksRefBranch.getCommits().size();
         rocksRefBranch.update(updateExpression);
         Assertions.assertEquals(initialCommitListSize + 2, rocksRefBranch.getCommits().size());
-        Assertions.assertEquals(EntityConverter.entityToCommit(commitsMapEntity1), rocksRefBranch.getCommits().get(initialCommitListSize));
-        Assertions.assertEquals(EntityConverter.entityToCommit(commitsMapEntity2), rocksRefBranch.getCommits().get(initialCommitListSize + 1));
+        Assertions.assertEquals(EntityConverter.entityToCommit(commitsMapEntity1),
+            rocksRefBranch.getCommits().get(initialCommitListSize));
+        Assertions.assertEquals(EntityConverter.entityToCommit(commitsMapEntity2),
+            rocksRefBranch.getCommits().get(initialCommitListSize + 1));
       }
 
       @Test
@@ -394,11 +396,11 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final int commitsPosition = 1;
           final int commitsDeltaIndex = 0;
           final UpdateExpression updateExpression =
-            UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
-              .position(commitsPosition)
-              .name(RocksRef.COMMITS_DELTA)
-              .position(commitsDeltaIndex)
-              .build()));
+              UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsPosition)
+                .name(RocksRef.COMMITS_DELTA)
+                .position(commitsDeltaIndex)
+                .build()));
           rocksRefBranch.update(updateExpression);
           Assertions.assertTrue(rocksRefBranch.getCommitsDeltaList(commitsPosition).isEmpty());
         }
@@ -412,7 +414,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final ValueProtos.Delta expectedDelta = EntityConverter.entityToDelta(deltaMapEntity);
 
           final UpdateExpression updateExpression =
-            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+              UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
                 .position(commitsPosition)
                 .name(RocksRef.COMMITS_DELTA)
                 .position(deltaIndex)
@@ -431,7 +433,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final ValueProtos.Delta expectedDelta = EntityConverter.entityToDelta(deltaMapEntity);
 
           final UpdateExpression updateExpression =
-            UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
+              UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
                 .position(commitsPosition)
                 .name(RocksRef.COMMITS_DELTA)
                 .build(),
@@ -451,7 +453,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final ValueProtos.Delta expectedDelta2 = EntityConverter.entityToDelta(deltaMapEntity2);
 
           final UpdateExpression updateExpression =
-            UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
+              UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
                 .position(commitsPosition)
                 .name(RocksRef.COMMITS_DELTA)
                 .build(),
@@ -476,12 +478,12 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final int deltaPosition = 0;
 
           final UpdateExpression updateExpression =
-            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
-              .position(commitsPosition)
-              .name(RocksRef.COMMITS_DELTA)
-              .position(deltaPosition)
-              .name(RocksRef.COMMITS_POSITION)
-              .build(), Entity.ofNumber(newValue)));
+              UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsPosition)
+                .name(RocksRef.COMMITS_DELTA)
+                .position(deltaPosition)
+                .name(RocksRef.COMMITS_POSITION)
+                .build(), Entity.ofNumber(newValue)));
           rocksRefBranch.update(updateExpression);
           Assertions.assertEquals(newValue, rocksRefBranch.getCommitsDeltaPosition(commitsPosition, deltaPosition));
         }
@@ -503,12 +505,12 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final int deltaPosition = 0;
 
           final UpdateExpression updateExpression =
-            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
-              .position(commitsPosition)
-              .name(RocksRef.COMMITS_DELTA)
-              .position(deltaPosition)
-              .name(RocksRef.COMMITS_OLD_ID)
-              .build(), newValue.toEntity()));
+              UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsPosition)
+                .name(RocksRef.COMMITS_DELTA)
+                .position(deltaPosition)
+                .name(RocksRef.COMMITS_OLD_ID)
+                .build(), newValue.toEntity()));
           rocksRefBranch.update(updateExpression);
           Assertions.assertEquals(newValue, rocksRefBranch.getCommitsDeltaOldId(commitsPosition, deltaPosition));
         }
@@ -530,12 +532,12 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final int deltaPosition = 0;
 
           final UpdateExpression updateExpression =
-            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
-              .position(commitsPosition)
-              .name(RocksRef.COMMITS_DELTA)
-              .position(deltaPosition)
-              .name(RocksRef.COMMITS_NEW_ID)
-              .build(), newValue.toEntity()));
+              UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsPosition)
+                .name(RocksRef.COMMITS_DELTA)
+                .position(deltaPosition)
+                .name(RocksRef.COMMITS_NEW_ID)
+                .build(), newValue.toEntity()));
           rocksRefBranch.update(updateExpression);
           Assertions.assertEquals(newValue, rocksRefBranch.getCommitsDeltaNewId(commitsPosition, deltaPosition));
         }
@@ -547,23 +549,23 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
         private void commitsDeltaRemoveFail(String name) {
           final UpdateExpression updateExpression =
-            UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
-              .position(0)
-              .name(RocksRef.COMMITS_DELTA)
-              .position(0)
-              .name(name)
-              .build()));
+              UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(0)
+                .name(RocksRef.COMMITS_DELTA)
+                .position(0)
+                .name(name)
+                .build()));
           updateTestFails(rocksRefBranch, updateExpression);
         }
 
         private void commitsDeltaAppendToListFail(String name, Entity entityToAppend) {
           final UpdateExpression updateExpression =
-            UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
-              .position(1)
-              .name(RocksRef.COMMITS_DELTA)
-              .position(0)
-              .name(name)
-              .build(), entityToAppend));
+              UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(1)
+                .name(RocksRef.COMMITS_DELTA)
+                .position(0)
+                .name(name)
+                .build(), entityToAppend));
           updateTestFails(rocksRefBranch, updateExpression);
         }
 
@@ -571,6 +573,85 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
 
           commitsDeltaAppendToListFail(name, NEW_ID.toEntity());
+        }
+      }
+
+      @Nested
+      @DisplayName("RocksRef update() branch/commits/keys tests")
+      class KeysTests {
+        @Test
+        void commitsKeysRemove() {
+          final int commitsPosition = 1;
+          final int commitsKeyIndex = 0;
+          final UpdateExpression updateExpression =
+              UpdateExpression.of(RemoveClause.of(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsPosition)
+                .name(RocksRef.COMMITS_KEY_LIST)
+                .position(commitsKeyIndex)
+                .build()));
+          rocksRefBranch.update(updateExpression);
+          Assertions.assertTrue(rocksRefBranch.getCommitsKeysList(commitsPosition).isEmpty());
+        }
+
+        @Test
+        void commitsKeysSetEquals() {
+          final int commitsPosition = 1;
+          final int commitsKeyIndex = 0;
+          final Entity keysEntity = createKeyMutationEntity(RocksRef.COMMITS_KEY_ADDITION);
+
+          final ValueProtos.KeyMutation expectedKeys = EntityConverter.entityToKeyMutation(keysEntity);
+
+          final UpdateExpression updateExpression =
+              UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsPosition)
+                .name(RocksRef.COMMITS_KEY_LIST)
+                .position(commitsKeyIndex)
+                .build(),
+              keysEntity));
+          rocksRefBranch.update(updateExpression);
+          Assertions.assertEquals(expectedKeys, rocksRefBranch.getCommitsKeys(commitsPosition, commitsKeyIndex));
+        }
+
+        @Test
+        void commitsKeysAppendToListScalar() {
+          final int commitsPosition = 1;
+          final int keysIndex = 1;
+          final Entity keysEntity = createKeyMutationEntity(RocksRef.COMMITS_KEY_REMOVAL);
+
+          final ValueProtos.KeyMutation expectedKeys = EntityConverter.entityToKeyMutation(keysEntity);
+
+          final UpdateExpression updateExpression =
+              UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsPosition)
+                .name(RocksRef.COMMITS_KEY_LIST)
+                .build(),
+              keysEntity));
+          rocksRefBranch.update(updateExpression);
+          Assertions.assertEquals(expectedKeys, rocksRefBranch.getCommitsKeys(commitsPosition, keysIndex));
+        }
+
+        @Test
+        void commitsKeysAppendToListWithList() {
+          final int commitsPosition = 1;
+          final Entity keysEntity1 = createKeyMutationEntity(RocksRef.COMMITS_KEY_REMOVAL);
+          final Entity keysEntity2 = createKeyMutationEntity(RocksRef.COMMITS_KEY_REMOVAL);
+          final Entity keysListEntity = Entity.ofList(keysEntity1, keysEntity2);
+
+          final ValueProtos.KeyMutation expectedKeys1 = EntityConverter.entityToKeyMutation(keysEntity1);
+          final ValueProtos.KeyMutation expectedKeys2 = EntityConverter.entityToKeyMutation(keysEntity2);
+
+          final UpdateExpression updateExpression =
+              UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsPosition)
+                .name(RocksRef.COMMITS_KEY_LIST)
+                .build(),
+                keysListEntity));
+          int initialKeysListSize = rocksRefBranch.getCommitsKeysList(commitsPosition).size();
+          rocksRefBranch.update(updateExpression);
+          // Test that two key mutations have been added.
+          Assertions.assertEquals(initialKeysListSize + 2, rocksRefBranch.getCommitsKeysList(commitsPosition).size());
+          Assertions.assertEquals(expectedKeys1, rocksRefBranch.getCommitsKeys(commitsPosition, initialKeysListSize));
+          Assertions.assertEquals(expectedKeys2, rocksRefBranch.getCommitsKeys(commitsPosition, initialKeysListSize + 1));
         }
       }
 
@@ -610,18 +691,19 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
         return Entity.ofMap(deltaMap);
       }
 
+      Entity createKeyMutationEntity(String type) {
+        final Entity keyListEntity = Entity.ofList(Entity.ofString("no"), Entity.ofString("hi"));
+        final Map<String, Entity> keyMap = new HashMap<>();
+        keyMap.put(type, keyListEntity);
+        return Entity.ofMap(keyMap);
+      }
+
       /**
        * Creates sample Entity representing a List of Key Mutation objects.
        * @return a MapEntity of the Delta object
        */
       Entity createKeyMutationListEntity() {
-        final Entity keyListEntity1 = Entity.ofList(Entity.ofString("no"), Entity.ofString("hi"));
-        final Entity keyListEntity2 = Entity.ofList(Entity.ofString("go"), Entity.ofString("away"));
-        final Map<String, Entity> keyMap1 = new HashMap<>();
-        keyMap1.put(RocksRef.COMMITS_KEY_ADDITION, keyListEntity1);
-        final Map<String, Entity> keyMap2 = new HashMap<>();
-        keyMap2.put(RocksRef.COMMITS_KEY_REMOVAL, keyListEntity2);
-        return Entity.ofList(Entity.ofMap(keyMap1), Entity.ofMap(keyMap2));
+        return Entity.ofList(createKeyMutationEntity(RocksRef.COMMITS_KEY_ADDITION), createKeyMutationEntity(RocksRef.COMMITS_KEY_REMOVAL));
       }
 
       Entity createCommitMapEntity() {

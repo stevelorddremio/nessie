@@ -363,21 +363,22 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
           List<ValueProtos.Delta> updatedDelta = new ArrayList<>(refBuilder.getBranch().getCommits(commitsPosition).getDeltaList());
           updatedDelta.addAll(valuesToAdd.stream().map(e -> EntityConverter.entityToDelta(e)).collect(Collectors.toList()));
           refBuilder.setBranch(
-            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-              .setCommits(commitsPosition,
-                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
-              .clearDelta()
-              .addAllDelta(updatedDelta)));
+              ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+                .setCommits(commitsPosition,
+                  ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
+                .clearDelta()
+                .addAllDelta(updatedDelta)));
           break;
         case RocksRef.COMMITS_KEY_LIST:
-          List<ValueProtos.KeyMutation> updatedKeyList = new ArrayList<>(refBuilder.getBranch().getCommits(commitsPosition).getKeyMutationList());
+          List<ValueProtos.KeyMutation> updatedKeyList =
+              new ArrayList<>(refBuilder.getBranch().getCommits(commitsPosition).getKeyMutationList());
           updatedKeyList.addAll(valuesToAdd.stream().map(e -> EntityConverter.entityToKeyMutation(e)).collect(Collectors.toList()));
           refBuilder.setBranch(
-            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-              .setCommits(commitsPosition,
-                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
-                  .clearKeyMutation()
-                  .addAllKeyMutation(updatedKeyList)));
+              ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+                .setCommits(commitsPosition,
+                  ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
+                    .clearKeyMutation()
+                    .addAllKeyMutation(updatedKeyList)));
           break;
         default:
           throw new UnsupportedOperationException(String.format("Append to list \"%s\" not supported for ", fieldName));
@@ -449,29 +450,29 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     if (!childPath.getChild().isPresent()) {
       // This is to update a complete commit.
       refBuilder.setBranch(
-        ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-        .setCommits(commitsPosition,
-          ValueProtos.Commit.newBuilder(EntityConverter.entityToCommit(newValue))));
+          ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+          .setCommits(commitsPosition,
+            ValueProtos.Commit.newBuilder(EntityConverter.entityToCommit(newValue))));
     } else {
       // This is to update part of a commit.
       switch (childPath.getChild().get().asName().getName()) {
         case COMMITS_ID:
           refBuilder.setBranch(
-            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-              .setCommits(commitsPosition,
-                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setId(newValue.getBinary())));
+              ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+                .setCommits(commitsPosition,
+                  ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setId(newValue.getBinary())));
           break;
         case COMMITS_COMMIT:
           refBuilder.setBranch(
-            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-              .setCommits(commitsPosition,
-                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setCommit(newValue.getBinary())));
+              ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+                .setCommits(commitsPosition,
+                  ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setCommit(newValue.getBinary())));
           break;
         case COMMITS_PARENT:
           refBuilder.setBranch(
-            ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-              .setCommits(commitsPosition,
-                ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setParent(newValue.getBinary())));
+              ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+                .setCommits(commitsPosition,
+                  ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition)).setParent(newValue.getBinary())));
           break;
         case COMMITS_DELTA:
           setDelta(childPath.getChild().get(), commitsPosition, newValue);
@@ -494,10 +495,10 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     if (!childPath.getChild().get().getChild().isPresent()) {
       // this is setting the complete delta
       refBuilder.setBranch(
-        ValueProtos.Branch.newBuilder(refBuilder.getBranch())
-          .setCommits(commitsPosition,
-            ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
-              .setDelta(deltaPosition, EntityConverter.entityToDelta(newValue))));
+          ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+            .setCommits(commitsPosition,
+              ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
+                .setDelta(deltaPosition, EntityConverter.entityToDelta(newValue))));
     } else {
       // this is setting parts of a delta
       final ValueProtos.Delta.Builder deltaBuilder =
@@ -813,6 +814,21 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   Id getCommitsDeltaNewId(int commitsPosition, int deltaPosition) {
     if (refBuilder.hasBranch()) {
       return Id.of(refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition).getNewId());
+    } else {
+      return null;
+    }
+  }
+
+  List<ValueProtos.KeyMutation> getCommitsKeysList(int commitsPosition) {
+    if (refBuilder.hasBranch()) {
+      return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutationList();
+    }
+    return null;
+  }
+
+  ValueProtos.KeyMutation getCommitsKeys(int commitsPosition, int keysPosition) {
+    if (refBuilder.hasBranch()) {
+      return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutation(keysPosition);
     } else {
       return null;
     }
