@@ -72,13 +72,6 @@ public class TestUpdateFunctionMultiple {
     }
 
     @Override
-    protected boolean fieldIsList(ExpressionPath path) {
-      return path.accept(PathPattern.exact(LIST_VALUE))
-          || path.accept(PathPattern.exact(NESTED_VALUE))
-          || path.accept(PathPattern.exact(NESTED_VALUE).anyPosition());
-    }
-
-    @Override
     protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
       if (path.accept(PathPattern.exact(LIST_VALUE))) {
         listValue.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));

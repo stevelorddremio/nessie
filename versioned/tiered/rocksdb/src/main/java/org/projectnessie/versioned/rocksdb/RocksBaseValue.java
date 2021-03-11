@@ -348,12 +348,6 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
 
     switch (updateFunction.getOperator()) {
       case REMOVE:
-        if (childPath == null || !fieldIsList(updateFunction.getPath())) {
-          throw new UnsupportedOperationException(
-            String.format("Expression path \"%s\" is not valid", updateFunction.getPath().asString())
-          );
-        }
-
         return;
       case SET:
         updateWithSetFunction((UpdateFunction.SetFunction) updateFunction);
@@ -366,11 +360,6 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
   private void updateWithSetFunction(UpdateFunction.SetFunction setFunction) {
     switch (setFunction.getSubOperator()) {
       case APPEND_TO_LIST:
-        if (!fieldIsList(removeLastPositionSegmentIfPosition(setFunction.getPath()))) {
-          throw new UnsupportedOperationException(
-              String.format("The append to list operation is not valid for \"%s\"", setFunction.getPath().asString()));
-        }
-
         final List<Entity> valuesToAppend;
         if (setFunction.getValue().getType() == Entity.EntityType.LIST) {
           valuesToAppend = setFunction.getValue().getList();
@@ -381,15 +370,7 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
         appendToList(setFunction.getPath(), valuesToAppend);
         break;
       case EQUALS:
-        final ExpressionPath fieldPath = removeLastPositionSegmentIfPosition(setFunction.getPath());
-
-        if (fieldIsList(fieldPath)) {
-          set(setFunction.getPath(), setFunction.getValue());
-        } else if (fieldIsList(fieldPath) != (setFunction.getValue().getType() == Entity.EntityType.LIST)) {
-          throw new UnsupportedOperationException(
-            String.format("The value for \"%s\" must be a list", setFunction.getPath().asString())
-          );
-        } else if (ID.equals(setFunction.getPath().getRoot().getName())) {
+        if (ID.equals(setFunction.getPath().getRoot().getName())) {
           id(Id.of(setFunction.getValue().getBinary()));
         } else if (DATETIME.equals(setFunction.getPath().getRoot().getName())) {
           dt(setFunction.getValue().getNumber());
@@ -445,13 +426,6 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    * @param path the path of the node to remove
    */
   protected abstract void remove(ExpressionPath path);
-
-  /**
-   * Checks if a node is a list that supports remove and append.
-   * @param path the path of the node to check
-   * @return if the node is a list
-   */
-  protected abstract boolean fieldIsList(ExpressionPath path);
 
   /**
    * Adds a list of values to a node that is a list.

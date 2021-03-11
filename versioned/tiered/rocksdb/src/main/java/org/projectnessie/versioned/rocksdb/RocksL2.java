@@ -91,11 +91,6 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
   }
 
   @Override
-  protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(PathPattern.exact(TREE));
-  }
-
-  @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
     if (path.accept(PathPattern.exact(TREE))) {
       valuesToAdd.forEach(e -> l2Builder.addTree(e.getBinary()));

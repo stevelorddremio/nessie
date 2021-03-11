@@ -289,16 +289,6 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   }
 
   @Override
-  protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(PathPattern.exact(CHILDREN))
-        || path.accept(PathPattern.exact(COMMITS))
-        || path.accept(PathPattern.exact(COMMITS).anyPosition().nameEquals(COMMITS_DELTA))
-        || path.accept(PathPattern.exact(COMMITS).anyPosition().nameEquals(COMMITS_KEY_LIST))
-        || path.accept(PathPattern.exact(COMMITS).anyPosition()
-            .nameEquals(COMMITS_KEY_LIST).anyPosition().nameEquals(COMMITS_KEY_LIST_KEY));
-  }
-
-  @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
     if (path.accept(PathPattern.exact(CHILDREN))) {
       if (!refBuilder.hasBranch()) {

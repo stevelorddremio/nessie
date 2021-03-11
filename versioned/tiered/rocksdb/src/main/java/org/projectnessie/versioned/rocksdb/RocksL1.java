@@ -220,15 +220,6 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   @Override
-  protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(PathPattern.exact(ANCESTORS))
-        || path.accept(PathPattern.exact(TREE))
-        || path.accept(PathPattern.exact(COMPLETE_KEY_LIST))
-        || path.accept(PathPattern.exact(KEY_MUTATIONS))
-        || path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY));
-  }
-
-  @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
     if (path.accept(PathPattern.exact(ANCESTORS))) {
       valuesToAdd.forEach(e -> l1Builder.addAncestors(e.getBinary()));

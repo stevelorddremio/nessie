@@ -163,11 +163,6 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   }
 
   @Override
-  protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(PathPattern.exact(KEY_LIST));
-  }
-
-  @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
     if (path.accept(PathPattern.exact(KEY_LIST))) {
       valuesToAdd.forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));

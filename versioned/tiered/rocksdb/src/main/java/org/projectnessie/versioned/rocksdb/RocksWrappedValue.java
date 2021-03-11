@@ -64,11 +64,6 @@ class RocksWrappedValue<C extends BaseWrappedValue<C>> extends RocksBaseValue<C>
   }
 
   @Override
-  protected boolean fieldIsList(ExpressionPath path) {
-    return false;
-  }
-
-  @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
     throw new UnsupportedOperationException(String.format("Append to list is not supported for \"%s\"", path.asString()));
   }

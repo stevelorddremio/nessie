@@ -111,12 +111,6 @@ class RocksL3 extends RocksBaseValue<L3> implements L3 {
   }
 
   @Override
-  protected boolean fieldIsList(ExpressionPath path) {
-    return path.accept(PathPattern.exact(TREE))
-        || path.accept(PathPattern.exact(TREE).anyPosition().nameEquals(TREE_KEY));
-  }
-
-  @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
     if (path.accept(PathPattern.exact(TREE))) {
       valuesToAdd.forEach(e -> l3Builder.addKeyDelta(EntityConverter.entityToKeyDelta(e)));
