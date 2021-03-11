@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.projectnessie.versioned.Key;
@@ -190,8 +191,8 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     updatesToApply
         .stream()
         .filter(uf -> uf.getOperator() == UpdateFunction.Operator.REMOVE)
-        .map(uf -> uf.getPath().getRoot())
-        .sorted(new Comparator<ExpressionPath.PathSegment>() {
+        .map(uf -> uf.getPath())
+        .sorted(new Comparator<ExpressionPath>() {
           /* Sort the PathSegments as follows
            * names before positions
            * names by string order
@@ -200,32 +201,36 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
            * when equal, recurse in with the child segments
            */
           @Override
-          public int compare(ExpressionPath.PathSegment ps1, ExpressionPath.PathSegment ps2) {
-            if (ps1.isName() && ps2.isName()) {
-              if (ps1.asName().getName().equals(ps2.asName().getName())) {
-                if (!ps1.getChild().isPresent() && ps2.getChild().isPresent()) {
-                  return 1;
-                } else if (ps1.getChild().isPresent() && !ps2.getChild().isPresent()) {
-                  return -1;
-                } else if (!ps1.getChild().isPresent() && !ps2.getChild().isPresent()) {
-                  return 0;
-                } else {
-                  return compare(ps1.getChild().get(), ps2.getChild().get());
-                }
-              } else {
-                return ps1.asName().getName().compareTo(ps2.asName().getName());
-              }
-            } else if (ps1.isName()) {
-              return -1;
-            } else if (ps1.isPosition() && ps2.isPosition()) {
-              return ps2.asPosition().getPosition() - ps1.asPosition().getPosition();
-            } else {
-              return 1;
-            }
+          public int compare(ExpressionPath path1, ExpressionPath path2) {
+            return compareSegments(path1.getRoot(), path2.getRoot());
           }
         }).forEach(rp -> {
-          remove(rp.asName().getName(), rp.getChild().orElse(null));
+          remove(rp);
         });
+  }
+
+  private static int compareSegments(ExpressionPath.PathSegment ps1, ExpressionPath.PathSegment ps2) {
+    if (ps1.isName() && ps2.isName()) {
+      if (ps1.asName().getName().equals(ps2.asName().getName())) {
+        if (!ps1.getChild().isPresent() && ps2.getChild().isPresent()) {
+          return 1;
+        } else if (ps1.getChild().isPresent() && !ps2.getChild().isPresent()) {
+          return -1;
+        } else if (!ps1.getChild().isPresent() && !ps2.getChild().isPresent()) {
+          return 0;
+        } else {
+          return compareSegments(ps1.getChild().get(), ps2.getChild().get());
+        }
+      } else {
+        return ps1.asName().getName().compareTo(ps2.asName().getName());
+      }
+    } else if (ps1.isName()) {
+      return -1;
+    } else if (ps1.isPosition() && ps2.isPosition()) {
+      return ps2.asPosition().getPosition() - ps1.asPosition().getPosition();
+    } else {
+      return 1;
+    }
   }
 
   /**
@@ -339,33 +344,22 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
    */
   private void updateWithFunction(UpdateFunction updateFunction) {
     final ExpressionPath.NameSegment nameSegment = updateFunction.getRootPathAsNameSegment();
-    final String segment = nameSegment.getName();
     final ExpressionPath.PathSegment childPath = nameSegment.getChild().orElse(null);
 
     switch (updateFunction.getOperator()) {
       case REMOVE:
-        if (childPath == null || !fieldIsList(segment, childPath)) {
-          throw new UnsupportedOperationException(
-            String.format("Expression path \"%s\" is not valid", updateFunction.getPath().asString())
-          );
-        }
-
         return;
       case SET:
-        updateWithSetFunction((UpdateFunction.SetFunction) updateFunction, segment, childPath);
+        updateWithSetFunction((UpdateFunction.SetFunction) updateFunction);
         break;
       default:
         throw new UnsupportedOperationException(String.format("Unknown operation \"%s\"", updateFunction.getOperator()));
     }
   }
 
-  private void updateWithSetFunction(UpdateFunction.SetFunction setFunction, String segment, ExpressionPath.PathSegment childPath) {
+  private void updateWithSetFunction(UpdateFunction.SetFunction setFunction) {
     switch (setFunction.getSubOperator()) {
       case APPEND_TO_LIST:
-        if (!fieldIsList(segment, childPath)) {
-          throw new UnsupportedOperationException(String.format("The append to list operation is not valid for \"%s\"", segment));
-        }
-
         final List<Entity> valuesToAppend;
         if (setFunction.getValue().getType() == Entity.EntityType.LIST) {
           valuesToAppend = setFunction.getValue().getList();
@@ -373,21 +367,15 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
           valuesToAppend = Collections.singletonList(setFunction.getValue());
         }
 
-        appendToList(segment, childPath, valuesToAppend);
+        appendToList(setFunction.getPath(), valuesToAppend);
         break;
       case EQUALS:
-        if (fieldIsList(segment, childPath) && childPath != null && childPath.isPosition()) {
-          set(segment, childPath, setFunction.getValue());
-        } else if (fieldIsList(segment, childPath) != (setFunction.getValue().getType() == Entity.EntityType.LIST)) {
-          throw new UnsupportedOperationException(
-            String.format("The value for \"%s\" must be a list", setFunction.getPath().asString())
-          );
-        } else if (ID.equals(segment)) {
+        if (ID.equals(setFunction.getPath().getRoot().getName())) {
           id(Id.of(setFunction.getValue().getBinary()));
-        } else if (DATETIME.equals(segment)) {
+        } else if (DATETIME.equals(setFunction.getPath().getRoot().getName())) {
           dt(setFunction.getValue().getNumber());
         } else {
-          set(segment, childPath, setFunction.getValue());
+          set(setFunction.getPath(), setFunction.getValue());
         }
         break;
       default:
@@ -395,9 +383,39 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     }
   }
 
-  protected int getPosition(ExpressionPath.PathSegment path) {
-    if (path != null && path.isPosition()) {
-      return path.asPosition().getPosition();
+  private ExpressionPath removeLastPositionSegmentIfPosition(ExpressionPath path) {
+    ExpressionPath.PathSegment currentNode = path.getRoot();
+    ExpressionPath.PathSegment.Builder pathBuilder = ExpressionPath.builder(currentNode.asName().getName());
+    currentNode = currentNode.getChild().orElse(null);
+
+    while (currentNode != null && (currentNode.getChild().isPresent() || currentNode.isName())) {
+      if (currentNode.isPosition()) {
+        pathBuilder = pathBuilder.position(currentNode.asPosition().getPosition());
+      } else {
+        pathBuilder = pathBuilder.name(currentNode.asName().getName());
+      }
+
+      currentNode = currentNode.getChild().orElse(null);
+    }
+
+    return pathBuilder.build();
+  }
+
+  /**
+   * Returns the int value nth path segment assuming it is a position segment.
+   * @param path the path to parse
+   * @param n index of the path segment
+   * @return int value of the position at index n
+   */
+  protected int getPathSegmentAsPosition(ExpressionPath path, int n) {
+    Optional<ExpressionPath.PathSegment> pathSegment = Optional.of(path.getRoot());
+
+    for (int i = 0; i < n && pathSegment.isPresent(); i++) {
+      pathSegment = pathSegment.get().getChild();
+    }
+
+    if (pathSegment.isPresent() && pathSegment.get().isPosition()) {
+      return pathSegment.get().asPosition().getPosition();
     } else {
       throw new UnsupportedOperationException("Invalid expression path");
     }
@@ -405,34 +423,23 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
 
   /**
    * Removes a value from a field or subvalue of the field.
-   * @param fieldName name of the top-level field
-   * @param path the path of the node to remove, starts immediately below the field
+   * @param path the path of the node to remove
    */
-  protected abstract void remove(String fieldName, ExpressionPath.PathSegment path);
-
-  /**
-   * Checks if a node is a list that supports remove and append.
-   * @param fieldName the name of the top-level field
-   * @param childPath the path of the node to check, starts immediately below the field
-   * @return if the node is a list
-   */
-  protected abstract boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath);
+  protected abstract void remove(ExpressionPath path);
 
   /**
    * Adds a list of values to a node that is a list.
-   * @param fieldName the name of the top-level field
-   * @param childPath the path of the node to append to, starts immediately below the field
+   * @param path the path of the node to append to
    * @param valuesToAdd list of values to add to the node
    */
-  protected abstract void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd);
+  protected abstract void appendToList(ExpressionPath path, List<Entity> valuesToAdd);
 
   /**
    * Updates the value of a node.
-   * @param fieldName the name of the top-level field
-   * @param childPath the path of the node to update, starts immediately below the field
+   * @param path the path of the node to update
    * @param newValue the new value for the node
    */
-  protected abstract void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue);
+  protected abstract void set(ExpressionPath path, Entity newValue);
 
   /**
    * Serialize the value to protobuf format.

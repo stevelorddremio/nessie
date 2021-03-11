@@ -184,49 +184,24 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   }
 
   @Override
-  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    switch (fieldName) {
-      case ANCESTORS:
-        assertIsPositionPath(path, "remove");
-
-        List<ByteString> updatedAncestors = new ArrayList<>(l1Builder.getAncestorsList());
-        updatedAncestors.remove(getPosition(path));
-        l1Builder.clearAncestors().addAllAncestors(updatedAncestors);
-        break;
-      case TREE:
-        assertIsPositionPath(path, "remove");
-
-        List<ByteString> updatedChildren = new ArrayList<>(l1Builder.getTreeList());
-        updatedChildren.remove(getPosition(path));
-        l1Builder.clearTree().addAllTree(updatedChildren);
-        break;
-      case KEY_MUTATIONS:
-        removesKeyMutations(path);
-        break;
-      case COMPLETE_KEY_LIST:
-        assertIsPositionPath(path, "remove");
-
-        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
-        updatedKeyList.remove(getPosition(path));
-        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
-        break;
-      default:
-        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
-    }
-  }
-
-  private void assertIsPositionPath(ExpressionPath.PathSegment path, String operation) {
-    if (!new PathPattern().anyPosition().matches(path)) {
-      throw new UnsupportedOperationException(String.format("Invalid path for %s", operation));
-    }
-  }
-
-  private void removesKeyMutations(ExpressionPath.PathSegment path) {
-    if (new PathPattern().anyPosition().matches(path)) {
-      l1Builder.removeKeyMutations(getPosition(path));
-    } else if (new PathPattern().anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition().matches(path)) {
-      final int keyMutationsIndex = path.asPosition().getPosition();
-      final int keyIndex = path.getChild().get().getChild().get().getChild().get().asPosition().getPosition();
+  protected void remove(ExpressionPath path) {
+    // parents[*]
+    if (path.accept(PathPattern.exact(ANCESTORS).anyPosition())) {
+      List<ByteString> updatedAncestors = new ArrayList<>(l1Builder.getAncestorsList());
+      updatedAncestors.remove(getPathSegmentAsPosition(path, 1));
+      l1Builder.clearAncestors().addAllAncestors(updatedAncestors);
+    // tree[*]
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition())) {
+      List<ByteString> updatedChildren = new ArrayList<>(l1Builder.getTreeList());
+      updatedChildren.remove(getPathSegmentAsPosition(path, 1));
+      l1Builder.clearTree().addAllTree(updatedChildren);
+    // mutations[*]
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition())) {
+      l1Builder.removeKeyMutations(getPathSegmentAsPosition(path, 1));
+    // mutations[*]/key[*]
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition())) {
+      final int keyMutationsIndex = getPathSegmentAsPosition(path, 1);
+      final int keyIndex = getPathSegmentAsPosition(path, 3);
 
       final List<String> updatedKeysList = new ArrayList<>(l1Builder.getKeyMutations(keyMutationsIndex).getKey().getElementsList());
       updatedKeysList.remove(keyIndex);
@@ -234,155 +209,98 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
           .newBuilder(l1Builder.getKeyMutations(keyMutationsIndex))
           .setKey(ValueProtos.Key.newBuilder().addAllElements(updatedKeysList))
       );
+    // fragments[*]
+    } else if (path.accept(PathPattern.exact(COMPLETE_KEY_LIST).anyPosition())) {
+      List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
+      updatedKeyList.remove(getPathSegmentAsPosition(path, 1));
+      l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
     } else {
-      throw new UnsupportedOperationException(String.format("Remove not supported for %s", KEY_MUTATIONS));
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for remove in L1", path.asString()));
     }
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
-    switch (fieldName) {
-      case ANCESTORS:
-      case TREE:
-      case COMPLETE_KEY_LIST:
-        return new PathPattern().matches(childPath) || new PathPattern().anyPosition().matches(childPath);
-      case KEY_MUTATIONS:
-        return new PathPattern().matches(childPath) || new PathPattern().anyPosition().matches(childPath)
-            || new PathPattern().anyPosition().nameEquals(KEY_MUTATIONS_KEY).matches(childPath)
-            || new PathPattern().anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition().matches(childPath);
-      default:
-        return false;
+  protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
+    if (path.accept(PathPattern.exact(ANCESTORS))) {
+      valuesToAdd.forEach(e -> l1Builder.addAncestors(e.getBinary()));
+    } else if (path.accept(PathPattern.exact(TREE))) {
+      valuesToAdd.forEach(e -> l1Builder.addTree(e.getBinary()));
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS))) {
+      valuesToAdd.forEach(e -> l1Builder.addTree(e.getBinary()));
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY))) {
+      final int i = getPathSegmentAsPosition(path, 1);
+
+      final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(l1Builder.getKeyMutations(i).getKey());
+      valuesToAdd.forEach(e -> keyBuilder.addElements(e.getString()));
+      l1Builder.setKeyMutations(i, ValueProtos.KeyMutation
+          .newBuilder(l1Builder.getKeyMutations(i))
+          .setKey(keyBuilder));
+    } else if (path.accept(PathPattern.exact(COMPLETE_KEY_LIST))) {
+      List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
+      updatedKeyList.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
+
+      final ValueProtos.CompleteList.Builder completeListBuilder = ValueProtos.CompleteList.newBuilder();
+      updatedKeyList.forEach(completeListBuilder::addFragmentIds);
+      l1Builder.setCompleteList(completeListBuilder);
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for append in L1", path.asString()));
     }
   }
 
   @Override
-  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    switch (fieldName) {
-      case ANCESTORS:
-        if (childPath != null) {
-          throw new UnsupportedOperationException("Invalid path for append");
-        }
-
-        valuesToAdd.forEach(e -> l1Builder.addAncestors(e.getBinary()));
-        break;
-      case TREE:
-        if (childPath != null) {
-          throw new UnsupportedOperationException("Invalid path for append");
-        }
-
-        valuesToAdd.forEach(e -> l1Builder.addTree(e.getBinary()));
-        break;
-      case KEY_MUTATIONS:
-        if (new PathPattern().matches(childPath)) {
-          valuesToAdd.forEach(e -> l1Builder.addKeyMutations(EntityConverter.entityToKeyMutation(e)));
-        } else if (new PathPattern().anyPosition().nameEquals(KEY_MUTATIONS_KEY).matches(childPath)) {
-          final int i = childPath.asPosition().getPosition();
-
-          final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(l1Builder.getKeyMutations(i).getKey());
-          valuesToAdd.forEach(e -> keyBuilder.addElements(e.getString()));
-          l1Builder.setKeyMutations(i, ValueProtos.KeyMutation
-              .newBuilder(l1Builder.getKeyMutations(i))
-              .setKey(keyBuilder));
-        } else {
-          throw new UnsupportedOperationException("Invalid path for append");
-        }
-        break;
-      case COMPLETE_KEY_LIST:
-        if (childPath != null) {
-          throw new UnsupportedOperationException("Invalid path for append");
-        }
-        List<ByteString> updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
-        updatedKeyList.addAll(valuesToAdd.stream().map(Entity::getBinary).collect(Collectors.toList()));
-
-        final ValueProtos.CompleteList.Builder completeListBuilder = ValueProtos.CompleteList.newBuilder();
-        updatedKeyList.forEach(completeListBuilder::addFragmentIds);
-        l1Builder.setCompleteList(completeListBuilder);
-        break;
-      default:
-        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
-    }
-  }
-
-  @Override
-  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    switch (fieldName) {
-      case ANCESTORS:
-        if (childPath != null) {
-          l1Builder.setAncestors(getPosition(childPath), newValue.getBinary());
-        } else {
-          l1Builder.clearAncestors();
-          newValue.getList().forEach(e -> l1Builder.addAncestors(e.getBinary()));
-        }
-        break;
-      case TREE:
-        if (childPath != null) {
-          l1Builder.setTree(getPosition(childPath), newValue.getBinary());
-        } else {
-          l1Builder.clearTree();
-          newValue.getList().forEach(e -> l1Builder.addTree(e.getBinary()));
-        }
-        break;
-      case KEY_MUTATIONS:
-        setsKeyMutations(childPath, newValue);
-        break;
-      case COMPLETE_KEY_LIST:
-        final List<ByteString> updatedKeyList;
-        if (childPath != null) {
-          updatedKeyList = new ArrayList<>(l1Builder.getCompleteList().getFragmentIdsList());
-          updatedKeyList.set(getPosition(childPath), newValue.getBinary());
-        } else {
-          updatedKeyList = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
-        }
-        l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder().addAllFragmentIds(updatedKeyList));
-        break;
-      case CHECKPOINT_ID:
-        l1Builder.setIncrementalList(ValueProtos.IncrementalList
-            .newBuilder(l1Builder.getIncrementalList())
-            .setCheckpointId(newValue.getBinary())
-        );
-        break;
-      case DISTANCE_FROM_CHECKPOINT:
-        l1Builder.setIncrementalList(ValueProtos.IncrementalList
-            .newBuilder(l1Builder.getIncrementalList())
-            .setDistanceFromCheckpointId((int)newValue.getNumber())
-        );
-        break;
-      case COMMIT_METADATA:
-        if (childPath != null) {
-          throw new UnsupportedOperationException("Invalid path for SetEquals");
-        }
-
-        commitMetadataId(Id.of(newValue.getBinary()));
-        break;
-      default:
-        throw new UnsupportedOperationException(String.format("%s is not a list", fieldName));
-    }
-  }
-
-  private void setsKeyMutations(ExpressionPath.PathSegment childPath, Entity newValue) {
-    if (new PathPattern().matches(childPath)) {
+  protected void set(ExpressionPath path, Entity newValue) {
+    if (path.accept(PathPattern.exact(ANCESTORS))) {
+      l1Builder.clearAncestors();
+      newValue.getList().forEach(e -> l1Builder.addAncestors(e.getBinary()));
+    } else if (path.accept(PathPattern.exact(ANCESTORS).anyPosition())) {
+      l1Builder.setAncestors(getPathSegmentAsPosition(path, 1), newValue.getBinary());
+    } else if (path.accept(PathPattern.exact(TREE))) {
+      l1Builder.clearTree();
+      newValue.getList().forEach(e -> l1Builder.addTree(e.getBinary()));
+    } else if (path.accept(PathPattern.exact(TREE).anyPosition())) {
+      l1Builder.setTree(getPathSegmentAsPosition(path, 1), newValue.getBinary());
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS))) {
       l1Builder.clearKeyMutations();
       newValue.getList().forEach(e -> l1Builder.addKeyMutations(EntityConverter.entityToKeyMutation(e)));
-    } else if (new PathPattern().anyPosition().matches(childPath)) {
-      final int i = childPath.asPosition().getPosition();
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition())) {
+      final int i = getPathSegmentAsPosition(path, 1);
       l1Builder.setKeyMutations(i, EntityConverter.entityToKeyMutation(newValue));
-    } else if (new PathPattern().anyPosition().nameEquals(KEY_MUTATIONS_KEY).matches(childPath)) {
-      final int i = childPath.asPosition().getPosition();
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY))) {
+      final int i = getPathSegmentAsPosition(path, 1);
 
       l1Builder.setKeyMutations(i, ValueProtos.KeyMutation
           .newBuilder(l1Builder.getKeyMutations(i))
           .setKey(EntityConverter.entityToKey(newValue)));
-    } else if (new PathPattern().anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition().matches(childPath)) {
-      final int keyMutationsIndex = childPath.asPosition().getPosition();
-      final int keyIndex = childPath.getChild().get().getChild().get().asPosition().getPosition();
+    } else if (path.accept(PathPattern.exact(KEY_MUTATIONS).anyPosition().nameEquals(KEY_MUTATIONS_KEY).anyPosition())) {
+      final int keyMutationsIndex = getPathSegmentAsPosition(path, 1);
+      final int keyIndex = getPathSegmentAsPosition(path, 3);
 
       l1Builder.setKeyMutations(keyMutationsIndex, ValueProtos.KeyMutation
           .newBuilder(l1Builder.getKeyMutations(keyMutationsIndex))
           .setKey(ValueProtos.Key
-              .newBuilder(l1Builder.getKeyMutations(keyMutationsIndex).getKey())
-              .setElements(keyIndex, newValue.getString())));
+            .newBuilder(l1Builder.getKeyMutations(keyMutationsIndex).getKey())
+            .setElements(keyIndex, newValue.getString())));
+    } else if (path.accept(PathPattern.exact(COMPLETE_KEY_LIST))) {
+      final ValueProtos.CompleteList.Builder completeListBuilder = ValueProtos.CompleteList.newBuilder();
+      newValue.getList().forEach(e -> completeListBuilder.addFragmentIds(e.getBinary()));
+      l1Builder.setCompleteList(completeListBuilder);
+    } else if (path.accept(PathPattern.exact(COMPLETE_KEY_LIST).anyPosition())) {
+      final int i = getPathSegmentAsPosition(path, 1);
+      l1Builder.setCompleteList(ValueProtos.CompleteList.newBuilder(l1Builder.getCompleteList()).setFragmentIds(i, newValue.getBinary()));
+    } else if (path.accept(PathPattern.exact(CHECKPOINT_ID))) {
+      l1Builder.setIncrementalList(ValueProtos.IncrementalList
+          .newBuilder(l1Builder.getIncrementalList())
+          .setCheckpointId(newValue.getBinary())
+      );
+    } else if (path.accept(PathPattern.exact(DISTANCE_FROM_CHECKPOINT))) {
+      l1Builder.setIncrementalList(ValueProtos.IncrementalList
+          .newBuilder(l1Builder.getIncrementalList())
+          .setDistanceFromCheckpointId((int)newValue.getNumber())
+      );
+    } else if (path.accept(PathPattern.exact(COMMIT_METADATA))) {
+      commitMetadataId(Id.of(newValue.getBinary()));
     } else {
-      throw new UnsupportedOperationException("Invalid path for SetEquals");
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in L1", path.asString()));
     }
   }
 

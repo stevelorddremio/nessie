@@ -140,13 +140,15 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   }
 
   @Override
-  protected void remove(String fieldName, ExpressionPath.PathSegment path) {
-    if (new PathPattern().anyPosition().matches(path)) {
-      final int i = path.asPosition().getPosition();
+  protected void remove(ExpressionPath path) {
+    // keys[*]
+    if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
+      final int i = getPathSegmentAsPosition(path, 1);
       fragmentBuilder.removeKeys(i);
-    } else if (new PathPattern().anyPosition().anyPosition().matches(path)) {
-      final int outerIndex = path.asPosition().getPosition();
-      final int innerIndex = path.getChild().get().asPosition().getPosition();
+    // keys[*][*]
+    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition().anyPosition())) {
+      final int outerIndex = getPathSegmentAsPosition(path, 1);
+      final int innerIndex = getPathSegmentAsPosition(path, 2);
 
       final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(outerIndex).getElementsList());
       updatedKeys.remove(innerIndex);
@@ -156,53 +158,43 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
       fragmentBuilder.setKeys(outerIndex, keyBuilder);
     } else {
-      throw new UnsupportedOperationException("Invalid path for remove");
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for remove in Fragment", path.asString()));
     }
   }
 
   @Override
-  protected boolean fieldIsList(String fieldName, ExpressionPath.PathSegment childPath) {
-    if (!KEY_LIST.equals(fieldName)) {
-      return false;
-    }
-
-    return new PathPattern().matches(childPath) || new PathPattern().anyPosition().matches(childPath);
-  }
-
-  @Override
-  protected void appendToList(String fieldName, ExpressionPath.PathSegment childPath, List<Entity> valuesToAdd) {
-    if (new PathPattern().matches(childPath)) {
+  protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
+    if (path.accept(PathPattern.exact(KEY_LIST))) {
       valuesToAdd.forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
-    } else if (new PathPattern().anyPosition().matches(childPath)) {
-      final int i = childPath.asPosition().getPosition();
+    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
+      final int i = getPathSegmentAsPosition(path, 1);
 
       final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(fragmentBuilder.getKeys(i));
       valuesToAdd.forEach(e -> keyBuilder.addElements(e.getString()));
 
       fragmentBuilder.setKeys(i, keyBuilder);
     } else {
-      throw new UnsupportedOperationException("Invalid path for append");
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for append in Fragment", path.asString()));
     }
   }
 
   @Override
-  protected void set(String fieldName, ExpressionPath.PathSegment childPath, Entity newValue) {
-    if (new PathPattern().matches(childPath)) {
+  protected void set(ExpressionPath path, Entity newValue) {
+    if (path.accept(PathPattern.exact(KEY_LIST))) {
       fragmentBuilder.clearKeys();
-
       newValue.getList().forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
-    } else if (new PathPattern().anyPosition().matches(childPath)) {
-      final int i = childPath.asPosition().getPosition();
+    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition())) {
+      final int i = getPathSegmentAsPosition(path, 1);
       fragmentBuilder.setKeys(i, EntityConverter.entityToKey(newValue));
-    } else if (new PathPattern().anyPosition().anyPosition().matches(childPath)) {
-      final int outerIndex = childPath.asPosition().getPosition();
-      final int innerIndex = childPath.getChild().get().asPosition().getPosition();
+    } else if (path.accept(PathPattern.exact(KEY_LIST).anyPosition().anyPosition())) {
+      final int outerIndex = getPathSegmentAsPosition(path, 1);
+      final int innerIndex = getPathSegmentAsPosition(path, 2);
 
       fragmentBuilder.setKeys(outerIndex, ValueProtos.Key
           .newBuilder(fragmentBuilder.getKeys(outerIndex))
           .setElements(innerIndex, newValue.getString()));
     } else {
-      throw new UnsupportedOperationException("Invalid path for set equals");
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in Fragment", path.asString()));
     }
   }
 }
