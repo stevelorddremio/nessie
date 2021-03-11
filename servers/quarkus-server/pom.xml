@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.projectnessie</groupId>
     <artifactId>nessie-server-parent</artifactId>
-    <version>0.3.1-SNAPSHOT</version>
+    <version>0.4.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>nessie-quarkus</artifactId>
@@ -31,12 +31,18 @@
 
   <properties>
     <quarkus.smallrye-openapi.store-schema-directory>${project.build.directory}/openapi</quarkus.smallrye-openapi.store-schema-directory>
+    <test.log.level>INFO</test.log.level>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.projectnessie</groupId>
       <artifactId>nessie-services</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectnessie</groupId>
+      <artifactId>nessie-server-store</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -183,6 +189,9 @@
         <configuration>
           <systemPropertyVariables>
             <maven.home>${maven.home}</maven.home>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <quarkus.log.level>${test.log.level}</quarkus.log.level>
+            <quarkus.log.console.level>${test.log.level}</quarkus.log.console.level>
           </systemPropertyVariables>
         </configuration>
       </plugin>

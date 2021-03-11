@@ -24,6 +24,17 @@ public abstract class SetClause implements UpdateClause {
 
   public abstract Value getValue();
 
+  /**
+   * Entry point for visitation.
+   * @param visitor the visitor that will be invoked.
+   * @param <T> the type of the returned value.
+   * @return the possibly transformed value resulting from the visitation.
+   */
+  @Override
+  public <T> T accept(UpdateClauseVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
+
   public static SetClause equals(ExpressionPath path, Entity value) {
     return ImmutableSetClause.builder().path(path).value(Value.of(value)).build();
   }
@@ -45,10 +56,5 @@ public abstract class SetClause implements UpdateClause {
   @Override
   public String toClauseString() {
     return String.format("%s = %s", getPath().asString(), getValue().asString());
-  }
-
-  @Override
-  public <T> T accept(UpdateClauseVisitor<T> visitor) {
-    return visitor.visit(this);
   }
 }

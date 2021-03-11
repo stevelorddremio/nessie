@@ -21,7 +21,7 @@
 
   <groupId>org.projectnessie</groupId>
   <artifactId>nessie</artifactId>
-  <version>0.3.1-SNAPSHOT</version>
+  <version>0.4.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Nessie</name>
@@ -114,7 +114,7 @@
     <!--<dynamodb-local.repository.url>https://s3.us-west-2.amazonaws.com/dynamodb-local/release</dynamodb-local.repository.url>-->
 
     <!-- Version properties -->
-    <awssdk.version>2.16.9</awssdk.version>
+    <awssdk.version>2.16.16</awssdk.version>
     <bouncycastle.version>1.66</bouncycastle.version>
     <deltalake2.version>0.6.2-nessie</deltalake2.version>
     <deltalake3.version>0.8.0-nessie</deltalake3.version>
@@ -126,7 +126,7 @@
     <hamcrest.version>2.2</hamcrest.version>
     <iceberg.version>0.11.0</iceberg.version>
     <immutables.version>2.8.9-ea-1</immutables.version>
-    <jackson.version>2.11.3</jackson.version>
+    <jackson.version>2.12.1</jackson.version>
     <javax.version>4.0.1</javax.version>
     <jaeger.version>1.3.2</jaeger.version>
     <jetty.version>9.4.31.v20200723</jetty.version>
@@ -135,7 +135,7 @@
     <jmeter.version>5.4.1</jmeter.version>
     <junit.version>5.7.1</junit.version>
     <logback.version>1.2.3</logback.version>
-    <protobuf.version>3.15.3</protobuf.version>
+    <protobuf.version>3.15.5</protobuf.version>
     <mockito.version>3.8.0</mockito.version>
     <prometheus.version>0.9.0</prometheus.version>
     <reactor.version>2020.0.4</reactor.version>
@@ -148,7 +148,7 @@
     <spark3.version>3.0.1</spark3.version>
     <spark3.jackson.version>2.10.2</spark3.jackson.version>
     <sqlite.version>1.0.392</sqlite.version>
-    <quarkus.version>1.12.0.Final</quarkus.version>
+    <quarkus.version>1.12.1.Final</quarkus.version>
     <openapi.version>1.1.2</openapi.version>
     <jsr305.version>3.0.2</jsr305.version>
   </properties>
@@ -321,6 +321,11 @@
       <dependency>
         <groupId>org.apache.iceberg</groupId>
         <artifactId>iceberg-nessie</artifactId>
+        <version>${iceberg.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.iceberg</groupId>
+        <artifactId>iceberg-spark3-runtime</artifactId>
         <version>${iceberg.version}</version>
       </dependency>
       <dependency>
@@ -647,14 +652,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>4.4.0</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.scala-lang</groupId>
-              <artifactId>scala-library</artifactId>
-              <version>${scala2.12.version}</version>
-            </dependency>
-          </dependencies>
+          <version>4.4.1</version>
           <configuration>
             <sendJavaToScalac>false</sendJavaToScalac>
             <scalaVersion>${scala2.12.version}</scalaVersion>
@@ -668,7 +666,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>flatten-maven-plugin</artifactId>
-          <version>1.2.5</version>
+          <version>1.2.7</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -689,6 +687,19 @@
           <groupId>io.quarkus</groupId>
           <artifactId>quarkus-maven-plugin</artifactId>
           <version>${quarkus.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.xolstice.maven.plugins</groupId>
+          <artifactId>protobuf-maven-plugin</artifactId>
+          <version>0.6.1</version>
+          <configuration>
+            <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>com.bazaarvoice.maven.plugins</groupId>
+          <artifactId>process-exec-maven-plugin</artifactId>
+          <version>0.9</version>
         </plugin>
       </plugins>
     </pluginManagement>

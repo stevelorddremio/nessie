@@ -79,6 +79,7 @@ import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.BillingMode;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
@@ -91,7 +92,6 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 import software.amazon.awssdk.services.dynamodb.model.KeyType;
 import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
-import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
@@ -450,7 +450,7 @@ public class DynamoStore implements Store {
         .consistentRead(true)
         .build());
     if (!response.hasItem()) {
-      throw new NotFoundException("Unable to load item.");
+      throw new NotFoundException(String.format("Unable to load item %s:%s.", valueType, id));
     }
     deserializeToConsumer(valueType, response.item(), consumer);
   }
@@ -473,7 +473,7 @@ public class DynamoStore implements Store {
       consumer.ifPresent(c -> deserializeToConsumer(type, response.attributes(), c));
       return true;
     } catch (ResourceNotFoundException ex) {
-      throw new NotFoundException("Unable to find value.", ex);
+      throw new NotFoundException(String.format("Unable to find value %s:%s.", type, id), ex);
     } catch (ConditionalCheckFailedException checkFailed) {
       LOGGER.debug("Conditional check failed.", checkFailed);
       return false;
@@ -511,13 +511,9 @@ public class DynamoStore implements Store {
         .tableName(name)
         .attributeDefinitions(AttributeDefinition.builder()
             .attributeName(KEY_NAME)
-            .attributeType(
-              ScalarAttributeType.B)
+            .attributeType(ScalarAttributeType.B)
             .build())
-        .provisionedThroughput(ProvisionedThroughput.builder()
-            .readCapacityUnits(10L)
-            .writeCapacityUnits(10L)
-            .build())
+        .billingMode(BillingMode.PAY_PER_REQUEST)
         .keySchema(KeySchemaElement.builder()
             .attributeName(KEY_NAME)
             .keyType(KeyType.HASH)

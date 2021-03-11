@@ -21,6 +21,17 @@ import org.immutables.value.Value;
 public abstract class RemoveClause implements UpdateClause {
   public abstract ExpressionPath getPath();
 
+  /**
+   * Entry point for visitation.
+   * @param visitor the visitor that will be invoked.
+   * @param <T> the type of the returned value.
+   * @return the possibly transformed value resulting from the visitation.
+   */
+  @Override
+  public <T> T accept(UpdateClauseVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
+
   @Override
   public RemoveClause alias(AliasCollector c) {
     return ImmutableRemoveClause.builder().path(getPath().alias(c)).build();
@@ -38,10 +49,5 @@ public abstract class RemoveClause implements UpdateClause {
   @Override
   public String toClauseString() {
     return getPath().asString();
-  }
-
-  @Override
-  public <T> T accept(UpdateClauseVisitor<T> visitor) {
-    return visitor.visit(this);
   }
 }

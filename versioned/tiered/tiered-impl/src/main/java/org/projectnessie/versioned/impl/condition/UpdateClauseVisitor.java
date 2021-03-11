@@ -15,6 +15,10 @@
  */
 package org.projectnessie.versioned.impl.condition;
 
+/**
+ * Visitor for all classes in the UpdateClause hierarchy.
+ * @param <T> The type to which the UpdateClause will be converted.
+ */
 public interface UpdateClauseVisitor<T> {
   /**
    * Visit the passed in RemoveClause.
