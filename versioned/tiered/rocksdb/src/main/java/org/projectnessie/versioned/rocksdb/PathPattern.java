@@ -37,14 +37,14 @@ import org.projectnessie.versioned.store.Entity;
  * Path patterns support exact matching on parts of the path, and any matching. The following patterns all
  * match the example path above.
  * <ul>
- *   <li>new PathPattern().anyName().anyPosition()</li>
- *   <li>new PathPattern().anyName().positionEquals(0)</li>
- *   <li>new PathPattern().nameEquals("foo").anyPosition()</li>
- *   <li>new PathPattern().nameEquals("foo").positionEquals(0)</li>
+ *   <li>PathPattern.exact().anyName().anyPosition()</li>
+ *   <li>PathPattern.exact().anyName().positionEquals(0)</li>
+ *   <li>PathPattern.exact().nameEquals("foo").anyPosition()</li>
+ *   <li>PathPattern.exact().nameEquals("foo").positionEquals(0)</li>
  * </ul>
  * After building up a path pattern, you can test a path against it with the match method. ex.
  * <pre>
- *   boolean matches = new PathPattern().nameEquals("foo").anyPosition().nameEquals("bar").anyPosition().matches(path);
+ *   boolean matches = PathPattern.exact().nameEquals("foo").anyPosition().nameEquals("bar").anyPosition().matches(path);
  * </pre>
  */
 class PathPattern implements ValueVisitor<Boolean> {
@@ -60,18 +60,38 @@ class PathPattern implements ValueVisitor<Boolean> {
     this.matchType = matchType;
   }
 
+  /**
+   * Create a new exact match pattern starting with a provided name.
+   * @param name the name the pattern starts with
+   * @return the new PathPattern
+   */
   static PathPattern exact(String name) {
     return new PathPattern(MatchType.EXACT).nameEquals(name);
   }
 
+  /**
+   * Create a new exact match pattern starting with a provided position.
+   * @param position the position the pattern starts with
+   * @return the new PathPattern
+   */
   static PathPattern exact(int position) {
     return new PathPattern(MatchType.EXACT).positionEquals(position);
   }
 
+  /**
+   * Create a new prefix match pattern starting with a provided name.
+   * @param name the name the pattern starts with
+   * @return the new PathPattern
+   */
   static PathPattern prefix(String name) {
     return new PathPattern(MatchType.PREFIX).nameEquals(name);
   }
 
+  /**
+   * Create a new prefix match pattern starting with a provided position.
+   * @param position the position the pattern starts with
+   * @return the new PathPattern
+   */
   static PathPattern prefix(int position) {
     return new PathPattern(MatchType.PREFIX).positionEquals(position);
   }
