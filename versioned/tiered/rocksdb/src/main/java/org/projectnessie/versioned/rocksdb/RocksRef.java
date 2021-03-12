@@ -331,8 +331,24 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
               ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitsPosition))
                 .clearKeyMutation()
                 .addAllKeyMutation(updatedKeyList)));
+      // commits[*]/keys[*]/key
+    } else if (path.accept(PathPattern.exact(COMMITS).anyPosition().nameEquals(COMMITS_KEY_LIST)
+        .anyPosition().nameEquals(COMMITS_KEY_LIST_KEY))) {
+      final int commitIndex = getPathSegmentAsPosition(path, 1);
+      final int keyMutationIndex = getPathSegmentAsPosition(path, 3);
+
+      final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(
+          refBuilder.getBranch().getCommits(commitIndex).getKeyMutation(keyMutationIndex).getKey());
+      valuesToAdd.forEach(e -> keyBuilder.addElements(e.getString()));
+      refBuilder.setBranch(
+          ValueProtos.Branch.newBuilder(refBuilder.getBranch())
+            .setCommits(commitIndex,
+              ValueProtos.Commit.newBuilder(refBuilder.getBranch().getCommits(commitIndex))
+                .setKeyMutation(keyMutationIndex,
+                  ValueProtos.KeyMutation.newBuilder(refBuilder.getBranch().getCommits(commitIndex).getKeyMutation(keyMutationIndex))
+                    .setKey(keyBuilder))));
     } else {
-      throw new UnsupportedOperationException(String.format("%s is not a valid path for append in L1", path.asString()));
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for append in Ref", path.asString()));
     }
   }
 
@@ -820,8 +836,21 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
   ValueProtos.KeyMutation getCommitsKeys(int commitsPosition, int keysPosition) {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutation(keysPosition);
-    } else {
-      return null;
     }
+    return null;
+  }
+
+  List<String> getCommitsKeysKey(int commitsPosition, int keysPosition) {
+    if (refBuilder.hasBranch()) {
+      return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutation(keysPosition).getKey().getElementsList();
+    }
+    return null;
+  }
+
+  String getCommitsKeysKeyElement(int commitsPosition, int keysPosition, int elementPosition) {
+    if (refBuilder.hasBranch()) {
+      return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutation(keysPosition).getKey().getElements(elementPosition);
+    }
+    return null;
   }
 }

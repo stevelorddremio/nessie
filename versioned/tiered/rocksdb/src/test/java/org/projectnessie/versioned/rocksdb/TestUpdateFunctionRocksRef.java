@@ -16,6 +16,7 @@
 
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -614,7 +615,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
         @Test
         void commitsKeysAppendToListScalar() {
-          final int commitsPosition = 1;
+          final int commitsIndex = 1;
           final int keysIndex = 1;
           final Entity keysEntity = createKeyMutationEntity(RocksRef.COMMITS_KEY_REMOVAL);
 
@@ -622,12 +623,12 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
           final UpdateExpression updateExpression =
               UpdateExpression.of(SetClause.appendToList(ExpressionPath.builder(RocksRef.COMMITS)
-                .position(commitsPosition)
+                .position(commitsIndex)
                 .name(RocksRef.COMMITS_KEY_LIST)
                 .build(),
               keysEntity));
           rocksRefBranch.update(updateExpression);
-          Assertions.assertEquals(expectedKeys, rocksRefBranch.getCommitsKeys(commitsPosition, keysIndex));
+          Assertions.assertEquals(expectedKeys, rocksRefBranch.getCommitsKeys(commitsIndex, keysIndex));
         }
 
         @Test
@@ -652,6 +653,81 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           Assertions.assertEquals(initialKeysListSize + 2, rocksRefBranch.getCommitsKeysList(commitsPosition).size());
           Assertions.assertEquals(expectedKeys1, rocksRefBranch.getCommitsKeys(commitsPosition, initialKeysListSize));
           Assertions.assertEquals(expectedKeys2, rocksRefBranch.getCommitsKeys(commitsPosition, initialKeysListSize + 1));
+        }
+
+        @Test
+        void commitKeysKeySetEquals() {
+          final int commitsIndex = 1;
+          final int commitsKeysIndex = 0;
+          final int commitsKeysKeyIndex = 0;
+          final UpdateExpression updateExpression =
+            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+              .position(commitsIndex)
+              .name(RocksRef.COMMITS_KEY_LIST)
+              .position(commitsKeysIndex)
+              .name(RocksRef.COMMITS_KEY_LIST_KEY)
+              .build(), Entity.ofList(Entity.ofString("foo"), Entity.ofString("bar"))));
+          rocksRefBranch.update(updateExpression);
+          Assertions.assertEquals(Lists.newArrayList("foo", "bar"), rocksRefBranch.getCommitsKeysKey(commitsIndex, commitsKeysIndex));
+        }
+
+        @Test
+        void commitKeysKeySingleSetEquals() {
+          final int commitsIndex = 1;
+          final int commitsKeysIndex = 0;
+          final int commitsKeysKeyIndex = 0;
+          final UpdateExpression updateExpression =
+              UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsIndex)
+                .name(RocksRef.COMMITS_KEY_LIST)
+                .position(commitsKeysIndex)
+                .name(RocksRef.COMMITS_KEY_LIST_KEY)
+                .position(commitsKeysKeyIndex)
+                .build(), Entity.ofString("foo")));
+
+          rocksRefBranch.update(updateExpression);
+          Assertions.assertEquals("foo", rocksRefBranch.getCommitsKeysKeyElement(commitsIndex, commitsKeysIndex, commitsKeysKeyIndex));
+        }
+
+        @Test
+        void commitKeysKeySetAppendToListSingle() {
+          final int commitsIndex = 1;
+          final int commitsKeysIndex = 0;
+          final UpdateExpression updateExpression =
+              UpdateExpression.of(SetClause.appendToList(ExpressionPath
+                .builder(RocksRef.COMMITS)
+                .position(commitsIndex)
+                .name(RocksRef.COMMITS_KEY_LIST)
+                .position(commitsKeysIndex)
+                .name(RocksRef.COMMITS_KEY_LIST_KEY)
+                .build(), Entity.ofString("foo")));
+
+          final List<String> expectedList = new ArrayList<>(rocksRefBranch.getCommitsKeysKey(commitsIndex, commitsKeysIndex));
+          expectedList.add("foo");
+
+          rocksRefBranch.update(updateExpression);
+          Assertions.assertEquals(expectedList, rocksRefBranch.getCommitsKeysKey(commitsIndex, commitsKeysIndex));
+        }
+
+        @Test
+        void commitKeysKeySetAppendToListWithList() {
+          final int commitsIndex = 1;
+          final int commitsKeysIndex = 0;
+          final UpdateExpression updateExpression =
+              UpdateExpression.of(SetClause.appendToList(ExpressionPath
+                .builder(RocksRef.COMMITS)
+                .position(commitsIndex)
+                .name(RocksRef.COMMITS_KEY_LIST)
+                .position(commitsKeysIndex)
+                .name(RocksRef.COMMITS_KEY_LIST_KEY)
+                .build(), Entity.ofList(Entity.ofString("foo"), Entity.ofString("bar"))));
+
+          final List<String> expectedList = new ArrayList<>(rocksRefBranch.getCommitsKeysKey(commitsIndex, commitsKeysIndex));
+          expectedList.add("foo");
+          expectedList.add("bar");
+
+          rocksRefBranch.update(updateExpression);
+          Assertions.assertEquals(expectedList, rocksRefBranch.getCommitsKeysKey(commitsIndex, commitsKeysIndex));
         }
       }
 
