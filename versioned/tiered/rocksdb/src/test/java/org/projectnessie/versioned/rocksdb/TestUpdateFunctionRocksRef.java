@@ -661,12 +661,12 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
           final int commitsKeysIndex = 0;
           final int commitsKeysKeyIndex = 0;
           final UpdateExpression updateExpression =
-            UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
-              .position(commitsIndex)
-              .name(RocksRef.COMMITS_KEY_LIST)
-              .position(commitsKeysIndex)
-              .name(RocksRef.COMMITS_KEY_LIST_KEY)
-              .build(), Entity.ofList(Entity.ofString("foo"), Entity.ofString("bar"))));
+              UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
+                .position(commitsIndex)
+                .name(RocksRef.COMMITS_KEY_LIST)
+                .position(commitsKeysIndex)
+                .name(RocksRef.COMMITS_KEY_LIST_KEY)
+                .build(), Entity.ofList(Entity.ofString("foo"), Entity.ofString("bar"))));
           rocksRefBranch.update(updateExpression);
           Assertions.assertEquals(Lists.newArrayList("foo", "bar"), rocksRefBranch.getCommitsKeysKey(commitsIndex, commitsKeysIndex));
         }
