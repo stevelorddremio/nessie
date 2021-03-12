@@ -64,21 +64,19 @@ class RocksDBValueVisitor implements ValueVisitor<Function> {
           arguments.size(), name.getArgCount(), name));
     }
 
-    switch (name) {
-      case EQUALS:
-        // Special case SIZE, as the object representation is not contained in one level of ExpressionFunction.
-        if (isSize(arguments.get(0))) {
-          return ImmutableFunction.builder().operator(Function.Operator.SIZE)
-            .path(arguments.get(0).getFunction().getArguments().get(0).accept(EXPRESSION_PATH_VALUE_VISITOR))
-            .value(arguments.get(1).getValue()).build();
-        }
-
-        return ImmutableFunction.builder().operator(Function.Operator.EQUALS)
-          .path(arguments.get(0).accept(EXPRESSION_PATH_VALUE_VISITOR))
+    if (name == ExpressionFunction.FunctionName.EQUALS) {
+      // Special case SIZE, as the object representation is not contained in one level of ExpressionFunction.
+      if (isSize(arguments.get(0))) {
+        return ImmutableFunction.builder().operator(Function.Operator.SIZE)
+          .path(arguments.get(0).getFunction().getArguments().get(0).accept(EXPRESSION_PATH_VALUE_VISITOR))
           .value(arguments.get(1).getValue()).build();
-      default:
-        throw new UnsupportedOperationException(String.format("%s is not a supported top-level RocksDB function.", name));
+      }
+
+      return ImmutableFunction.builder().operator(Function.Operator.EQUALS)
+        .path(arguments.get(0).accept(EXPRESSION_PATH_VALUE_VISITOR))
+        .value(arguments.get(1).getValue()).build();
     }
+    throw new UnsupportedOperationException(String.format("%s is not a supported top-level RocksDB function.", name));
   }
 
   @Override

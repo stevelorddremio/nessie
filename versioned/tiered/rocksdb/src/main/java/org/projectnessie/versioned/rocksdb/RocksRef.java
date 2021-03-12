@@ -206,7 +206,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
         break;
       case EQUALS:
         if (function.getPath().accept(COMMITS_ID_FULL_EXACT)) {
-          final int i = function.getPath().getRoot().getChild().get().asPosition().getPosition();
+          final int i = getPathSegmentAsPosition(function.getPath(), 1);
           if (refBuilder.getBranch().getCommitsCount() <= i
               || !function.getValue().getBinary().equals(refBuilder.getBranch().getCommits(i).getId())) {
             throw new ConditionFailedException(conditionNotMatchedMessage(function));
@@ -348,7 +348,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     } else if (path.accept(PathPattern.exact(COMMITS).anyPosition().nameEquals(COMMITS_DELTA))) {
       final int commitIndex = getPathSegmentAsPosition(path, 1);
       List<ValueProtos.Delta> updatedDelta = new ArrayList<>(refBuilder.getBranch().getCommits(commitIndex).getDeltaList());
-      updatedDelta.addAll(valuesToAdd.stream().map(e -> EntityConverter.entityToDelta(e)).collect(Collectors.toList()));
+      updatedDelta.addAll(valuesToAdd.stream().map(EntityConverter::entityToDelta).collect(Collectors.toList()));
       refBuilder.setBranch(
           ValueProtos.Branch.newBuilder(refBuilder.getBranch())
             .setCommits(commitIndex,
@@ -360,7 +360,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
       final int commitsPosition = getPathSegmentAsPosition(path, 1);
       List<ValueProtos.KeyMutation> updatedKeyList =
           new ArrayList<>(refBuilder.getBranch().getCommits(commitsPosition).getKeyMutationList());
-      updatedKeyList.addAll(valuesToAdd.stream().map(e -> EntityConverter.entityToKeyMutation(e)).collect(Collectors.toList()));
+      updatedKeyList.addAll(valuesToAdd.stream().map(EntityConverter::entityToKeyMutation).collect(Collectors.toList()));
       refBuilder.setBranch(
           ValueProtos.Branch.newBuilder(refBuilder.getBranch())
             .setCommits(commitsPosition,
@@ -791,6 +791,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     return refBuilder.getName();
   }
 
+  @VisibleForTesting
   Stream<Id> getChildren() {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getChildrenList().stream().map(Id::of);
@@ -799,6 +800,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     }
   }
 
+  @VisibleForTesting
   Id getMetadata() {
     if (refBuilder.hasBranch()) {
       return Id.of(refBuilder.getBranch().getMetadataId());
@@ -807,6 +809,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     }
   }
 
+  @VisibleForTesting
   Id getCommit() {
     if (refBuilder.hasTag()) {
       return Id.of(refBuilder.getTag().getId());
@@ -819,6 +822,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     return refBuilder.getBranch().getCommitsList();
   }
 
+  @VisibleForTesting
   Id getCommitsId(int index) {
     if (refBuilder.hasBranch()) {
       return Id.of(refBuilder.getBranch().getCommits(index).getId());
@@ -826,6 +830,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     return null;
   }
 
+  @VisibleForTesting
   Id getCommitsParent(int index) {
     if (refBuilder.hasBranch()) {
       return Id.of(refBuilder.getBranch().getCommits(index).getParent());
@@ -833,6 +838,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     return null;
   }
 
+  @VisibleForTesting
   List<ValueProtos.Delta> getCommitsDeltaList(int commitsPosition) {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getCommits(commitsPosition).getDeltaList();
@@ -840,6 +846,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     return null;
   }
 
+  @VisibleForTesting
   ValueProtos.Delta getCommitsDelta(int commitsPosition, int deltaPosition) {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition);
@@ -848,6 +855,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     }
   }
 
+  @VisibleForTesting
   Integer getCommitsDeltaPosition(int commitsPosition, int deltaPosition) {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition).getPosition();
@@ -856,6 +864,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     }
   }
 
+  @VisibleForTesting
   Id getCommitsDeltaOldId(int commitsPosition, int deltaPosition) {
     if (refBuilder.hasBranch()) {
       return Id.of(refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition).getOldId());
@@ -864,6 +873,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     }
   }
 
+  @VisibleForTesting
   Id getCommitsDeltaNewId(int commitsPosition, int deltaPosition) {
     if (refBuilder.hasBranch()) {
       return Id.of(refBuilder.getBranch().getCommits(commitsPosition).getDelta(deltaPosition).getNewId());
@@ -872,6 +882,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     }
   }
 
+  @VisibleForTesting
   List<ValueProtos.KeyMutation> getCommitsKeysList(int commitsPosition) {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutationList();
@@ -879,6 +890,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     return null;
   }
 
+  @VisibleForTesting
   ValueProtos.KeyMutation getCommitsKeys(int commitsPosition, int keysPosition) {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutation(keysPosition);
@@ -886,6 +898,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     return null;
   }
 
+  @VisibleForTesting
   List<String> getCommitsKeysKey(int commitsPosition, int keysPosition) {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutation(keysPosition).getKey().getElementsList();
@@ -893,6 +906,7 @@ class RocksRef extends RocksBaseValue<Ref> implements Ref {
     return null;
   }
 
+  @VisibleForTesting
   String getCommitsKeysKeyElement(int commitsPosition, int keysPosition, int elementPosition) {
     if (refBuilder.hasBranch()) {
       return refBuilder.getBranch().getCommits(commitsPosition).getKeyMutation(keysPosition).getKey().getElements(elementPosition);

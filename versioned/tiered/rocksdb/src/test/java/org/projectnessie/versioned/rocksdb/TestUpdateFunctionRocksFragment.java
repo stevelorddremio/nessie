@@ -16,8 +16,6 @@
 
 package org.projectnessie.versioned.rocksdb;
 
-import java.util.Random;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -26,14 +24,13 @@ import org.projectnessie.versioned.store.Id;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("RocksFragment update() tests")
 public class TestUpdateFunctionRocksFragment extends TestUpdateFunctionBase {
-  final RocksFragment rocksFragment = createFragment(RANDOM);
+  final RocksFragment rocksFragment = createFragment();
 
   /**
    * Create a Sample Fragment entity.
-   * @param random object to use for randomization of entity creation.
    * @return sample Fragment entity.
    */
-  static RocksFragment createFragment(Random random) {
+  static RocksFragment createFragment() {
     return (RocksFragment) new RocksFragment()
       .id(Id.EMPTY);
   }

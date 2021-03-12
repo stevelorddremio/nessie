@@ -75,7 +75,6 @@ class RocksL1 extends RocksBaseValue<L1> implements L1 {
   static final String ANCESTORS = "parents";
   static final String TREE = "tree";
   static final String KEY_MUTATIONS = "mutations";
-  static final String KEY_MUTATIONS_MUTATION_TYPE = "mutationType";
   static final String KEY_MUTATIONS_KEY = "key";
   static final String COMPLETE_KEY_LIST = "fragments";
   static final String CHECKPOINT_ID = "origin";

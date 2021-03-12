@@ -16,8 +16,6 @@
 
 package org.projectnessie.versioned.rocksdb;
 
-import java.util.Random;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -26,14 +24,13 @@ import org.projectnessie.versioned.store.Id;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("RocksL3 update() tests")
 public class TestUpdateFunctionRocksL3 extends TestUpdateFunctionBase {
-  final RocksL3 rocksL3 = createL3(RANDOM);
+  final RocksL3 rocksL3 = createL3();
 
   /**
    * Create a Sample L3 entity.
-   * @param random object to use for randomization of entity creation.
    * @return sample L3 entity.
    */
-  static RocksL3 createL3(Random random) {
+  static RocksL3 createL3() {
     return (RocksL3) new RocksL3()
       .id(Id.EMPTY);
   }

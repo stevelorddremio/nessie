@@ -40,17 +40,14 @@ import com.google.protobuf.ByteString;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("RocksBase update() tests with multiple functions")
 public class TestUpdateFunctionMultiple {
-  private static final String SCALAR_VALUE = "scalarValue";
   private static final String LIST_VALUE = "listValue";
   private static final String NESTED_VALUE = "nestedValue";
 
   private static class RocksValueForTest extends RocksBaseValue<RocksValueForTest> {
-    private String scalarValue;
     private List<ByteString> listValue;
     private List<List<ByteString>> nestedValue;
 
-    public RocksValueForTest(String scalarValue, List<ByteString> listValue, List<List<ByteString>> nestedValue) {
-      this.scalarValue = scalarValue;
+    public RocksValueForTest(List<ByteString> listValue, List<List<ByteString>> nestedValue) {
       this.listValue = listValue;
       this.nestedValue = nestedValue;
     }
@@ -62,12 +59,12 @@ public class TestUpdateFunctionMultiple {
     @Override
     protected void remove(ExpressionPath path) {
       if (path.accept(PathPattern.exact(LIST_VALUE).anyPosition())) {
-        listValue.remove(path.getRoot().getChild().get().asPosition().getPosition());
+        listValue.remove(getPathSegmentAsPosition(path, 1));
       } else if (path.accept(PathPattern.exact(NESTED_VALUE).anyPosition())) {
-        nestedValue.remove(path.getRoot().getChild().get().asPosition().getPosition());
+        nestedValue.remove(getPathSegmentAsPosition(path, 1));
       } else if (path.accept(PathPattern.exact(NESTED_VALUE).anyPosition().anyPosition())) {
-        int innerIndex = path.getRoot().getChild().get().getChild().get().asPosition().getPosition();
-        nestedValue.get(path.getRoot().getChild().get().asPosition().getPosition()).remove(innerIndex);
+        int innerIndex = getPathSegmentAsPosition(path, 2);
+        nestedValue.get(getPathSegmentAsPosition(path, 1)).remove(innerIndex);
       }
     }
 
@@ -87,9 +84,7 @@ public class TestUpdateFunctionMultiple {
 
     @Override
     protected void set(ExpressionPath path, Entity newValue) {
-      if (path.accept(PathPattern.exact(SCALAR_VALUE))) {
-        scalarValue = newValue.getString();
-      } else if (path.accept(PathPattern.exact(LIST_VALUE))) {
+      if (path.accept(PathPattern.exact(LIST_VALUE))) {
         listValue = newValue.getList().stream().map(Entity::getBinary).collect(Collectors.toList());
       } else if (path.accept(PathPattern.exact(LIST_VALUE).anyPosition())) {
         listValue.set(getPathSegmentAsPosition(path, 1), newValue.getBinary());
@@ -115,10 +110,6 @@ public class TestUpdateFunctionMultiple {
       return new byte[0];
     }
 
-    public String getScalarValue() {
-      return scalarValue;
-    }
-
     public List<ByteString> getListValue() {
       return listValue;
     }
@@ -132,7 +123,6 @@ public class TestUpdateFunctionMultiple {
 
   @BeforeEach
   void createTestValue() {
-    final String scalarValue = "foo";
     final List<ByteString> listValue = new ArrayList<>();
     final List<List<ByteString>> nestedValue = new ArrayList<>();
     final Random random = new Random();
@@ -153,7 +143,7 @@ public class TestUpdateFunctionMultiple {
       }
     }
 
-    testValue = new RocksValueForTest(scalarValue, listValue, nestedValue);
+    testValue = new RocksValueForTest(listValue, nestedValue);
   }
 
   @Test

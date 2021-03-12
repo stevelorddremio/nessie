@@ -18,7 +18,6 @@ package org.projectnessie.versioned.rocksdb;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -188,25 +187,18 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
         .filter(uf -> uf.getOperator() != UpdateFunction.Operator.REMOVE)
         .forEach(this::updateWithFunction);
 
+    /* Sort the PathSegments as follows
+     * names before positions
+     * names by string order
+     * higher positions before lower positions
+     * path with child before path without child
+     * when equal, recurse in with the child segments
+     */
     updatesToApply
         .stream()
         .filter(uf -> uf.getOperator() == UpdateFunction.Operator.REMOVE)
-        .map(uf -> uf.getPath())
-        .sorted(new Comparator<ExpressionPath>() {
-          /* Sort the PathSegments as follows
-           * names before positions
-           * names by string order
-           * higher positions before lower positions
-           * path with child before path without child
-           * when equal, recurse in with the child segments
-           */
-          @Override
-          public int compare(ExpressionPath path1, ExpressionPath path2) {
-            return compareSegments(path1.getRoot(), path2.getRoot());
-          }
-        }).forEach(rp -> {
-          remove(rp);
-        });
+        .map(UpdateFunction::getPath)
+        .sorted((path1, path2) -> compareSegments(path1.getRoot(), path2.getRoot())).forEach(this::remove);
   }
 
   private static int compareSegments(ExpressionPath.PathSegment ps1, ExpressionPath.PathSegment ps2) {
@@ -340,12 +332,8 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
   /**
    * Applies an update to the implementing class.
    * @param updateFunction the update to apply to the implementing class.
-   * @return The PathSegment that should be removed, or null
    */
   private void updateWithFunction(UpdateFunction updateFunction) {
-    final ExpressionPath.NameSegment nameSegment = updateFunction.getRootPathAsNameSegment();
-    final ExpressionPath.PathSegment childPath = nameSegment.getChild().orElse(null);
-
     switch (updateFunction.getOperator()) {
       case REMOVE:
         return;

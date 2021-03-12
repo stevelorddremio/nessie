@@ -17,7 +17,6 @@ package org.projectnessie.versioned.rocksdb;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
@@ -29,10 +28,8 @@ import org.projectnessie.versioned.VersionStoreException;
 import org.projectnessie.versioned.tests.AbstractITVersionStore;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled("RocksDBStore not fully implemented")
 public class TestRocksDBVersionStore extends AbstractITVersionStore {
   private static final String testDatabaseName = "mydb";
-  private String connectionString;
 
   private RocksDBStoreFixture fixture;
 
@@ -51,7 +48,6 @@ public class TestRocksDBVersionStore extends AbstractITVersionStore {
     return fixture;
   }
 
-  @Disabled
   @Override
   public void commitWithInvalidReference() throws ReferenceNotFoundException,
       ReferenceConflictException, ReferenceAlreadyExistsException {
@@ -61,7 +57,6 @@ public class TestRocksDBVersionStore extends AbstractITVersionStore {
   @Nested
   @DisplayName("when transplanting")
   class WhenTransplanting extends AbstractITVersionStore.WhenTransplanting {
-    @Disabled
     @Override
     protected void checkInvalidBranchHash() throws VersionStoreException {
       super.checkInvalidBranchHash();

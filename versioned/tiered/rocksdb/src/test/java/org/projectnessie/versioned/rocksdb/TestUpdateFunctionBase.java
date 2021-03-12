@@ -16,12 +16,9 @@
 
 package org.projectnessie.versioned.rocksdb;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.TestInstance;
 import org.projectnessie.versioned.impl.SampleEntities;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.impl.condition.RemoveClause;
@@ -30,14 +27,15 @@ import org.projectnessie.versioned.impl.condition.UpdateExpression;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+import com.google.common.collect.ImmutableList;
+
 public abstract class TestUpdateFunctionBase {
   protected static final Random RANDOM = new Random(getRandomSeed());
 
   protected static final Id ID = SampleEntities.createId(RANDOM);
   protected static final Id ID_2 = SampleEntities.createId(RANDOM);
   private static final Id ID_3 = SampleEntities.createId(RANDOM);
-  protected static final List<Id> ID_LIST = Arrays.asList(ID, ID_2, ID_3);
+  protected static final ImmutableList<Id> ID_LIST = ImmutableList.of(ID, ID_2, ID_3);
   protected static final Entity ID_ENTITY_LIST = Entity.ofList(ID.toEntity(), ID_2.toEntity(), ID_3.toEntity());
 
   protected static long getRandomSeed() {

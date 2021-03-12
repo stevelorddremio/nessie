@@ -49,7 +49,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
   static final Id ID_4 = SampleEntities.createId(new Random(getRandomSeed()));
 
   RocksRef rocksRefBranch;
-  final RocksRef rocksRefTag = createRefTag(RANDOM);
+  final RocksRef rocksRefTag = createRefTag();
 
   /**
    * Create a Sample Ref entity for a branch.
@@ -82,10 +82,9 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
 
   /**
    * Create a Sample Ref entity for a tag.
-   * @param random object to use for randomization of entity creation.
    * @return sample Ref entity.
    */
-  static RocksRef createRefTag(Random random) {
+  static RocksRef createRefTag() {
     return (RocksRef) new RocksRef()
       .id(Id.EMPTY)
       .name(sampleName)
@@ -324,7 +323,7 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
       @Test
       void commitsIdSetEquals() {
         final Id NEW_ID = SampleEntities.createId(new Random(getRandomSeed()));
-        final int position = 0;
+        final int position = 1;
 
         final UpdateExpression updateExpression =
             UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
@@ -659,7 +658,6 @@ public class TestUpdateFunctionRocksRef extends TestUpdateFunctionBase {
         void commitKeysKeySetEquals() {
           final int commitsIndex = 1;
           final int commitsKeysIndex = 0;
-          final int commitsKeysKeyIndex = 0;
           final UpdateExpression updateExpression =
               UpdateExpression.of(SetClause.equals(ExpressionPath.builder(RocksRef.COMMITS)
                 .position(commitsIndex)

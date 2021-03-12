@@ -37,9 +37,9 @@ interface UpdateFunction {
     SET
   }
 
-  abstract Operator getOperator();
+  Operator getOperator();
 
-  abstract ExpressionPath getPath();
+  ExpressionPath getPath();
 
   default ExpressionPath.NameSegment getRootPathAsNameSegment() {
     return getPath().getRoot().asName();
