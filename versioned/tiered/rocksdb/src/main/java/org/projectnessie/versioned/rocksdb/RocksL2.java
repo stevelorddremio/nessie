@@ -46,6 +46,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
  */
 class RocksL2 extends RocksBaseValue<L2> implements L2 {
   static final String TREE = "tree";
+  static final PathPattern TREE_EXACT = PathPattern.exact(TREE);
+  static final PathPattern TREE_INDEX_EXACT = PathPattern.exact(TREE).anyPosition();
 
   private final ValueProtos.L2.Builder l2Builder = ValueProtos.L2.newBuilder();
 
@@ -79,7 +81,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   protected void remove(ExpressionPath path) {
-    if (path.accept(PathPattern.exact(TREE).anyPosition())) {
+    if (path.accept(TREE_INDEX_EXACT)) {
       final List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
       updatedChildren.remove(getPathSegmentAsPosition(path, 1));
 
@@ -92,7 +94,7 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
-    if (path.accept(PathPattern.exact(TREE))) {
+    if (path.accept(TREE_EXACT)) {
       valuesToAdd.forEach(e -> l2Builder.addTree(e.getBinary()));
     } else {
       throw new UnsupportedOperationException(String.format("%s is not a valid path for append in L2", path.asString()));
@@ -101,10 +103,10 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   protected void set(ExpressionPath path, Entity newValue) {
-    if (path.accept(PathPattern.exact(TREE))) {
+    if (path.accept(TREE_EXACT)) {
       l2Builder.clearTree();
       newValue.getList().forEach(e -> l2Builder.addTree(e.getBinary()));
-    } else if (path.accept(PathPattern.exact(TREE).anyPosition())) {
+    } else if (path.accept(TREE_INDEX_EXACT)) {
       l2Builder.setTree(getPathSegmentAsPosition(path, 1), newValue.getBinary());
     } else {
       throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in L2", path.asString()));
