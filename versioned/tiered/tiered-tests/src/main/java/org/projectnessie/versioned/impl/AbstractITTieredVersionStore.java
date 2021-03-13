@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.projectnessie.versioned.BranchName;
 import org.projectnessie.versioned.Delete;
@@ -431,7 +430,6 @@ public abstract class AbstractITTieredVersionStore {
     assertEquals(0L, versionStore().getCommits(branch).count());
   }
 
-  @Disabled
   @Test
   void completeFlow() throws Exception {
     final BranchName branch = ImmutableBranchName.builder().name("main").build();

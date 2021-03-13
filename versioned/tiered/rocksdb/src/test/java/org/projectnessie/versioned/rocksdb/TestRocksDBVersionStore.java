@@ -17,6 +17,7 @@ package org.projectnessie.versioned.rocksdb;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
@@ -46,12 +47,6 @@ public class TestRocksDBVersionStore extends AbstractITVersionStore {
   @Override
   protected VersionStore<String, String> store() {
     return fixture;
-  }
-
-  @Override
-  public void commitWithInvalidReference() throws ReferenceNotFoundException,
-      ReferenceConflictException, ReferenceAlreadyExistsException {
-    super.commitWithInvalidReference();
   }
 
   @Nested
