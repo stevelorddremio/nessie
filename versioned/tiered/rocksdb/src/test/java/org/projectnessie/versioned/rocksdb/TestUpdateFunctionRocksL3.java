@@ -13,21 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.projectnessie.versioned.rocksdb;
 
-import java.nio.file.Path;
-
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.io.TempDir;
-import org.projectnessie.versioned.impl.AbstractITTieredVersionStore;
+import org.projectnessie.versioned.store.Id;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class TestRocksDBTieredVersionStore extends AbstractITTieredVersionStore {
-  @TempDir
-  static Path DB_PATH;
+@DisplayName("RocksL3 update() tests")
+public class TestUpdateFunctionRocksL3 extends TestUpdateFunctionBase {
+  final RocksL3 rocksL3 = createL3();
 
-  @Override
-  protected RocksDBStoreFixture createNewFixture() {
-    return new RocksDBStoreFixture(DB_PATH.toString());
+  /**
+   * Create a Sample L3 entity.
+   * @return sample L3 entity.
+   */
+  static RocksL3 createL3() {
+    return (RocksL3) new RocksL3()
+      .id(Id.EMPTY);
+  }
+
+  @Test
+  void idRemove() {
+    idRemove(rocksL3);
+  }
+
+  @Test
+  void idSetEquals() {
+    idSetEquals(rocksL3);
+  }
+
+  @Test
+  void idSetAppendToList() {
+    idSetAppendToList(rocksL3);
   }
 }

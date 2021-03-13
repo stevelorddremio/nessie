@@ -24,6 +24,13 @@ import com.google.protobuf.ByteString;
 /**
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.CommitMetadata} providing
  * SerDe and Condition evaluation.
+ *
+ * <p>Conceptually, this is matching the following JSON structure:</p>
+ * <pre>{
+ *   "id": &lt;ByteString&gt;,   // ID
+ *   "dt": &lt;int64&gt;,        // DATETIME
+ *   "value": &lt;ByteString&gt; // VALUE
+ * }</pre>
  */
 class RocksCommitMetadata extends RocksWrappedValue<CommitMetadata> implements CommitMetadata {
   static CommitMetadata of(Id id, long dt, ByteString value) {

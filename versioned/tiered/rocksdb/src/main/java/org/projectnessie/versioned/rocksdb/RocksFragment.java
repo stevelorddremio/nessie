@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import org.projectnessie.versioned.ImmutableKey;
 import org.projectnessie.versioned.Key;
+import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.StoreException;
@@ -32,11 +33,25 @@ import com.google.protobuf.InvalidProtocolBufferException;
 /**
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.Fragment} providing
  * SerDe and Condition evaluation.
+ *
+ * <p>Conceptually, this is matching the following JSON structure:</p>
+ * <pre>{
+ *   "id": &lt;ByteString&gt;, // ID
+ *   "dt": &lt;int64&gt;,      // DATETIME
+ *   "keys": [                 // KEY_LIST
+ *     [
+ *       &lt;String&gt;
+ *     ]
+ *   ]
+ * }</pre>
  */
 class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   static final String KEY_LIST = "keys";
+  static final PathPattern KEY_LIST_EXACT = PathPattern.exact(KEY_LIST);
+  static final PathPattern KEY_LIST_INDEX_EXACT = PathPattern.exact(KEY_LIST).anyPosition();
+  static final PathPattern KEY_LIST_INNER_INDEX_EXACT = PathPattern.exact(KEY_LIST).anyPosition().anyPosition();
 
-  private final ValueProtos.Fragment.Builder builder = ValueProtos.Fragment.newBuilder();
+  private final ValueProtos.Fragment.Builder fragmentBuilder = ValueProtos.Fragment.newBuilder();
 
   RocksFragment() {
     super();
@@ -44,7 +59,7 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   public Fragment keys(Stream<Key> keys) {
-    builder
+    fragmentBuilder
         .clearKeys()
         .addAllKeys(keys.map(key -> ValueProtos.Key
             .newBuilder()
@@ -57,9 +72,9 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
 
   @Override
   byte[] build() {
-    checkPresent(builder.getKeysList(), KEY_LIST);
+    checkPresent(fragmentBuilder.getKeysList(), KEY_LIST);
 
-    return builder.setBase(buildBase()).build().toByteArray();
+    return fragmentBuilder.setBase(buildBase()).build().toByteArray();
   }
 
   /**
@@ -93,7 +108,7 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
             throw new ConditionFailedException(conditionNotMatchedMessage(function));
           }
         } else if (function.getOperator().equals(Function.Operator.SIZE)) {
-          if (builder.getKeysCount() != function.getValue().getNumber()) {
+          if (fragmentBuilder.getKeysCount() != function.getValue().getNumber()) {
             throw new ConditionFailedException(conditionNotMatchedMessage(function));
           }
         } else {
@@ -107,14 +122,13 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
   }
 
   private List<Key> getKeys() {
-    return builder.getKeysList()
+    return fragmentBuilder.getKeysList()
       .stream()
-      .map(key ->
-        ImmutableKey
-          .builder()
-          .addAllElements(new ArrayList<>(key.getElementsList()))
-          .build()
-      )
+      .map(key -> {
+        final ImmutableKey.Builder keyBuilder = ImmutableKey.builder();
+        key.getElementsList().forEach(keyBuilder::addElements);
+        return keyBuilder.build();
+      })
       .collect(Collectors.toList());
   }
 
@@ -126,5 +140,64 @@ class RocksFragment extends RocksBaseValue<Fragment> implements Fragment {
    */
   private Entity keysAsEntityList(List<Key> keys) {
     return Entity.ofList(keys.stream().map(k -> Entity.ofList(k.getElements().stream().map(Entity::ofString))));
+  }
+
+  @Override
+  protected void remove(ExpressionPath path) {
+    // keys[*]
+    if (path.accept(KEY_LIST_INDEX_EXACT)) {
+      final int i = getPathSegmentAsPosition(path, 1);
+      fragmentBuilder.removeKeys(i);
+    // keys[*][*]
+    } else if (path.accept(KEY_LIST_INNER_INDEX_EXACT)) {
+      final int outerIndex = getPathSegmentAsPosition(path, 1);
+      final int innerIndex = getPathSegmentAsPosition(path, 2);
+
+      final List<String> updatedKeys = new ArrayList<>(fragmentBuilder.getKeys(outerIndex).getElementsList());
+      updatedKeys.remove(innerIndex);
+
+      final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder();
+      updatedKeys.forEach(keyBuilder::addElements);
+
+      fragmentBuilder.setKeys(outerIndex, keyBuilder);
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for remove in Fragment", path.asString()));
+    }
+  }
+
+  @Override
+  protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
+    if (path.accept(KEY_LIST_EXACT)) {
+      valuesToAdd.forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
+    } else if (path.accept(KEY_LIST_INDEX_EXACT)) {
+      final int i = getPathSegmentAsPosition(path, 1);
+
+      final ValueProtos.Key.Builder keyBuilder = ValueProtos.Key.newBuilder(fragmentBuilder.getKeys(i));
+      valuesToAdd.forEach(e -> keyBuilder.addElements(e.getString()));
+
+      fragmentBuilder.setKeys(i, keyBuilder);
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for append in Fragment", path.asString()));
+    }
+  }
+
+  @Override
+  protected void set(ExpressionPath path, Entity newValue) {
+    if (path.accept(KEY_LIST_EXACT)) {
+      fragmentBuilder.clearKeys();
+      newValue.getList().forEach(v -> fragmentBuilder.addKeys(EntityConverter.entityToKey(v)));
+    } else if (path.accept(KEY_LIST_INDEX_EXACT)) {
+      final int i = getPathSegmentAsPosition(path, 1);
+      fragmentBuilder.setKeys(i, EntityConverter.entityToKey(newValue));
+    } else if (path.accept(KEY_LIST_INNER_INDEX_EXACT)) {
+      final int outerIndex = getPathSegmentAsPosition(path, 1);
+      final int innerIndex = getPathSegmentAsPosition(path, 2);
+
+      fragmentBuilder.setKeys(outerIndex, ValueProtos.Key
+          .newBuilder(fragmentBuilder.getKeys(outerIndex))
+          .setElements(innerIndex, newValue.getString()));
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in Fragment", path.asString()));
+    }
   }
 }

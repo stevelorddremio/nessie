@@ -301,7 +301,7 @@ class TestConditionExpressions {
       }
     }
 
-    return builder.build();
+    return (builder != null ? builder.build() : null);
   }
 
   private static String createPath() {

@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.projectnessie.versioned.rocksdb;
 
-import java.nio.file.Path;
+import org.projectnessie.versioned.impl.condition.UpdateExpression;
 
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.io.TempDir;
-import org.projectnessie.versioned.impl.AbstractITTieredVersionStore;
+/**
+ * Applies updates from a collection of {@link org.projectnessie.versioned.rocksdb.UpdateFunction} against the
+ * implementing class's attributes.
+ */
+public interface Updater {
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class TestRocksDBTieredVersionStore extends AbstractITTieredVersionStore {
-  @TempDir
-  static Path DB_PATH;
-
-  @Override
-  protected RocksDBStoreFixture createNewFixture() {
-    return new RocksDBStoreFixture(DB_PATH.toString());
-  }
+  /**
+   * Applies the updates to the implementing class.
+   * @param updates the updates to apply
+   */
+  void update(UpdateExpression updates);
 }

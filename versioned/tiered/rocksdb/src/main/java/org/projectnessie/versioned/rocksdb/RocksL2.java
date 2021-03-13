@@ -16,24 +16,40 @@
 
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.projectnessie.versioned.impl.condition.ExpressionPath;
 import org.projectnessie.versioned.store.ConditionFailedException;
+import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.store.StoreException;
 import org.projectnessie.versioned.tiered.L2;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
  * A RocksDB specific implementation of {@link org.projectnessie.versioned.tiered.L2} providing
  * SerDe and Condition evaluation.
+ *
+ * <p>Conceptually, this is matching the following JSON structure:</p>
+ * <pre>{
+ *   "id": &lt;ByteString&gt;, // ID
+ *   "dt": &lt;int64&gt;,      // DATETIME
+ *   "tree": [                 // TREE
+ *     &lt;ByteString&gt;
+ *   ]
+ * }</pre>
  */
 class RocksL2 extends RocksBaseValue<L2> implements L2 {
-  private static final String CHILDREN = "children";
+  static final String TREE = "tree";
+  static final PathPattern TREE_EXACT = PathPattern.exact(TREE);
+  static final PathPattern TREE_INDEX_EXACT = PathPattern.exact(TREE).anyPosition();
 
-  private final ValueProtos.L2.Builder builder = ValueProtos.L2.newBuilder();
+  private final ValueProtos.L2.Builder l2Builder = ValueProtos.L2.newBuilder();
 
   RocksL2() {
     super();
@@ -41,9 +57,8 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
 
   @Override
   public L2 children(Stream<Id> ids) {
-    builder
-        .clearTree()
-        .addAllTree(ids.map(Id::getValue).collect(Collectors.toList()));
+    l2Builder.clearTree();
+    ids.forEach(id -> l2Builder.addTree(id.getValue()));
     return this;
   }
 
@@ -54,20 +69,55 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
       case ID:
         evaluatesId(function);
         break;
-      case CHILDREN:
-        evaluate(function, builder.getTreeList().stream().map(Id::of).collect(Collectors.toList()));
+      case TREE:
+        evaluate(function, l2Builder.getTreeList().stream().map(Id::of).collect(Collectors.toList()));
         break;
       default:
         // Invalid Condition Function.
         throw new ConditionFailedException(invalidOperatorSegmentMessage(function));
     }
+
+  }
+
+  @Override
+  protected void remove(ExpressionPath path) {
+    if (path.accept(TREE_INDEX_EXACT)) {
+      final List<ByteString> updatedChildren = new ArrayList<>(l2Builder.getTreeList());
+      updatedChildren.remove(getPathSegmentAsPosition(path, 1));
+
+      l2Builder.clearTree();
+      l2Builder.addAllTree(updatedChildren);
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for remove in L2", path.asString()));
+    }
+  }
+
+  @Override
+  protected void appendToList(ExpressionPath path, List<Entity> valuesToAdd) {
+    if (path.accept(TREE_EXACT)) {
+      valuesToAdd.forEach(e -> l2Builder.addTree(e.getBinary()));
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for append in L2", path.asString()));
+    }
+  }
+
+  @Override
+  protected void set(ExpressionPath path, Entity newValue) {
+    if (path.accept(TREE_EXACT)) {
+      l2Builder.clearTree();
+      newValue.getList().forEach(e -> l2Builder.addTree(e.getBinary()));
+    } else if (path.accept(TREE_INDEX_EXACT)) {
+      l2Builder.setTree(getPathSegmentAsPosition(path, 1), newValue.getBinary());
+    } else {
+      throw new UnsupportedOperationException(String.format("%s is not a valid path for set equals in L2", path.asString()));
+    }
   }
 
   @Override
   byte[] build() {
-    checkPresent(builder.getTreeList(), CHILDREN);
+    checkPresent(l2Builder.getTreeList(), TREE);
 
-    return builder.setBase(buildBase()).build().toByteArray();
+    return l2Builder.setBase(buildBase()).build().toByteArray();
   }
 
   /**
@@ -84,5 +134,9 @@ class RocksL2 extends RocksBaseValue<L2> implements L2 {
     } catch (InvalidProtocolBufferException e) {
       throw new StoreException("Corrupt L2 value encountered when deserializing.", e);
     }
+  }
+
+  Stream<Id> getChildren() {
+    return l2Builder.getTreeList().stream().map(Id::of);
   }
 }

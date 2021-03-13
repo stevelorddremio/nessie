@@ -15,26 +15,35 @@
  */
 package org.projectnessie.versioned.rocksdb;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.projectnessie.versioned.Key;
 import org.projectnessie.versioned.impl.condition.ExpressionPath;
+import org.projectnessie.versioned.impl.condition.UpdateClause;
+import org.projectnessie.versioned.impl.condition.UpdateExpression;
 import org.projectnessie.versioned.store.ConditionFailedException;
 import org.projectnessie.versioned.store.Entity;
 import org.projectnessie.versioned.store.Id;
 import org.projectnessie.versioned.tiered.BaseValue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 /**
  * An implementation of @{BaseValue} used for ConditionExpression and UpdateExpression evaluation.
  * @param <C> Specialization of a specific BaseValue interface.
  */
-abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, Evaluator {
+abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, Evaluator, Updater {
 
   static final String ID = "id";
+  static final String DATETIME = "dt";
+
   private final ValueProtos.BaseValue.Builder builder = ValueProtos.BaseValue.newBuilder();
 
   RocksBaseValue() {
@@ -145,7 +154,8 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     }
   }
 
-  private Id getId() {
+  @VisibleForTesting
+  Id getId() {
     return Id.of(buildBase().getId());
   }
 
@@ -163,6 +173,261 @@ abstract class RocksBaseValue<C extends BaseValue<C>> implements BaseValue<C>, E
     return String.format("Condition %s did not match the actual value for %s", function.getValue().getType(),
       function.getRootPathAsNameSegment().getName());
   }
+
+  /**
+   * Entry point to update this object with a series of UpdateClauses.
+   * @param updates the updates to apply
+   */
+  @Override
+  public void update(UpdateExpression updates) {
+    final List<UpdateFunction> updatesToApply = removeUnnecessaryFunctions(updates.getClauses());
+
+    updatesToApply
+        .stream()
+        .filter(uf -> uf.getOperator() != UpdateFunction.Operator.REMOVE)
+        .forEach(this::updateWithFunction);
+
+    /* Sort the PathSegments as follows
+     * names before positions
+     * names by string order
+     * higher positions before lower positions
+     * path with child before path without child
+     * when equal, recurse in with the child segments
+     */
+    updatesToApply
+        .stream()
+        .filter(uf -> uf.getOperator() == UpdateFunction.Operator.REMOVE)
+        .map(UpdateFunction::getPath)
+        .sorted((path1, path2) -> compareSegments(path1.getRoot(), path2.getRoot())).forEach(this::remove);
+  }
+
+  private static int compareSegments(ExpressionPath.PathSegment ps1, ExpressionPath.PathSegment ps2) {
+    if (ps1.isName() && ps2.isName()) {
+      if (ps1.asName().getName().equals(ps2.asName().getName())) {
+        if (!ps1.getChild().isPresent() && ps2.getChild().isPresent()) {
+          return 1;
+        } else if (ps1.getChild().isPresent() && !ps2.getChild().isPresent()) {
+          return -1;
+        } else if (!ps1.getChild().isPresent() && !ps2.getChild().isPresent()) {
+          return 0;
+        } else {
+          return compareSegments(ps1.getChild().get(), ps2.getChild().get());
+        }
+      } else {
+        return ps1.asName().getName().compareTo(ps2.asName().getName());
+      }
+    } else if (ps1.isName()) {
+      return -1;
+    } else if (ps1.isPosition() && ps2.isPosition()) {
+      return ps2.asPosition().getPosition() - ps1.asPosition().getPosition();
+    } else {
+      return 1;
+    }
+  }
+
+  /**
+   * Filters through the list of UpdateClause objects to remove conflicting updates. The order of
+   * the updates is preserved. Conflicts are defined as follows:
+   * <ul>
+   *   <li>Remove -&gt; Remove conflicts if latter remove is same node or a child node of former remove</li>
+   *   <li>Remove -&gt; SetEquals conflicts if SetEquals is for the same node or a child node of Remove</li>
+   *   <li>Remove -&gt; SetEquals conflicts if Remove is for a child node of SetEquals</li>
+   *   <li>Remove -&gt; Append conflicts if Append is for the same node or a child node of Remove</li>
+   *   <li>SetEquals -&gt; Remove conflicts if Remove is for a child node of SetEquals</li>
+   *   <li>SetEquals -&gt; SetEquals conflicts if latter SetEquals is for child node of the former SetEquals</li>
+   *   <li>SetEquals -&gt; Append conflicts if Append is for the same node or a child node of SetEquals</li>
+   * </ul>
+   * @param updateClauses The list of UpdateClause objects to filter
+   * @return A safe list of UpdateFunction objects to apply
+   */
+  private List<UpdateFunction> removeUnnecessaryFunctions(List<UpdateClause> updateClauses) {
+    final List<UpdateFunction> updateFunctions = updateClauses
+        .stream()
+        .map(uc -> uc.accept(RocksDBUpdateClauseVisitor.ROCKS_DB_UPDATE_CLAUSE_VISITOR))
+        .collect(Collectors.toList());
+    final boolean[] keepUpdateFunction = new boolean[updateFunctions.size()];
+    Arrays.fill(keepUpdateFunction, true);
+
+    for (int i = 1; i < updateClauses.size(); i++) {
+      final UpdateFunction currentUpdateFunction = updateFunctions.get(i);
+      final String currentUpdatePath = currentUpdateFunction.getPath().asString();
+      final UpdateFunction.Operator currentOperator = currentUpdateFunction.getOperator();
+      final UpdateFunction.SetFunction.SubOperator currentSubOperator;
+      if (currentOperator == UpdateFunction.Operator.SET) {
+        currentSubOperator = ((UpdateFunction.SetFunction) currentUpdateFunction).getSubOperator();
+      } else {
+        currentSubOperator = null;
+      }
+
+      for (int j = 0; j < i; j++) {
+        if (!keepUpdateFunction[j]) {
+          continue;
+        }
+
+        final UpdateFunction earlierUpdateFunction = updateFunctions.get(j);
+        final String earlierUpdatePath = earlierUpdateFunction.getPath().asString();
+        final UpdateFunction.Operator earlierOperator = earlierUpdateFunction.getOperator();
+        final UpdateFunction.SetFunction.SubOperator earlierSubOperator;
+        if (earlierOperator == UpdateFunction.Operator.SET) {
+          earlierSubOperator = ((UpdateFunction.SetFunction) earlierUpdateFunction).getSubOperator();
+        } else {
+          earlierSubOperator = null;
+        }
+
+        if (currentOperator == UpdateFunction.Operator.REMOVE
+            && earlierOperator == UpdateFunction.Operator.REMOVE) {
+          if (currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.REMOVE
+            && currentOperator == UpdateFunction.Operator.SET
+            && currentSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+          if (currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          } else if (earlierUpdatePath.startsWith(currentUpdatePath)) {
+            keepUpdateFunction[j] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.REMOVE
+            && currentOperator == UpdateFunction.Operator.SET
+            && currentSubOperator == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+          if (currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.SET
+            && earlierSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS
+            && currentOperator == UpdateFunction.Operator.REMOVE) {
+          if (!currentUpdatePath.equals(earlierUpdatePath) && currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.SET
+            && earlierSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS
+            && currentOperator == UpdateFunction.Operator.SET
+            && currentSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS) {
+          if (!currentUpdatePath.equals(earlierUpdatePath) && currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        } else if (earlierOperator == UpdateFunction.Operator.SET
+            && earlierSubOperator == UpdateFunction.SetFunction.SubOperator.EQUALS
+            && currentOperator == UpdateFunction.Operator.SET
+            && currentSubOperator == UpdateFunction.SetFunction.SubOperator.APPEND_TO_LIST) {
+          if (currentUpdatePath.startsWith(earlierUpdatePath)) {
+            keepUpdateFunction[i] = false;
+          }
+        }
+      }
+    }
+
+    final List<UpdateFunction> functionsToApply = new ArrayList<>();
+    for (int i = 0; i < keepUpdateFunction.length; i++) {
+      if (keepUpdateFunction[i]) {
+        functionsToApply.add(updateFunctions.get(i));
+      }
+    }
+    return functionsToApply;
+  }
+
+  // TODO: we might be able to provide implementation here and just have
+  // abstract methods for SET and REMOVE, which will be implemented by the
+  // specific classes L1, L2 etc.
+  /**
+   * Applies an update to the implementing class.
+   * @param updateFunction the update to apply to the implementing class.
+   */
+  private void updateWithFunction(UpdateFunction updateFunction) {
+    switch (updateFunction.getOperator()) {
+      case REMOVE:
+        return;
+      case SET:
+        updateWithSetFunction((UpdateFunction.SetFunction) updateFunction);
+        break;
+      default:
+        throw new UnsupportedOperationException(String.format("Unknown operation \"%s\"", updateFunction.getOperator()));
+    }
+  }
+
+  private void updateWithSetFunction(UpdateFunction.SetFunction setFunction) {
+    switch (setFunction.getSubOperator()) {
+      case APPEND_TO_LIST:
+        final List<Entity> valuesToAppend;
+        if (setFunction.getValue().getType() == Entity.EntityType.LIST) {
+          valuesToAppend = setFunction.getValue().getList();
+        } else {
+          valuesToAppend = Collections.singletonList(setFunction.getValue());
+        }
+
+        appendToList(setFunction.getPath(), valuesToAppend);
+        break;
+      case EQUALS:
+        if (ID.equals(setFunction.getPath().getRoot().getName())) {
+          id(Id.of(setFunction.getValue().getBinary()));
+        } else if (DATETIME.equals(setFunction.getPath().getRoot().getName())) {
+          dt(setFunction.getValue().getNumber());
+        } else {
+          set(setFunction.getPath(), setFunction.getValue());
+        }
+        break;
+      default:
+        throw new UnsupportedOperationException(String.format("Unknown sub operation \"%s\"", setFunction.getSubOperator().name()));
+    }
+  }
+
+  private ExpressionPath removeLastPositionSegmentIfPosition(ExpressionPath path) {
+    ExpressionPath.PathSegment currentNode = path.getRoot();
+    ExpressionPath.PathSegment.Builder pathBuilder = ExpressionPath.builder(currentNode.asName().getName());
+    currentNode = currentNode.getChild().orElse(null);
+
+    while (currentNode != null && (currentNode.getChild().isPresent() || currentNode.isName())) {
+      if (currentNode.isPosition()) {
+        pathBuilder = pathBuilder.position(currentNode.asPosition().getPosition());
+      } else {
+        pathBuilder = pathBuilder.name(currentNode.asName().getName());
+      }
+
+      currentNode = currentNode.getChild().orElse(null);
+    }
+
+    return pathBuilder.build();
+  }
+
+  /**
+   * Returns the int value nth path segment assuming it is a position segment.
+   * @param path the path to parse
+   * @param n index of the path segment
+   * @return int value of the position at index n
+   */
+  protected int getPathSegmentAsPosition(ExpressionPath path, int n) {
+    Optional<ExpressionPath.PathSegment> pathSegment = Optional.of(path.getRoot());
+
+    for (int i = 0; i < n && pathSegment.isPresent(); i++) {
+      pathSegment = pathSegment.get().getChild();
+    }
+
+    if (pathSegment.isPresent() && pathSegment.get().isPosition()) {
+      return pathSegment.get().asPosition().getPosition();
+    } else {
+      throw new UnsupportedOperationException("Invalid expression path");
+    }
+  }
+
+  /**
+   * Removes a value from a field or subvalue of the field.
+   * @param path the path of the node to remove
+   */
+  protected abstract void remove(ExpressionPath path);
+
+  /**
+   * Adds a list of values to a node that is a list.
+   * @param path the path of the node to append to
+   * @param valuesToAdd list of values to add to the node
+   */
+  protected abstract void appendToList(ExpressionPath path, List<Entity> valuesToAdd);
+
+  /**
+   * Updates the value of a node.
+   * @param path the path of the node to update
+   * @param newValue the new value for the node
+   */
+  protected abstract void set(ExpressionPath path, Entity newValue);
 
   /**
    * Serialize the value to protobuf format.
